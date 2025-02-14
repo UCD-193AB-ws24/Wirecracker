@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+
+<!-- Test: Typical fullscreen usage; autoload an image and overlay. -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <script type="module">
+        import load_untouch_nii from '../load_untouch_nifti.js'
+        window.load_untouch_nii_from_bitarray = load_untouch_nii;
+    </script>
+
+    <script type="text/javascript">
+        function readNIFTI(name, data) {
+            var canvas = document.getElementById('myCanvas');
+            var slider = document.getElementById('myRange');
+
+            // parse nifti
+            console.log("reading NIFTI file...");
+            var nii = load_untouch_nii_from_bitarray(name, data);
+
+            // set up slider
+            var slices = nii.hdr.dime.dim[3];
+            slider.max = slices - 1;
+            slider.value = Math.round(slices / 2);
+
+            slider.oninput = function() {
+                drawCanvas(canvas, slider.value, nii);
+            };
+
+            // draw slice
+            drawCanvas(canvas, slider.value, nii);
+        }
+
+        function drawCanvas(canvas, slice, nii) {
+            // get nifti dimensions
+            var cols = nii.hdr.dime.dim[1];
+            var rows = nii.hdr.dime.dim[2];
+
+            // set canvas dimensions to nifti slice dimensions
+            canvas.width = cols;
+            canvas.height = rows;
+
+            // make canvas image data
+            var ctx = canvas.getContext("2d");
+            var canvasImageData = ctx.createImageData(canvas.width, canvas.height);
+
+            if ( (nii.hdr.dime.datatype == 128 && nii.hdr.dime.bitpix == 24) ||
+                (nii.hdr.dime.datatype == 511 && nii.hdr.dime.bitpix == 96) ) {
+                for (var row = 0; row < rows; row++) {
+                    var rowOffset = row * cols;
+
+                    for (var col = 0; col < cols; col++) {
+                        canvasImageData.data[(rowOffset + col) * 4] = nii.img[slice][row][col][0];     // R
+                        canvasImageData.data[(rowOffset + col) * 4 + 1] = nii.img[slice][row][col][1]; // G
+                        canvasImageData.data[(rowOffset + col) * 4 + 2] = nii.img[slice][row][col][2]; // B
+                        canvasImageData.data[(rowOffset + col) * 4 + 3] = 255;   // A
+                    }
+                }
+            } else {
+                // draw pixels
+                for (var row = 0; row < rows; row++) {
+                    var rowOffset = row * cols;
+
+                    for (var col = 0; col < cols; col++) {
+                        var value = nii.img[slice][row][col] / nii.hdr.dime.glmax * 255;
+                        canvasImageData.data[(rowOffset + col) * 4] = value;     // R
+                        canvasImageData.data[(rowOffset + col) * 4 + 1] = value; // G
+                        canvasImageData.data[(rowOffset + col) * 4 + 2] = value; // B
+                        canvasImageData.data[(rowOffset + col) * 4 + 3] = 255;   // A
+                    }
+                }
+            }
+
+
+
+            ctx.putImageData(canvasImageData, 0, 0);
+        }
+
+        function makeSlice(file, start, length) {
+            var fileType = (typeof File);
+
+            if (fileType === 'undefined') {
+                return function () {};
+            }
+
+            if (File.prototype.slice) {
+                return file.slice(start, start + length);
+            }
+
+            if (File.prototype.mozSlice) {
+                return file.mozSlice(start, length);
+            }
+
+            if (File.prototype.webkitSlice) {
+                return file.webkitSlice(start, length);
+            }
+
+            return null;
+        }
+
+        function readFile(file) {
+            var blob = makeSlice(file, 0, file.size);
+
+            var reader = new FileReader();
+
+            reader.onloadend = function (evt) {
+                if (evt.target.readyState === FileReader.DONE) {
+                    readNIFTI(file.name, evt.target.result);
+                }
+            };
+
+            reader.readAsArrayBuffer(blob);
+        }
+
+        function handleFileSelect(evt) {
+            var files = evt.target.files;
+            readFile(files[0]);
+        }
+    </script>
+
+    <title>NIFTI parser Test</title>
+</head>
+
+<body>
+
+<div id="select" style="font-family:sans-serif">
+    <p>Select a file: <input type="file" id="file" name="files" /></p>
+    <hr />
+</div>
+
+<div id="results">
+    <canvas id="myCanvas" width="100" height="100"></canvas><br />
+    <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+</div>
+
+<script type="text/javascript">
+    document.getElementById('file').addEventListener('change', handleFileSelect, false);
+</script>
+
+</body>
+
+</html>
