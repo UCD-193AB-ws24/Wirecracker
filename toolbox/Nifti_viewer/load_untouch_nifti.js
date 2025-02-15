@@ -272,6 +272,17 @@ function transpose(arr) {
     return transposed;
 }
 
+
+function dimension(array) {
+    let dims = [];
+    let current = array;
+    while (Array.isArray(current)) {
+        dims.push(current.length);
+        current = current[0];
+    }
+    return dims;
+}
+
 function prod(arr) {
     return arr.reduce((acc, num) => acc * num, 1);
 }
