@@ -91,12 +91,12 @@ export default function load_untouch_nii( filename, data, img_idx = [], dim5_idx
 
     if (nii.filetype == 0)
     {
-        nii.hdr = load_untouch0_nii_hdr(nii.fileprefix, nii.machine, data);
+        nii.hdr = load_untouch0_nii_hdr(nii.machine, data);
         nii.ext = [];
     }
     else
     {
-        nii.hdr = load_untouch_nii_hdr(nii.fileprefix,nii.machine,nii.filetype,data);
+        nii.hdr = load_untouch_nii_hdr(nii.machine,data);
         //  Read the header extension
         nii.ext = load_nii_ext(filename,data);
     }
@@ -163,7 +163,6 @@ function reshape (array, sizes)
     let matlabDim = sizes.reverse();
     array.flat(Infinity);
     let tmpArray2;
-    let trivial = 1;
     // for each dimensions starting by the last one and ignoring the first one
     for (let sizeIndex = matlabDim.length - 1; sizeIndex > 0; sizeIndex--)
     {
@@ -208,8 +207,6 @@ function isequal ( array1, array2 )
 
 // Deforms original. Destructive in weird way
 function permute(array, order) {
-    const dimensions = dimension(array);
-    const newDimensions = order.map(dim => dimensions[dim - 1]);
 
     for (var i = 0; i < order.length; i++) {
 
@@ -272,17 +269,6 @@ function transpose(arr) {
     return transposed;
 }
 
-
-function dimension(array) {
-    let dims = [];
-    let current = array;
-    while (Array.isArray(current)) {
-        dims.push(current.length);
-        current = current[0];
-    }
-    return dims;
-}
-
 function prod(arr) {
     return arr.reduce((acc, num) => acc * num, 1);
 }
@@ -302,7 +288,7 @@ function load_untouch_nii_img ( hdr, filetype, fileprefix, machine, data,
     check_argin(dim7_idx, hdr);
     check_argin(slice_idx, hdr);
 
-    return load_untouch_nii_img_read_image(hdr, filetype, fileprefix, machine, img_idx, dim5_idx, dim6_idx, dim7_idx, old_RGB, slice_idx, data);
+    return load_untouch_nii_img_read_image(hdr, filetype, machine, img_idx, dim5_idx, dim6_idx, dim7_idx, old_RGB, slice_idx, data);
 }
 
 function check_argin ( input, hdr )
@@ -334,7 +320,7 @@ function check_argin ( input, hdr )
     }
 }
 
-function load_untouch_nii_img_read_image ( hdr, filetype, fileprefix, machine,
+function load_untouch_nii_img_read_image ( hdr, filetype, machine,
                       img_idx, dim5_idx, dim6_idx,
                       dim7_idx, old_RGB, slice_idx, data )
 {
@@ -740,14 +726,7 @@ function load_untouch_nii_img_read_image ( hdr, filetype, fileprefix, machine,
     return [img, hdr];
 }
 
-function load_untouch_nii_hdr ( fileprefix, machine, filetype, data ) {
-
-    let filename;
-    if ( filetype === 2 ) {
-        filename = fileprefix + ".nii";
-    } else {
-        filename = fileprefix + ".hdr";
-    }
+function load_untouch_nii_hdr ( machine, data ) {
 
     const fid = new FILE('', machine);
     fid.fopen(data);
@@ -916,7 +895,7 @@ function load_untouch_nii_hdr_data_history ( fid ) {
     return hist;
 }
 
-function load_untouch0_nii_hdr ( fileprefix, machine, data )
+function load_untouch0_nii_hdr ( machine, data )
 {
     const fid = new FILE('', machine);
     fid.fopen(data);
