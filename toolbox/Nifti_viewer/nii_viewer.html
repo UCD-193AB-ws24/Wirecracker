@@ -7,7 +7,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <script type="module">
         import load_untouch_nii from '../load_untouch_nifti.js'
-        window.load_untouch_nii_from_bitarray = load_untouch_nii;
+        window.load_untouch_nii = load_untouch_nii;
     </script>
 
     <script type="text/javascript">
@@ -17,7 +17,7 @@
 
             // parse nifti
             console.log("reading NIFTI file...");
-            var nii = load_untouch_nii_from_bitarray(name, data);
+            var nii = load_untouch_nii(name, data);
 
             // set up slider
             var slices = nii.hdr.dime.dim[3];
