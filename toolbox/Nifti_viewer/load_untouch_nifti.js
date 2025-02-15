@@ -172,8 +172,6 @@ function reshape (array, sizes)
 
         // aggregate the elements of the current tmpArray in elements of the requested size
         const length = array.length / size;
-        if ( size == 1 && trivial ) continue;
-        //trivial = 0;
         for (let i = 0; i < length; i++)
         {
             tmpArray2.push(array.slice(i * size, (i + 1) * size));
@@ -208,17 +206,70 @@ function isequal ( array1, array2 )
     return true;
 }
 
-function permute ( array, ...order )
-{
-    let temp = [];
-    let i = 0;
-    for (item of order)
-    {
-        temp[i] = array[item];
-        i++;
+// Deforms original. Destructive in weird way
+function permute(array, order) {
+    const dimensions = dimension(array);
+    const newDimensions = order.map(dim => dimensions[dim - 1]);
+
+    for (var i = 0; i < order.length; i++) {
+
+        // Last i elements are already in place
+        for (var j = 0; j < (order.length - i - 1); j++) {
+            // Checking if the item at present iteration
+            // is greater than the next iteration
+            if (order[j] > order[j + 1]) {
+
+                // If the condition is true
+                // then swap them
+
+                // transpose dimension j
+                array = transpose_nth_dim(array, j);
+
+                [order[j], order[j + 1]] = [order[j + 1], order[j]];
+            }
+        }
     }
 
-    return temp;
+    return array;
+}
+
+function transpose_nth_dim ( arr, n ) {
+    if ( n == 0 )
+    {
+        arr = transpose(arr);
+    }
+    else if ( n == 1 )
+    {
+        for ( let i = 0; i < arr.length; i++ )
+        {
+            arr[i] = transpose(arr[i]);
+        }
+    }
+    else
+    {
+        for ( let i = 0; i < arr.length; i++ )
+        {
+            arr[i] = transpose_nth_dim(arr[i], n - 1);
+        }
+    }
+    return arr;
+}
+
+function transpose(arr) {
+    let rows = arr.length;
+    let cols = arr[0].length;
+
+    // Initialize transposed array
+    let transposed = Array.from({ length: cols }, () => Array(rows).fill(0));
+
+    // Swap rows and columns
+    for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+            transposed[j][i] = arr[i][j];
+        }
+    }
+
+    return transposed;
 }
 
 function prod(arr) {
