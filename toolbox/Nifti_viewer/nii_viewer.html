@@ -7,7 +7,9 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <script type="module">
         import load_untouch_nii from '../load_untouch_nifti.js'
+        import nifti_anatomical_conversion from '../nifti_anatomical_conversion.js'
         window.load_untouch_nii = load_untouch_nii;
+        window.nifti_anatomical_conversion = nifti_anatomical_conversion;
     </script>
 
     <script type="text/javascript">
@@ -18,6 +20,7 @@
             // parse nifti
             console.log("reading NIFTI file...");
             var nii = load_untouch_nii(name, data);
+            nii = nifti_anatomical_conversion(nii);
 
             // set up slider
             var slices = nii.hdr.dime.dim[3];
