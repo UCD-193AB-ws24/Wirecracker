@@ -1,12 +1,31 @@
-import "./App.css"
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import Signup from './pages/Signup';
+import Login from './pages/Login';
 
-function App() {
-  return (
-    <div className="App">
-      <h1>Welcome to My React App</h1>
-      <p>This is a basic React app created with Vite.</p>
-    </div>
-  )
+function Home() {
+    return (
+        <div>
+            <h1>Welcome to the Healthcare App</h1>
+            <Link to="/signup">
+                <button>Sign Up</button>
+            </Link>
+            <Link to="/login">
+                <button>Log In</button>
+            </Link>
+        </div>
+    );
 }
 
-export default App
+function App() {
+    return (
+        <Router>
+            <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/login" element={<Login />} />
+            </Routes>
+        </Router>
+    );
+}
+
+export default App;
