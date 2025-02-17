@@ -5,7 +5,7 @@ import Login from './pages/Login';
 function Home() {
     return (
         <div>
-            <h1>Welcome to the Healthcare App</h1>
+            <h1>Welcome to the WireCracker App</h1>
             <Link to="/signup">
                 <button>Sign Up</button>
             </Link>
