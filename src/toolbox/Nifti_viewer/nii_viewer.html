@@ -16,57 +16,125 @@
         function readNIFTI(name, data) {
             var canvas = document.getElementById('myCanvas');
             var slider = document.getElementById('myRange');
+            var direction = document.getElementById('mySelect');
 
             // parse nifti
             console.log("reading NIFTI file...");
             var nii = load_untouch_nii(name, data);
             nii = nifti_anatomical_conversion(nii);
 
+            var slices;
+            var dir;
+
+            direction.onchange = function() {
+                switch ( direction.value ) {
+                    case 'top':
+                        dir = 3;
+                        break;
+                    case 'front':
+                        dir = 2;
+                        break;
+                    case 'side':
+                        dir = 1;
+                        break;
+                }
+                slices = nii.hdr.dime.dim[dir];
+                slider.max = slices - 1;
+                slider.value = Math.round(slices / 2);
+
+                drawCanvas(canvas, slider.value, nii, dir);
+            }
+
+            switch ( direction.value ) {
+                case 'top':
+                    dir = 3;
+                    break;
+                case 'front':
+                    dir = 2;
+                    break;
+                case 'side':
+                    dir = 1;
+                    break;
+            }
+
             // set up slider
-            var slices = nii.hdr.dime.dim[3];
+            slices = nii.hdr.dime.dim[dir];
             slider.max = slices - 1;
             slider.value = Math.round(slices / 2);
 
             slider.oninput = function() {
-                drawCanvas(canvas, slider.value, nii);
+                drawCanvas(canvas, slider.value, nii, dir);
             };
 
             // draw slice
-            drawCanvas(canvas, slider.value, nii);
+            drawCanvas(canvas, slider.value, nii, dir);
         }
 
-        function drawCanvas(canvas, slice, nii) {
+        function drawCanvas(canvas, slice, nii, dir) {
             // get nifti dimensions
-            var cols = nii.hdr.dime.dim[1];
-            var rows = nii.hdr.dime.dim[2];
+            var cols;
+            var rows;
+            if (dir == 1) {
+                cols = nii.hdr.dime.dim[2];
+                rows = nii.hdr.dime.dim[3];
+            } else if (dir == 2) {
+                cols = nii.hdr.dime.dim[1];
+                rows = nii.hdr.dime.dim[3];
+            } else if (dir == 3) {
+                cols = nii.hdr.dime.dim[1];
+                rows = nii.hdr.dime.dim[2];
+            }
 
             // set canvas dimensions to nifti slice dimensions
-            canvas.width = cols;
-            canvas.height = rows;
+            var maxDim = Math.max(rows, cols);
+            var scaleRow = rows < maxDim ? maxDim / rows : 1;
+            var scaleCol = cols < maxDim ? maxDim / cols : 1;
+            canvas.height = maxDim;
+            canvas.width = maxDim;
 
             // make canvas image data
             var ctx = canvas.getContext("2d");
             var canvasImageData = ctx.createImageData(canvas.width, canvas.height);
-
+            var value;
             if ( (nii.hdr.dime.datatype == 128 && nii.hdr.dime.bitpix == 24) ||
                 (nii.hdr.dime.datatype == 511 && nii.hdr.dime.bitpix == 96) ) {
-                for (var row = 0; row < rows; row++) {
-                    var rowOffset = row * cols;
+                for (var row = 0; row < maxDim; row++) {
+                    var originalRowFlipped = rows - 1 - Math.floor(row / scaleRow);
 
-                    for (var col = 0; col < cols; col++) {
-                        canvasImageData.data[(rowOffset + col) * 4] = nii.img[slice][row][col][0];     // R
-                        canvasImageData.data[(rowOffset + col) * 4 + 1] = nii.img[slice][row][col][1]; // G
-                        canvasImageData.data[(rowOffset + col) * 4 + 2] = nii.img[slice][row][col][2]; // B
+                    var rowOffset = row * maxDim;
+
+                    for (var col = 0; col < maxDim; col++) {
+                        var originalCol = Math.floor(col / scaleCol);
+
+                        if (dir == 1) {
+                            value = nii.img[originalRowFlipped][originalCol][slice];
+                        } else if (dir == 2) {
+                            value = nii.img[originalRowFlipped][slice][originalCol];
+                        } else if (dir == 3) {
+                            value = nii.img[slice][originalRowFlipped][originalCol];
+                        }
+                        canvasImageData.data[(rowOffset + col) * 4] = value[0];     // R
+                        canvasImageData.data[(rowOffset + col) * 4 + 1] = value[1]; // G
+                        canvasImageData.data[(rowOffset + col) * 4 + 2] = value[2]; // B
                         canvasImageData.data[(rowOffset + col) * 4 + 3] = 255;   // A
                     }
                 }
             } else {
-                // draw pixels
-                for (var row = 0; row < rows; row++) {
-                    var rowOffset = row * cols;
+                for (var row = 0; row < maxDim; row++) {
+                    var originalRowFlipped = rows - 1 - Math.floor(row / scaleRow);
 
-                    for (var col = 0; col < cols; col++) {
-                        var value = nii.img[slice][row][col] / nii.hdr.dime.glmax * 255;
+                    var rowOffset = row * maxDim;
+
+                    for (var col = 0; col < maxDim; col++) {
+                        var originalCol = Math.floor(col / scaleCol);
+
+                        if (dir == 1) {
+                            value = nii.img[originalRowFlipped][originalCol][slice] / nii.hdr.dime.glmax * 255;
+                        } else if (dir == 2) {
+                            value = nii.img[originalRowFlipped][slice][originalCol] / nii.hdr.dime.glmax * 255;
+                        } else if (dir == 3) {
+                            value = nii.img[slice][originalRowFlipped][originalCol] / nii.hdr.dime.glmax * 255;
+                        }
                         canvasImageData.data[(rowOffset + col) * 4] = value;     // R
                         canvasImageData.data[(rowOffset + col) * 4 + 1] = value; // G
                         canvasImageData.data[(rowOffset + col) * 4 + 2] = value; // B
@@ -135,6 +203,11 @@
 <div id="results">
     <canvas id="myCanvas" width="100" height="100"></canvas><br />
     <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+    <select id="mySelect">
+        <option value="top" selected>Top</option>
+        <option value="front">Front</option>
+        <option value="side">Side</option>
+    </select>
 </div>
 
 <script type="text/javascript">
