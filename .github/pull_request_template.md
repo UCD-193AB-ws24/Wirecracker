@@ -21,7 +21,7 @@ Issue Number: N/A
 - [ ] Build related changes
 - [ ] CI related changes
 - [ ] Documentation content changes
-- [ ] angular.dev application / infrastructure changes
+- [ ] Infrastructure changes
 - [ ] Other... Please describe:
 
 
