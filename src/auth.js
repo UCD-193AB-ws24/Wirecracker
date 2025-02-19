@@ -1,6 +1,26 @@
 import { supabase } from './utils/supabaseClient';
+//import { sendVerificationEmail } from './utils/emailService';
 import { v4 as uuidv4 } from 'uuid';
 
+
+export async function sendVerificationEmail(email, code) {
+    try {
+        const response = await fetch('http://localhost:5000/send-verification-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to send verification email');
+        }
+
+        console.log('Verification email sent successfully');
+    } catch (error) {
+        console.error('Error:', error);
+        throw new Error('Failed to send email');
+    }
+}
 
 export async function signUp(email, name, password) {
     // Hash password (in real-world apps, use a backend to hash)
@@ -19,6 +39,8 @@ export async function signUp(email, name, password) {
     ]);
 
     console.log('Verification code:', verificationCode); // Replace with email service
+
+    await sendVerificationEmail(email, verificationCode);
 
     return { message: 'Verification email sent' };
 }
