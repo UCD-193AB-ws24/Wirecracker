@@ -2,6 +2,8 @@
 //  CAUTION only works on 3D B&W nii image. Will not work on Colored ones, ones with imaginary numbers, and ones with 4+ dimension
 
 
+import { permute, flip } from './matlab_functions.js'
+
 export default function nifti_anatomical_convention (nii)
 {
     let final_flip = [0,0,0];
@@ -163,85 +165,6 @@ export default function nifti_anatomical_convention (nii)
     return nii;
 }
 
-
-
-// Deforms original. Destructive in weird way
-function permute(array, order) {
-    for (var i = 0; i < order.length; i++) {
-
-        // Last i elements are already in place
-        for (var j = 0; j < (order.length - i - 1); j++) {
-            // Checking if the item at present iteration
-            // is greater than the next iteration
-            if (order[j] > order[j + 1]) {
-
-                // If the condition is true
-                // then swap them
-
-                // transpose dimension j
-                array = transpose_nth_dim(array, j);
-
-                [order[j], order[j + 1]] = [order[j + 1], order[j]];
-            }
-        }
-    }
-
-    return array;
-}
-
-function transpose_nth_dim ( arr, n ) {
-    if ( n == 0 )
-    {
-        arr = transpose(arr);
-    }
-    else if ( n == 1 )
-    {
-        for ( let i = 0; i < arr.length; i++ )
-        {
-            arr[i] = transpose(arr[i]);
-        }
-    }
-    else
-    {
-        for ( let i = 0; i < arr.length; i++ )
-        {
-            arr[i] = transpose_nth_dim(arr[i], n - 1);
-        }
-    }
-    return arr;
-}
-
-function transpose(arr) {
-    let rows = arr.length;
-    let cols = arr[0].length;
-
-    // Initialize transposed array
-    let transposed = Array.from({ length: cols }, () => Array(rows).fill(0));
-
-    // Swap rows and columns
-    for (let i = 0; i < rows; i++) {
-        for (let j = 0; j < cols; j++) {
-            transposed[j][i] = arr[i][j];
-        }
-    }
-
-    return transposed;
-}
-
-function flip( array, n )
-{
-    if ( n <= 0 )
-    {
-        array.reverse();
-    }
-    else
-    {
-        for (let item of array)
-        {
-            flip(item, n - 1);
-        }
-    }
-}
 
 function max_abs_pos( array )
 {
