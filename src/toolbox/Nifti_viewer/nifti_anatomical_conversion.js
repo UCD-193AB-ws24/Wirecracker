@@ -1,6 +1,39 @@
-//  Open all .nii file using untouch-nii with automatic flip to have right on the right
-//  CAUTION only works on 3D B&W nii image. Will not work on Colored ones, ones with imaginary numbers, and ones with 4+ dimension
-
+//   _    _ _                              _
+//  | |  | (_)                            | |
+//  | |  | |_ _ __ ___  ___ _ __ __ _  ___| | _____ _ __
+//  | |/\| | | '__/ _ \/ __| '__/ _` |/ __| |/ / _ \ '__|
+//  \  /\  / | | |  __/ (__| | | (_| | (__|   <  __/ |
+//   \/  \/|_|_|  \___|\___|_|  \__,_|\___|_|\_\___|_|
+//
+//
+//  Automatically flip NIFTI image data to have right on right
+//  Only works on 3D B&W nii image. Will not work on colored ones, ones with imaginary numbers, and ones with 4 dimension
+//
+//  Usage: nii = open_nii_anatomical_convention (nii)
+//
+//  @param {Object} nii  - 	NIFTI file data loaded using load_nifti.js or load_untouch_nifti.js
+//
+//  @returns {nii}  a object containing flipped NIFTI header and data
+//
+//  nii structure:
+//
+//	hdr -		struct with NIFTI header fields.
+//
+//	img - 		3D matrix of NIFTI data.
+//
+//  rotation - 		Permutad identity matrix representing the rotation done on the image
+//
+//  rot_dim - 		Array representing the rotation done on the image
+//
+//  flip - 		Array representing which axis had reversing operation
+//
+// - Medina Villalon Samuel ___ samuel.medina@ap-hm.fr ___
+// - Paz Rodrigo
+// - Roehri Nicolas
+// - Benar Christian
+// - Bartolomei Fabrice
+//
+//  This version is ported from original MatLab script into JavaScript by Wirecracker team and distributed under MIT license.
 
 import { permute, flip } from './matlab_functions.js'
 

@@ -5,7 +5,6 @@
 //  \  /\  / | | |  __/ (__| | | (_| | (__|   <  __/ |
 //   \/  \/|_|_|  \___|\___|_|  \__,_|\___|_|\_\___|_|
 //
-//  This version is ported from original MatLab script into JavaScript by Wirecracker team
 //
 //  Load NIFTI or ANALYZE dataset, but not applying any appropriate affine
 //  geometric transform or voxel intensity scaling.
@@ -22,31 +21,33 @@
 //  "view_nii.m" for the data that is loaded by "load_untouch_nii.m". For
 //  normal situation, you should use "load_nii.m" instead.
 //
-//  Usage: nii = load_untouch_nii(filename, [img_idx], [dim5_idx], [dim6_idx], ...
+//  Usage: nii = load_untouch_nii(filename, data, [img_idx], [dim5_idx], [dim6_idx], ...
 //			[dim7_idx], [old_RGB], [slice_idx])
 //
-//  filename  - 	NIFTI or ANALYZE file name.
+//  @param {string} filename  - 	NIFTI or ANALYZE file name.
 //
-//  img_idx (optional)  -  a numerical array of image volume indices.
+//  @param {ArrayBuffer} data  - 	Raw content of the file.
+//
+//  @param {number[]} [img_idx]  -  a numerical array of image volume indices.
 //	Only the specified volumes will be loaded. All available image
 //	volumes will be loaded, if it is default or empty.
 //
 //	The number of images scans can be obtained from get_nii_frame.m,
 //	or simply: hdr.dime.dim(5).
 //
-//  dim5_idx (optional)  -  a numerical array of 5th dimension indices.
+//  @param {number[]} [dim5_idx]  -  a numerical array of 5th dimension indices.
 //	Only the specified range will be loaded. All available range
 //	will be loaded, if it is default or empty.
 //
-//  dim6_idx (optional)  -  a numerical array of 6th dimension indices.
+//  @param {number[]} [dim6_idx]  -  a numerical array of 6th dimension indices.
 //	Only the specified range will be loaded. All available range
 //	will be loaded, if it is default or empty.
 //
-//  dim7_idx (optional)  -  a numerical array of 7th dimension indices.
+//  @param {number[]} [dim7_idx]  -  a numerical array of 7th dimension indices.
 //	Only the specified range will be loaded. All available range
 //	will be loaded, if it is default or empty.
 //
-//  old_RGB (optional)  -  a scale number to tell difference of new RGB24
+//  @param {boolean|number} [old_RGB]  -  a scale number to tell difference of new RGB24
 //	from old RGB24. New RGB24 uses RGB triple sequentially for each
 //	voxel, like [R1 G1 B1 R2 G2 B2 ...]. Analyze 6.0 from AnalyzeDirect
 //	uses old RGB24, in a way like [R1 R2 ... G1 G2 ... B1 B2 ...] for
@@ -54,11 +55,11 @@
 //	old_RGB variable to 1 and try again, because it could be in
 //	old RGB24. It will be set to 0, if it is default or empty.
 //
-//  slice_idx (optional)  -  a numerical array of image slice indices.
+//  @param {number[]} [slice_idx]  -  a numerical array of image slice indices.
 //	Only the specified slices will be loaded. All available image
 //	slices will be loaded, if it is default or empty.
 //
-//  Returned values:
+//  @returns {nii}  a object containing NIFTI header and data
 //
 //  nii structure:
 //
@@ -75,8 +76,8 @@
 //	img - 		3D (or 4D) matrix of NIFTI data.
 //
 //  - Jimmy Shen (jimmy@rotman-baycrest.on.ca)
-
-
+//
+//  This version is ported from original MatLab script into JavaScript by Wirecracker team and distributed under MIT license.
 
 import { isnumeric, unique, sub2ind, reshape, isequal, permute, prod } from './matlab_functions.js'
 
