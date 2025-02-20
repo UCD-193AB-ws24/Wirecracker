@@ -134,7 +134,7 @@ function load_untouch_nii_img ( hdr, filetype, fileprefix, machine, data,
     check_argin(dim7_idx, hdr);
     check_argin(slice_idx, hdr);
 
-    return load_untouch_nii_img_read_image(hdr, filetype, machine, img_idx, dim5_idx, dim6_idx, dim7_idx, old_RGB, slice_idx, data);
+    return read_image(hdr, filetype, machine, img_idx, dim5_idx, dim6_idx, dim7_idx, old_RGB, slice_idx, data);
 }
 
 function check_argin ( input, hdr )
@@ -166,7 +166,7 @@ function check_argin ( input, hdr )
     }
 }
 
-function load_untouch_nii_img_read_image ( hdr, filetype, machine,
+function read_image ( hdr, filetype, machine,
                       img_idx, dim5_idx, dim6_idx,
                       dim7_idx, old_RGB, slice_idx, data )
 {
