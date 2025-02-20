@@ -530,13 +530,9 @@ function read_image ( hdr, filetype, machine,
     }
     else if (hdr.dime.datatype == 511 && hdr.dime.bitpix == 96)
     {
-        img = single((img - min(img))/(max(img) - min(img)));
-        for ( let col = 0; col < img.length; col++ )
+        for ( let i = 0; i < img.length; i++ )
         {
-            for ( let row = 0; row < img[0].length; row++ )
-            {
-                img[col][row] = (img[col][row] - hdr.dime.glmin) / (hdr.dime.glmax - hdr.dime.glmin);
-            }
+            img[i] = (img[i] - hdr.dime.glmin) / (hdr.dime.glmax - hdr.dime.glmin);
         }
 
         // remove squeeze
