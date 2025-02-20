@@ -4,14 +4,15 @@ import Signup from './pages/Signup';
 import Login from './pages/Login';
 
 function HomePage() {
-    const hasToken = localStorage.getItem('token') || null;
+    const token = localStorage.getItem('token') || null;
     
     return (
-        <div className="flex justify-center items-center">
-            {hasToken ? (
+        <div className="flex w-screen justify-center items-start">
+            {token ? (
                 <>
                     <Left />
-                    <Center />
+                    <Center token={token} />
+                    <Right />
                 </>
             ) : (
                 <>
@@ -26,19 +27,34 @@ function Center(props) {
     const token = localStorage.getItem('token');
 
     return (
-        <div className="flex flex-col justify-center items-center">
+        <div className="basis-80 grow flex flex-col justify-center items-center">
             <Logo />
-            {!props.hasToken && <SignInButtons />}
+            {!props.token && <SignInButtons />}
         </div>
     )
 }
 
 function Left() {
     return (
-        <div>
-            <h2 className="text-6xl mb-10">My Stuff</h2>
+        <div className="basis-60 grow self-start">
+            <h2 className="text-6xl m-3">My Stuff</h2>
             <ToReview />
             <Approved />
+        </div>
+    )
+}
+
+function Right() {
+    return (
+        <div className="basis-60 grow self-start flex flex-col items-end m-3">
+            <h3 className="text-4xl">Recent Localizations</h3>
+            <div className="mb-5">
+                <div>temp.csv</div>
+            </div>
+            <h3 className="text-4xl">Recent Stimulation Plans</h3>
+            <div className="mb-5">
+                <div>temp.csv</div>
+            </div>
         </div>
     )
 }
