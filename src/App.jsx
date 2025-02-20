@@ -1,14 +1,44 @@
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 
-function Center() {
+function HomePage() {
+    const hasToken = localStorage.getItem('token') || null;
+    
+    return (
+        <div className="flex justify-center items-center">
+            {hasToken ? (
+                <>
+                    <Left />
+                    <Center />
+                </>
+            ) : (
+                <>
+                    <Center />
+                </>
+            )}
+        </div>
+    )
+}
+
+function Center(props) {
     const token = localStorage.getItem('token');
 
     return (
         <div className="flex flex-col justify-center items-center">
             <Logo />
-            {!token && <SignInButtons />}
+            {!props.hasToken && <SignInButtons />}
+        </div>
+    )
+}
+
+function Left() {
+    return (
+        <div>
+            <h2 className="text-6xl mb-10">My Stuff</h2>
+            <ToReview />
+            <Approved />
         </div>
     )
 }
@@ -35,11 +65,65 @@ function SignInButtons() {
     )
 }
 
+function ToReview() {
+    const [isReviewOpen, setIsReviewOpen] = useState(false);
+
+    return (
+        <div
+            className="text-violet-500 text-2xl flex gap-x-2"
+            onClick={() => setIsReviewOpen(!isReviewOpen)}
+        >
+            {isReviewOpen ? (
+                <>
+                    <div className="before:content-['▾']"></div>
+                    <div className="mb-5">
+                        <div>To Review</div>
+                    </div>
+                </>
+            ) : (
+                <>
+                    {/* Triangle */}
+                    <div className="before:content-['▸']"></div>
+                    <div>To Review</div>
+                </>
+            )}
+            
+        </div>
+    )
+}
+
+function Approved() {
+    const [isApprovedOpen, setIsApprovedOpen] = useState(false);
+
+    return (
+        <div
+            className="text-green-500 text-2xl flex gap-x-2"
+            onClick={() => setIsApprovedOpen(!isApprovedOpen)}
+        >
+            {isApprovedOpen ? (
+                <>
+                    <div className="before:content-['▾']"></div>
+                    <div className="mb-5">
+                        <div>Approved</div>
+                    </div>
+                </>
+            ) : (
+                <>
+                    {/* Triangle */}
+                    <div className="before:content-['▸']"></div>
+                    <div>Approved</div>
+                </>
+            )}
+            
+        </div>
+    )
+}
+
 function App() {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<Center />} />
+                <Route path="/" element={<HomePage />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
             </Routes>
