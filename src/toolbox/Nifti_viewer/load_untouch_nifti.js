@@ -272,7 +272,7 @@ function read_image ( hdr, filetype, machine,
     //  seeked in bit and can not be calculated the way below.
     let img_siz;
     if ( hdr.dime.datatype == 1 ||
-        isequal(hdr.dime.dim.slice(3, 7), [1,1,1,1,1]) ||
+        isequal(hdr.dime.dim.slice(3, 8), [1,1,1,1,1]) ||
         (
             img_idx.length == 0 &&
             dim5_idx.length == 0 &&
@@ -286,7 +286,7 @@ function read_image ( hdr, filetype, machine,
         //  in img_siz times, where img_siz is only the
         //  dimension size of an image, not the byte storage
         //  size of an image.
-        img_siz = prod(hdr.dime.dim.slice(1,7));
+        img_siz = prod(hdr.dime.dim.slice(1,8));
 
         //  For complex float32 or complex float64, voxel values
         //  include [real, imag]
