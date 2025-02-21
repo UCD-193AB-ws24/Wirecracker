@@ -94,6 +94,7 @@
 
 import { isnumeric, unique, sub2ind, reshape, isequal, permute, prod } from './matlab_functions.js'
 import FILE from './FILE.js'
+import xform_nii from './xform_nii.js';
 // import load_nii_ext from './load_nii_ext.js';
 import load_nii_hdr from './load_nii_hdr.js';
 

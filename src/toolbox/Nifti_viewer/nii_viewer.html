@@ -8,8 +8,10 @@
     <script type="module">
         import load_untouch_nii from '../load_untouch_nifti.js'
         import nifti_anatomical_conversion from '../nifti_anatomical_conversion.js'
+        import load_nii from '../load_nifti.js'
         window.load_untouch_nii = load_untouch_nii;
         window.nifti_anatomical_conversion = nifti_anatomical_conversion;
+        window.load_nii = load_nii;
     </script>
 
     <script type="text/javascript">
@@ -20,7 +22,7 @@
 
             // parse nifti
             console.log("reading NIFTI file...");
-            var nii = load_untouch_nii(name, data);
+            var nii = load_nii(name, data);
             nii = nifti_anatomical_conversion(nii);
 
             var slices;
@@ -86,7 +88,10 @@
             }
 
             // set canvas dimensions to nifti slice dimensions
-            var maxDim = Math.max(rows, cols);
+            // var maxDim = Math.max(rows, cols);
+
+            // Showcase fixed size canvas
+            var maxDim = 500;
             var scaleRow = rows < maxDim ? maxDim / rows : 1;
             var scaleCol = cols < maxDim ? maxDim / cols : 1;
             canvas.height = maxDim;
