@@ -19,6 +19,13 @@
 //  @function transpose
 //  @function flip
 //  @function prod
+//  @function size
+//  @function ndims
+//  @function find
+//  @function det
+//  @function diag
+//  @function bitset
+//  @function inv
 
 /*
  * Determine whether input is numeric array
@@ -95,7 +102,6 @@ export function sub2ind(sizes, ...subs)
 
 /*
  * Reshape array by rearranging existing elements
- * Destructive
  *
  * @param {Array} array  -  Input array, specified as a vector, matrix, or multidimensional array.
  * @param {integer[]} sizes  -  Output size, specified as a row vector of integers. Each element of
@@ -109,7 +115,7 @@ export function sub2ind(sizes, ...subs)
 export function reshape (array, sizes)
 {
     let matlabDim = sizes.reverse();
-    array.flat(Infinity);
+    let tmp = structuredClone(array).flat(Infinity);
     let tmpArray2;
     // for each dimensions starting by the last one and ignoring the first one
     for (let sizeIndex = matlabDim.length - 1; sizeIndex > 0; sizeIndex--)
@@ -118,16 +124,16 @@ export function reshape (array, sizes)
         tmpArray2 = [];
 
         // aggregate the elements of the current tmpArray in elements of the requested size
-        const length = array.length / size;
+        const length = tmp.length / size;
         for (let i = 0; i < length; i++)
         {
-            tmpArray2.push(array.slice(i * size, (i + 1) * size));
+            tmpArray2.push(tmp.slice(i * size, (i + 1) * size));
         }
         // set it as the new tmpArray for the next loop turn or for return
-        array = tmpArray2;
+        tmp = tmpArray2;
     }
 
-    return array;
+    return tmp;
 }
 
 /*
@@ -163,7 +169,6 @@ export function isequal ( array1, array2 )
 
 /*
  * Permute array dimentions
- * Destructive. Always reassign the output value from this function to the variable holding the array to be permuted
  *
  * @param {Array} array  -  Input array, specified as a vector, matrix, or multidimensional array.
  * @param {integer[]} order  -  Dimension order, specified as a row vector with unique,
@@ -174,6 +179,7 @@ export function isequal ( array1, array2 )
  * the ith dimension of the output array is the dimension dimorder(i) from the input array.
  */
 export function permute(array, order) {
+    let tmp = structuredClone(array);
     for (var i = 0; i < order.length; i++) {
 
         // Last i elements are already in place
@@ -186,7 +192,7 @@ export function permute(array, order) {
                 // then swap them
 
                 // transpose dimension j
-                array = transpose_nth_dim(array, j);
+                tmp = transpose_nth_dim(tmp, j);
 
                 [order[j], order[j + 1]] = [order[j + 1], order[j]];
             }
@@ -228,6 +234,7 @@ function transpose_nth_dim ( arr, n ) {
  */
 export function transpose(arr) {
     let rows = arr.length;
+    if (!Array.isArray(arr[0])) return arr;
     let cols = arr[0].length;
 
     // Initialize transposed array
@@ -275,4 +282,184 @@ export function flip( array, n )
  */
 export function prod(array) {
     return array.reduce((acc, num) => acc * num, 1);
+}
+
+/*
+ * Array size
+ *
+ * @param {Array} array  -  Input array, specified as a scalar, a vector, a matrix, or a multidimensional array.
+ *
+ * @returns {number[]}  a row vector whose elements are the lengths of the corresponding dimensions of input.
+ */
+export function size(array) {
+    let dimension = [];
+    while (Array.isArray(array)) {
+        dimension.push(array.length);
+        array = array[0];
+    }
+    return dimension;
+}
+
+/*
+ * Number of array dimensions
+ *
+ * @param {Array} array  -  Input array, specified as a scalar, a vector, a matrix, or a multidimensional array.
+ *
+ * @returns {number[]}  the number of dimensions in the input array. The number of dimensions is always greater than or equal to 2.
+ */
+export function ndims(array) {
+    let ndim = size(array).length;
+
+    if (ndim <= 2)
+        return 2;
+
+    return ndim;
+}
+
+/*
+ * Find indices and values of nonzero elements
+ *
+ * @param {Array} array  -  Input array, specified as a scalar, vector, matrix, or multidimensional array.
+ *
+ * @returns {number[]}  a vector containing the linear indices of each nonzero element in array X.
+ */
+export function find(X) {
+    let indices = [];
+    let dimension = size(X);
+
+    function traverse(array, path = [], linearIdx = 0) {
+        if (!Array.isArray(array)) {
+            if (array !== 0) indices.push(linearIdx); // Store linear index if nonzero
+            return linearIdx + 1; // Increment linear index
+        }
+        return array.reduce((linIdx, val, i) => traverse(val, [...path, i], linIdx), linearIdx);
+    }
+
+    traverse(X);
+
+    // Preserve row/column orientation for vectors
+    if (dimension.length === 1) return dimension[0] === indices.length ? indices : indices.flat();
+    return indices; // Return as column vector for multi-dimensional arrays
+}
+
+/*
+ * Matrix determinant
+ *
+ * @param {number[]} array  -  Input matrix, specified as a square numeric matrix.
+ *
+ * @returns {number}  the determinant of square matrix.
+ */
+export function det(matrix) {
+    let n = matrix.length;
+
+    // Base case: 1x1 matrix
+    if (n === 1) return matrix[0][0];
+
+    // Base case: 2x2 matrix
+    if (n === 2) {
+        return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+    }
+
+    let determinant = 0;
+
+    // Expanding along the first row
+    for (let j = 0; j < n; j++) {
+        let subMatrix = matrix.slice(1).map(row => row.filter((_, col) => col !== j));
+        determinant += ((j % 2 === 0 ? 1 : -1) * matrix[0][j] * det(subMatrix));
+    }
+
+    return determinant;
+}
+
+/*
+ * Create diagonal matrix or get diagonal elements of matrix
+ *
+ * @param {number[]} values  -  Diagonal elements, specified as a vector.
+ *
+ * @returns {number[number[]]}  a square diagonal matrix with the elements of vector v on the main diagonal.
+ */
+export function diag(values) {
+    // Create a square matrix of size values.length x values.length filled with zeros
+    let matrix = Array(values.length).fill().map(() => Array(values.length).fill(0));
+
+    // Place the values in the diagonal of the matrix
+    for (let i = 0; i < values.length; i++) {
+        matrix[i][i] = values[i];  // Set diagonal elements
+    }
+
+    return matrix;
+}
+
+/*
+ * Set bit at specific location
+ *
+ * @param {number[]} value  -  Input value, specified as an scalar.
+ * @param {integer} position  -  Bit position, specified as an integer.
+ * @param {0|1} bit  -  Bit value, specified as a integer.
+ *
+ * @returns {number[number[]]}  'value' with 'position' bit set to the value of 'bit'.
+ */
+export function bitset(value, position, bit) {
+    if (bit === 1) {
+        return value | (1 << position); // Set the bit to 1
+    } else {
+        return value & ~(1 << position); // Set the bit to 0
+    }
+}
+
+/*
+ * Matrix inverse
+ *
+ * @param {number[number[]]} matrix  -  Input matrix, specified as a square matrix.
+ *
+ * @returns {number[number[]]}  inverse of input matrix.
+ */
+export function inv(matrix) {
+    const n = matrix.length;
+    let test = transpose(matrix); // We treat each row in js to be a column in matlab
+
+    // Augment the matrix with the identity matrix
+    let augmented = test.map((row, i) => [...row, ...Array(n).fill(0)]);
+    for (let i = 0; i < n; i++) {
+        augmented[i][n + i] = 1; // Set identity matrix
+    }
+
+    // Perform Gaussian elimination
+    for (let i = 0; i < n; i++) {
+        // Search for maximum in this column
+        let maxRow = i;
+        for (let j = i + 1; j < n; j++) {
+            if (Math.abs(augmented[j][i]) > Math.abs(augmented[maxRow][i])) {
+                maxRow = j;
+            }
+        }
+
+        // Swap maximum row with current row
+        let temp = augmented[maxRow];
+        augmented[maxRow] = augmented[i];
+        augmented[i] = temp;
+
+        // Make the diagonal element 1
+        let pivot = augmented[i][i];
+        if (pivot === 0) {
+            throw new Error("Matrix is singular and cannot be inverted");
+        }
+        for (let j = 0; j < 2 * n; j++) {
+            augmented[i][j] /= pivot;
+        }
+
+        // Eliminate all below and above the pivot
+        for (let j = 0; j < n; j++) {
+            if (i !== j) {
+                let factor = augmented[j][i];
+                for (let k = 0; k < 2 * n; k++) {
+                    augmented[j][k] -= factor * augmented[i][k];
+                }
+            }
+        }
+    }
+
+    // Extract the inverse matrix from the augmented matrix
+    let invMatrix = augmented.map(row => row.slice(n));
+    return invMatrix;
 }
