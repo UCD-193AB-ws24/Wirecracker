@@ -452,47 +452,45 @@ function read_image ( hdr, filetype, machine,
     //  include [real, imag]
     if ( hdr.dime.datatype == 32 || hdr.dime.datatype == 1792 )
     {
-        console.log("max: " + hdr.dime.glmax);
-        console.log("min: " + hdr.dime.glmin);
         img.flat(Infinity);
         img_tmp = reshape(img, [2, img.length/2]);
         img = {};
-        img.real = img_tmp[0];
-        img.complex = img_tmp[1];
+        img = img_tmp[0];
+        img.imaginary = img_tmp[1];
 
         //  Update the global min and max values
-        hdr.dime.glmax.complex = img.complex[0];
-        hdr.dime.glmax.real = img.real[0];
+        hdr.dime.glmax.imaginary = img.imaginary[0];
+        hdr.dime.glmax.real = img[0];
 
-        hdr.dime.glmin.complex = img.complex[0];
-        hdr.dime.glmin.real = img.real[0];
+        hdr.dime.glmin.imaginary = img.imaginary[0];
+        hdr.dime.glmin.real = img[0];
 
-        for ( let i = 1; i < img.real.length; i++ )
+        for ( let i = 1; i < img.length; i++ )
         {
-            if ( Math.hypot(hdr.dime.glmax.complex, hdr.dime.glmax.real) < Math.hypot(img.complex[i], img.real[i]) )
+            if ( Math.hypot(hdr.dime.glmax.imaginary, hdr.dime.glmax.real) < Math.hypot(img.imaginary[i], img[i]) )
             {
-                hdr.dime.glmax.complex = img.complex[i];
-                hdr.dime.glmax.real = img.real[i];
+                hdr.dime.glmax.imaginary = img.imaginary[i];
+                hdr.dime.glmax.real = img[i];
             }
-            else if ( Math.hypot(hdr.dime.glmin.complex, hdr.dime.glmin.real) > Math.hypot(img.complex[i], img.real[i]) )
+            else if ( Math.hypot(hdr.dime.glmin.imaginary, hdr.dime.glmin.real) > Math.hypot(img.imaginary[i], img[i]) )
             {
-                hdr.dime.glmin.complex = img.complex[i];
-                hdr.dime.glmin.real = img.real[i];
+                hdr.dime.glmin.imaginary = img.imaginary[i];
+                hdr.dime.glmin.real = img[i];
             }
-            else if ( Math.hypot(hdr.dime.glmax.complex, hdr.dime.glmax.real) == Math.hypot(img.complex[i], img.real[i]) )
+            else if ( Math.hypot(hdr.dime.glmax.imaginary, hdr.dime.glmax.real) == Math.hypot(img.imaginary[i], img[i]) )
             {
-                if ( Math.atan2(hdr.dime.glmax.complex, hdr.dime.glmax.real) < Math.atan2(img.complex[i], img.real[i]) )
+                if ( Math.atan2(hdr.dime.glmax.imaginary, hdr.dime.glmax.real) < Math.atan2(img.imaginary[i], img[i]) )
                 {
-                    hdr.dime.glmax.complex = img.complex[i];
-                    hdr.dime.glmax.real = img.real[i];
+                    hdr.dime.glmax.imaginary = img.imaginary[i];
+                    hdr.dime.glmax.real = img[i];
                 }
             }
-            else if ( Math.hypot(hdr.dime.glmin.complex, hdr.dime.glmin.real) == Math.hypot(img.complex[i], img.real[i]) )
+            else if ( Math.hypot(hdr.dime.glmin.imaginary, hdr.dime.glmin.real) == Math.hypot(img.imaginary[i], img[i]) )
             {
-                if ( Math.atan2(hdr.dime.glmin.complex, hdr.dime.glmin.real) > Math.atan2(img.complex[i], img.real[i]) )
+                if ( Math.atan2(hdr.dime.glmin.imaginary, hdr.dime.glmin.real) > Math.atan2(img.imaginary[i], img[i]) )
                 {
-                    hdr.dime.glmin.complex = img.complex[i];
-                    hdr.dime.glmin.real = img.real[i];
+                    hdr.dime.glmin.imaginary = img.imaginary[i];
+                    hdr.dime.glmin.real = img[i];
                 }
             }
         }
@@ -500,7 +498,7 @@ function read_image ( hdr, filetype, machine,
     else
     {
         //  Update the global min and max values
-        let img_tmp = img;
+        let img_tmp = structuredClone(img);
         img_tmp.flat(Infinity);
         for (let item of img_tmp) {
             if ( hdr.dime.glmax < item ) {
