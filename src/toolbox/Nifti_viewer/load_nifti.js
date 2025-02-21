@@ -129,7 +129,6 @@ function load_nii_img ( hdr, filetype, fileprefix, machine, data,
     if ( !hdr || !filetype || !fileprefix || !machine || !data )
     {
         throw 'Usage: [img,hdr] = load_untouch_nii_img(hdr, filetype, fileprefix, machine, data [img_idx], [dim5_idx], [dim6_idx], [dim7_idx], [old_RGB], [slice_idx]);';
-        throw 'Usage: [img,hdr] = load_nii_img(hdr,filetype,fileprefix,machine,data,[img_idx],[dim5_idx],[dim6_idx],[dim7_idx],[old_RGB]);';
     }
 
     check_argin(img_idx, hdr);
@@ -275,7 +274,6 @@ function read_image ( hdr, filetype, machine,
     //  seeked in bit and can not be calculated the way below.
     let img_siz;
     if ( hdr.dime.datatype == 1 ||
-        isequal(hdr.dime.dim.slice(4, 7), [1,1,1,1]) ||
         isequal(hdr.dime.dim.slice(4, 8), [1,1,1,1]) ||
         (
             img_idx.length == 0 &&
@@ -289,7 +287,6 @@ function read_image ( hdr, filetype, machine,
         //  in img_siz times, where img_siz is only the
         //  dimension size of an image, not the byte storage
         //  size of an image.
-        img_siz = prod(hdr.dime.dim.slice(1,7));
         img_siz = prod(hdr.dime.dim.slice(1,8));
 
         //  For complex float32 or complex float64, voxel values
@@ -456,8 +453,6 @@ function read_image ( hdr, filetype, machine,
     else
     {
         //  Update the global min and max values
-        let img_tmp = structuredClone(img);
-        img_tmp.flat(Infinity);
         let img_tmp = structuredClone(img).flat(Infinity);
         for (let item of img_tmp) {
             if ( hdr.dime.glmax < item ) {
