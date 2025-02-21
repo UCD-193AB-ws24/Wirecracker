@@ -409,7 +409,7 @@ function read_image ( hdr, filetype, machine,
     //  include [real, imag]
     if ( hdr.dime.datatype == 32 || hdr.dime.datatype == 1792 )
     {
-        img.flat(Infinity);
+        img = img.flat(Infinity);
         img_tmp = reshape(img, [2, img.length/2]);
         img = {};
         img = img_tmp[0];
@@ -457,6 +457,7 @@ function read_image ( hdr, filetype, machine,
         //  Update the global min and max values
         let img_tmp = structuredClone(img);
         img_tmp.flat(Infinity);
+        let img_tmp = structuredClone(img).flat(Infinity);
         for (let item of img_tmp) {
             if ( hdr.dime.glmax < item ) {
                 hdr.dime.glmax = item;
