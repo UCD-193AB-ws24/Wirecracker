@@ -128,6 +128,7 @@ function load_nii_img ( hdr, filetype, fileprefix, machine, data,
     if ( !hdr || !filetype || !fileprefix || !machine || !data )
     {
         throw 'Usage: [img,hdr] = load_untouch_nii_img(hdr, filetype, fileprefix, machine, data [img_idx], [dim5_idx], [dim6_idx], [dim7_idx], [old_RGB], [slice_idx]);';
+        throw 'Usage: [img,hdr] = load_nii_img(hdr,filetype,fileprefix,machine,data,[img_idx],[dim5_idx],[dim6_idx],[dim7_idx],[old_RGB]);';
     }
 
     check_argin(img_idx, hdr);
