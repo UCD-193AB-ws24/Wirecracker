@@ -49,11 +49,11 @@
 //
 //  nii	- NIFTI structure (returned from load_nii)
 //
-//  tolerance (optional) - distortion allowed for non-orthogonal rotation
+//  @param {number} [tolerance]  -  distortion allowed for non-orthogonal rotation
 //	or shearing in NIfTI affine matrix. It will be set to 0.1 (10%),
 //	if it is default or empty.
 //
-//  preferredForm (optional)  -  selects which transformation from voxels
+//  @param {char} [preferredForm]  -  selects which transformation from voxels
 //	to RAS coordinates; values are s,q,S,Q.  Lower case s,q indicate
 //	"prefer sform or qform, but use others if preferred not present".
 //	Upper case indicate the program is forced to use the specificied

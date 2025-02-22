@@ -1,3 +1,9 @@
+//  internal function
+//
+//  - Jimmy Shen (jimmy@rotman-baycrest.on.ca)
+//
+//  This version is ported from original MatLab script into JavaScript by Wirecracker team and distributed under MIT license.
+
 import FILE from "./FILE.js";
 
 export default function load_untouch0_nii_hdr ( machine, data )

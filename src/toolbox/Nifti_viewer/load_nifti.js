@@ -21,28 +21,30 @@
 //  Usage: nii = load_nii(filename, [img_idx], [dim5_idx], [dim6_idx], ...
 //			[dim7_idx], [old_RGB], [tolerance], [preferredForm])
 //
-//  filename  - 	NIFTI or ANALYZE file name.
+//  @param {string} filename  - 	NIFTI or ANALYZE file name.
 //
-//  img_idx (optional)  -  a numerical array of 4th dimension indices,
+//  @param {ArrayBuffer} data  - 	Raw content of the file.
+//
+//  @param {number[]} [img_idx]  -  a numerical array of 4th dimension indices,
 //	which is the indices of image scan volume. The number of images
 //	scan volumes can be obtained from get_nii_frame.m, or simply
 //	hdr.dime.dim(5). Only the specified volumes will be loaded.
 //	All available image volumes will be loaded, if it is default or
 //	empty.
 //
-//  dim5_idx (optional)  -  a numerical array of 5th dimension indices.
+//  @param {number[]} [dim5_idx]  -  a numerical array of 5th dimension indices.
 //	Only the specified range will be loaded. All available range
 //	will be loaded, if it is default or empty.
 //
-//  dim6_idx (optional)  -  a numerical array of 6th dimension indices.
+//  @param {number[]} [dim6_idx]  -  a numerical array of 6th dimension indices.
 //	Only the specified range will be loaded. All available range
 //	will be loaded, if it is default or empty.
 //
-//  dim7_idx (optional)  -  a numerical array of 7th dimension indices.
+//  @param {number[]} [dim7_idx]  -  a numerical array of 7th dimension indices.
 //	Only the specified range will be loaded. All available range
 //	will be loaded, if it is default or empty.
 //
-//  old_RGB (optional)  -  a scale number to tell difference of new RGB24
+//  @param {boolean|number} [old_RGB]  -  a scale number to tell difference of new RGB24
 //	from old RGB24. New RGB24 uses RGB triple sequentially for each
 //	voxel, like [R1 G1 B1 R2 G2 B2 ...]. Analyze 6.0 from AnalyzeDirect
 //	uses old RGB24, in a way like [R1 R2 ... G1 G2 ... B1 B2 ...] for
@@ -50,7 +52,7 @@
 //	old_RGB variable to 1 and try again, because it could be in
 //	old RGB24. It will be set to 0, if it is default or empty.
 //
-//  tolerance (optional) - distortion allowed in the loaded image for any
+//  @param {number} [tolerance] - distortion allowed in the loaded image for any
 //	non-orthogonal rotation or shearing of NIfTI affine matrix. If
 //	you set 'tolerance' to 0, it means that you do not allow any
 //	distortion. If you set 'tolerance' to 1, it means that you do
@@ -58,7 +60,7 @@
 //	can not be tolerated. The tolerance will be set to 0.1 (10%), if
 //	it is default or empty.
 //
-//  preferredForm (optional)  -  selects which transformation from voxels
+//  @param {char} [preferredForm]  -  selects which transformation from voxels
 //	to RAS coordinates; values are s,q,S,Q.  Lower case s,q indicate
 //	"prefer sform or qform, but use others if preferred not present".
 //	Upper case indicate the program is forced to use the specificied
@@ -104,7 +106,7 @@ export default function load_nii( filename, data, img_idx = [], dim5_idx = [], d
 {
     if ( !filename )
     {
-        throw 'Usage: nii = load_nii(filename, [img_idx], [dim5_idx], [dim6_idx], [dim7_idx], [old_RGB], [tolerance], [preferredForm])'
+        throw 'Usage: nii = load_nii(filename, data, [img_idx], [dim5_idx], [dim6_idx], [dim7_idx], [old_RGB], [tolerance], [preferredForm])'
     }
 
     // Read the dataset header

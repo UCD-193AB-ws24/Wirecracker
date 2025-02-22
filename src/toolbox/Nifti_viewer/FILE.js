@@ -1,5 +1,26 @@
+//   _    _ _                              _
+//  | |  | (_)                            | |
+//  | |  | |_ _ __ ___  ___ _ __ __ _  ___| | _____ _ __
+//  | |/\| | | '__/ _ \/ __| '__/ _` |/ __| |/ / _ \ '__|
+//  \  /\  / | | |  __/ (__| | | (_| | (__|   <  __/ |
+//   \/  \/|_|_|  \___|\___|_|  \__,_|\___|_|\_\___|_|
+//
+//
+//  Interface for ArrayBuffer to make translation of MATLAB
+//  script easier. This class provides methods to interact
+//  with binary data in a manner similar to MATLAB file operations.
+//  It supports reading various data types (e.g., integers, floats,
+//  strings) from a given ArrayBuffer.
+//
+//  Developed by Wirecracker team and distributed under MIT license.
+
 export default class FILE
 {
+    /**
+     * Creates an instance of the FILE class.
+     * @param {string} [filename] - The name of the file.
+     * @param {string} [machine] - The byte order used by the machine ('ieee-le' for little-endian, 'ieee-be' for big-endian).
+     */
     constructor( filename = '', machine = 'ieee-le' )
     {
         this.filename = filename;
@@ -7,19 +28,32 @@ export default class FILE
         this.littleEndian = machine === 'ieee-le';
     }
 
+    /**
+     * Opens a data source and initializes the content buffer.
+     * @param {ArrayBuffer} data - The binary data to read from.
+     */
     fopen ( data )
     {
         this.content = new DataView(data);
         this.offset = 0;
     }
 
+    /**
+     * Closes the file, clearing the content buffer and resetting the offset.
+     */
     fclose ()
     {
         this.content = null;
         this.offset = 0;
     }
 
-    fread ( number, type = '' ) // Default is uInt8
+    /**
+     * Reads data from the file at the current offset.
+     * @param {number} number - The number of items to read.
+     * @param {string} [type=''] - The data type to read (e.g., 'int32', 'float64', 'string', etc.). Defaults to 'uint8'.
+     * @returns {any} The read data, either as a single value or an array of values.
+     */
+    fread ( number, type = '' )
     {
         var result;
         switch ( type )
@@ -189,6 +223,11 @@ export default class FILE
         return result;
     }
 
+    /**
+     * Changes the current read/write position in the file.
+     * @param {number} offset - The offset to move to.
+     * @param {string} origin - The reference point for the offset ('bof' for beginning, 'cof' for current, 'eof' for end).
+     */
     fseek ( offset, origin )
     {
         switch ( origin )
@@ -207,11 +246,18 @@ export default class FILE
         }
     }
 
+    /**
+     * Resets the file pointer to the beginning of the file.
+     */
     frewind ()
     {
         this.fseek(0, 'bof');
     }
 
+    /**
+     * Gets the current offset within the file.
+     * @returns {number} The current file offset.
+     */
     ftell ()
     {
         return this.offset;

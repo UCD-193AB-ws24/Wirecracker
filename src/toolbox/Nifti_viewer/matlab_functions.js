@@ -5,6 +5,7 @@
 //  \  /\  / | | |  __/ (__| | | (_| | (__|   <  __/ |
 //   \/  \/|_|_|  \___|\___|_|  \__,_|\___|_|\_\___|_|
 //
+//
 //  Collection of matlab function ported into javascript.
 //  The functions here does not have original algorithm.
 //
@@ -26,6 +27,8 @@
 //  @function diag
 //  @function bitset
 //  @function inv
+//
+//  Developed by Wirecracker team and distributed under MIT license.
 
 /*
  * Determine whether input is numeric array
