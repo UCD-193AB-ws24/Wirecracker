@@ -423,57 +423,56 @@ export function bitset(value, position, bit) {
 
 /*
  * Matrix inverse
+ * @see {http://web.archive.org/web/20210406035905/http://blog.acipo.com/matrix-inversion-in-javascript/}
  *
  * @param {number[number[]]} matrix  -  Input matrix, specified as a square matrix.
  *
  * @returns {number[number[]]}  inverse of input matrix.
  */
-export function inv(matrix) {
-    const n = matrix.length;
-    let test = transpose(matrix); // We treat each row in js to be a column in matlab
-
-    // Augment the matrix with the identity matrix
-    let augmented = test.map((row, i) => [...row, ...Array(n).fill(0)]);
-    for (let i = 0; i < n; i++) {
-        augmented[i][n + i] = 1; // Set identity matrix
+export function inv (matrix) {
+    if (matrix.length !== matrix[0].length) { return; }
+    var i = 0, ii = 0, j = 0, dim = matrix.length, e = 0;
+    var I = [], C = [];
+    for (i = 0; i < dim; i += 1) {
+        I[I.length] = [];
+        C[C.length] = [];
+        for (j = 0; j < dim; j += 1) {
+            if (i == j) { I[i][j] = 1; }
+            else { I[i][j] = 0; }
+            C[i][j] = matrix[i][j];
+        }
     }
-
-    // Perform Gaussian elimination
-    for (let i = 0; i < n; i++) {
-        // Search for maximum in this column
-        let maxRow = i;
-        for (let j = i + 1; j < n; j++) {
-            if (Math.abs(augmented[j][i]) > Math.abs(augmented[maxRow][i])) {
-                maxRow = j;
-            }
-        }
-
-        // Swap maximum row with current row
-        let temp = augmented[maxRow];
-        augmented[maxRow] = augmented[i];
-        augmented[i] = temp;
-
-        // Make the diagonal element 1
-        let pivot = augmented[i][i];
-        if (pivot === 0) {
-            throw new Error("Matrix is singular and cannot be inverted");
-        }
-        for (let j = 0; j < 2 * n; j++) {
-            augmented[i][j] /= pivot;
-        }
-
-        // Eliminate all below and above the pivot
-        for (let j = 0; j < n; j++) {
-            if (i !== j) {
-                let factor = augmented[j][i];
-                for (let k = 0; k < 2 * n; k++) {
-                    augmented[j][k] -= factor * augmented[i][k];
+    for (i = 0; i < dim; i += 1) {
+        e = C[i][i];
+        if (e == 0) {
+            for (ii = i + 1; ii < dim; ii += 1) {
+                if (C[ii][i] != 0) {
+                    for (j = 0; j < dim; j++) {
+                        e = C[i][j];
+                        C[i][j] = C[ii][j];
+                        C[ii][j] = e;
+                        e = I[i][j];
+                        I[i][j] = I[ii][j];
+                        I[ii][j] = e;
+                    }
+                    break;
                 }
             }
+            e = C[i][i];
+            if (e == 0) { return }
+        }
+        for (j = 0; j < dim; j++) {
+            C[i][j] = C[i][j] / e; //apply to original matrix
+            I[i][j] = I[i][j] / e; //apply to identity
+        }
+        for (ii = 0; ii < dim; ii++) {
+            if (ii == i) { continue; }
+            e = C[ii][i];
+            for (j = 0; j < dim; j++) {
+                C[ii][j] -= e * C[i][j]; //apply to original matrix
+                I[ii][j] -= e * I[i][j]; //apply to identity
+            }
         }
     }
-
-    // Extract the inverse matrix from the augmented matrix
-    let invMatrix = augmented.map(row => row.slice(n));
-    return invMatrix;
+    return I;
 }
