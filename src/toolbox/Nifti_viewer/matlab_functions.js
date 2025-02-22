@@ -116,6 +116,9 @@ export function reshape (array, sizes)
 {
     let matlabDim = sizes.reverse();
     let tmp = structuredClone(array).flat(Infinity);
+    if ( prod(sizes) !== prod(size(tmp)) )
+        throw new Error(`Number of elements must not change. (${prod(size(tmp))} => ${prod(sizes)})`);
+
     let tmpArray2;
     // for each dimensions starting by the last one and ignoring the first one
     for (let sizeIndex = matlabDim.length - 1; sizeIndex > 0; sizeIndex--)
@@ -179,6 +182,13 @@ export function isequal ( array1, array2 )
  * the ith dimension of the output array is the dimension dimorder(i) from the input array.
  */
 export function permute(array, order) {
+    if (unique(order).length != order.length)
+        throw new Error("ORDER cannot contain repeated permutation indices.");
+
+    let check = structuredClone(order).sort();
+    if (!isequal(check, Array.from(Array(check.length).keys())))
+        throw new Error("ORDER contains an invalid permutation index.");
+
     let tmp = structuredClone(array);
     for (var i = 0; i < order.length; i++) {
 
@@ -199,7 +209,7 @@ export function permute(array, order) {
         }
     }
 
-    return array;
+    return tmp;
 }
 
 function transpose_nth_dim ( arr, n ) {
@@ -252,6 +262,7 @@ export function transpose(arr) {
 
 /*
  * Flip order of elements
+ * CAUTION destructive
  *
  * @param {Array} array  -  Input array, specified as a vector, matrix, or multidimensional array.
  * @param {integer} n  -  Dimension to operate along, specified as a positive integer scalar.
@@ -260,6 +271,9 @@ export function transpose(arr) {
  */
 export function flip( array, n )
 {
+    if (!Array.isArray(array))
+        return;
+
     if ( n <= 0 )
     {
         array.reverse();
