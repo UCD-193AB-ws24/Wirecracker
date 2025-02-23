@@ -7,7 +7,7 @@ function HomePage() {
     const token = localStorage.getItem('token') || null;
     
     return (
-        <div className="flex w-screen justify-center items-start">
+        <div className="h-screen flex justify-around items-baseline">
             {token ? (
                 <>
                     <Left />
@@ -27,7 +27,11 @@ function Center(props) {
     const token = localStorage.getItem('token');
 
     return (
-        <div className="basis-80 grow flex flex-col justify-center items-center">
+        <div className="h-screen basis-150 flex flex-col justify-center items-center">
+            {/* Add Link to database search */}
+            <button className="bg-white-100 text-blue-500 border-solid border-1 border-blue-300 p-2 rounded-full">
+                Search the Database
+            </button>
             <Logo />
             {!props.token && <SignInButtons />}
         </div>
@@ -36,7 +40,7 @@ function Center(props) {
 
 function Left() {
     return (
-        <div className="basis-60 grow self-start">
+        <div className="basis-80">
             <h2 className="text-6xl m-3">My Stuff</h2>
             <ToReview />
             <Approved />
@@ -46,7 +50,7 @@ function Left() {
 
 function Right() {
     return (
-        <div className="basis-60 grow self-start flex flex-col items-end m-3">
+        <div className="basis-80 justify-center">
             <h3 className="text-4xl">Recent Localizations</h3>
             <div className="mb-5">
                 <div>temp.csv</div>
@@ -130,7 +134,6 @@ function Approved() {
                     <div>Approved</div>
                 </>
             )}
-            
         </div>
     )
 }
