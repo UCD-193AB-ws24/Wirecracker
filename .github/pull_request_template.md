@@ -1,12 +1,3 @@
----
-name: Pull request
-about: Create a pull request in Wirecracker
-title: ''
-labels: ''
-assignees: ''
-
----
-
 ## Describe your changes
 <!-- Please describe the changes you made, behaviors before changes and after changes, or link to a relevant issue. -->
 Issue Number: N/A
