@@ -3,6 +3,7 @@ name: Feature request
 about: Suggest an feature for Wirecracker
 title: ''
 labels: enhancement
+type: Feature
 assignees: ''
 
 ---
