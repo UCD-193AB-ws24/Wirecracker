@@ -3,6 +3,7 @@ name: Bug report
 about: Report a bug in Wirecracker
 title: ''
 labels: bug
+type: Bug
 assignees: ''
 
 ---
