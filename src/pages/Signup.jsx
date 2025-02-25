@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { signUp, verifyEmail } from '../auth';
 
 const Signup = () => {
@@ -7,6 +8,7 @@ const Signup = () => {
     const [password, setPassword] = useState('');
     const [code, setCode] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
+    const navigate = useNavigate();
 
     const handleSignup = async () => {
         try {
@@ -21,6 +23,7 @@ const Signup = () => {
         try {
             await verifyEmail(email, code);
             alert('Verification successful! You can log in now.');
+            navigate('/');
         } catch (error) {
             alert(error.message);
         }
