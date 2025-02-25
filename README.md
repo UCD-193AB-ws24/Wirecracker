@@ -99,7 +99,7 @@ This is an example of how to list things they need to host the site and how to i
   ```
 * [Tailwind CSS](https://tailwindcss.com/docs/installation/using-vite)
   ```sh
-  npm install tailwindcss @tailwindcss/vite
+  npm install tailwindcss @tailwindcss/postcss
   ```
 * [PostgreSQL](https://www.postgresql.org/download/)
 
