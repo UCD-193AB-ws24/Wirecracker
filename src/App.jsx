@@ -3,9 +3,13 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import Dropdown from './utils/Dropdown';
+import Debug from './pages/Debug';
+import DatabaseTable from "./pages/DatabaseTable";
+import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
 
 const HomePage = () => {
     const token = localStorage.getItem('token') || null;
+    console.log(token);
     
     return (
         <div className="h-screen flex justify-around items-baseline">
@@ -90,15 +94,22 @@ const Logo = () => {
 
 const SignInButtons = () => {
     return (
-        <div className="flex m-10">
-            <Link to="/signup">
-                <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3 mr-5">Sign Up</button>
-            </Link>
-            <Link to="/login">
-                <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3">Log In</button>
-            </Link>
+        <div>
+            <div className="flex m-10">
+                <Link to="/signup">
+                    <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3 mr-5">Sign Up</button>
+                </Link>
+                <Link to="/login">
+                    <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3">Log In</button>
+                </Link>
+            </div>
+            <a href="http://localhost:5000/auth/google">
+                <button className="bg-blue-500 text-white text-2xl px-5 py-3 rounded mt-5">
+                    Sign in with Google
+                </button>
+            </a>
         </div>
-    );
+    );;
 };
 
 const ToReview = () => {
@@ -161,6 +172,9 @@ const App = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/debug" element={<Debug />} />
+                <Route path="/database/:table" element={<DatabaseTable />} />
+                <Route path="/auth-success" element={<GoogleAuthSuccess />} />
                 {/* Change when localization and stimulation pages are added*/}
                 <Route path="/localization" element={<HomePage />} />
                 <Route path="/stimulation" element={<HomePage />} />
