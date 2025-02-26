@@ -103,11 +103,13 @@ const SignInButtons = () => {
                     <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3">Log In</button>
                 </Link>
             </div>
-            <a href="http://localhost:5000/auth/google">
-                <button className="bg-blue-500 text-white text-2xl px-5 py-3 rounded mt-5">
-                    Sign in with Google
-                </button>
-            </a>
+            <div className="flex m-10 justify-center">
+                <a href="http://localhost:5000/auth/google">
+                    <button className="bg-blue-500 font-semibold rounded-xl w-40 py-3">
+                        Sign in with Google
+                    </button>
+                </a>
+            </div>
         </div>
     );;
 };
