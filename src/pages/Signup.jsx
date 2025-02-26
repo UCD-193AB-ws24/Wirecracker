@@ -23,7 +23,7 @@ const Signup = () => {
         try {
             await verifyEmail(email, code);
             alert('Verification successful! You can log in now.');
-            navigate('/');
+            navigate('/login');
         } catch (error) {
             alert(error.message);
         }
