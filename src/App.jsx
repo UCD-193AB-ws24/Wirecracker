@@ -86,6 +86,7 @@ const HomePage = () => {
                                     token={token} 
                                     onNewLocalization={() => addTab('localization')}
                                     onFileUpload={handleFileUpload}
+                                    error={error}
                                 />
                                 <Right />
                             </>
@@ -93,6 +94,7 @@ const HomePage = () => {
                             <Center 
                                 onNewLocalization={() => addTab('localization')}
                                 onFileUpload={handleFileUpload}
+                                error={error}
                             />
                         )}
                     </div>
@@ -149,14 +151,13 @@ const HomePage = () => {
             </div>
 
             <div className="flex-1">
-                {error && <p className="text-red-500 p-4">{error}</p>}
                 {renderTabContent()}
             </div>
         </div>
     );
 };
 
-const Center = ({ token, onNewLocalization, onFileUpload }) => {
+const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     return (
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
             {/* Add Link to database search */}
@@ -195,6 +196,7 @@ const Center = ({ token, onNewLocalization, onFileUpload }) => {
             >
                 Open File
             </button>
+            {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
     );
 };
