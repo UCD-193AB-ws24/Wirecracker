@@ -1,5 +1,5 @@
 import { demoContactData } from "./demoData";
-import { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -7,10 +7,23 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 const ContactSelection = ({ electrodes = demoContactData }) => {
     const [planningContacts, setPlanningContacts] = useState([]);
 
-    const handleDropToPlanning = (contact) => {
+    const handleDropToPlanning = (contact, index = "") => {
         setPlanningContacts((prev) => {
-            if (prev.some((c) => c.id === contact.id)) return prev;
-            return [...prev, contact];
+            if (index === "") index = prev.length;
+            if (index > prev.length) index = prev.length;
+            const newContacts = [...prev];
+
+            if (prev.some((c) => c.id === contact.id)) {
+                // Move existing one
+                let oldIndex = prev.indexOf(contact);
+                if (index === oldIndex + 1) return prev; // Ignore if index is one below
+                newContacts.splice(index, 0, newContacts.splice(oldIndex, 1)[0]);
+            } else {
+                // Add new one
+                newContacts.splice(index, 0, contact);
+            }
+
+            return newContacts;
         });
     };
 
@@ -21,7 +34,6 @@ const ContactSelection = ({ electrodes = demoContactData }) => {
     return (
         <DndProvider backend={HTML5Backend}>
             <div className="flex h-screen p-6 space-x-6">
-
                 <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} />
 
                 <PlanningPane contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} />
@@ -89,13 +101,33 @@ const Contact = ({ contact, onClick }) => {
 };
 
 const PlanningPane = ({ contacts, onDrop, onDropBack }) => {
+    const [hoverIndex, setHoverIndex] = useState(null);
+
+    let index = hoverIndex; // For synchronization between hover and drop
+
     const [{ isOver }, drop] = useDrop(() => ({
         accept: "CONTACT",
-        drop: (item) => onDrop(item),
+        hover: (item, monitor) => {
+            if (!monitor.isOver()) return;
+            const clientOffset = monitor.getClientOffset();
+            if (!clientOffset) return;
+            const hoverY = clientOffset.y;
+            let elementSize = 114; // TODO fix this to get value more programmatically
+            const newIndex = Math.max(0, Math.floor((hoverY - elementSize / 2) / elementSize));
+            setHoverIndex(newIndex);
+            index = newIndex;
+        },
+        drop: (item) => {
+            onDrop(item, index);
+            setHoverIndex(null);
+            index = 0;
+        },
         collect: (monitor) => ({
             isOver: monitor.isOver(),
         }),
     }));
+
+
 
     return (
         <div ref={drop} className={`p-4 w-1/4 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
@@ -103,10 +135,18 @@ const PlanningPane = ({ contacts, onDrop, onDropBack }) => {
             {contacts.length === 0 ? (
                 <p className="text-lg text-gray-500">Drag contacts here</p>
             ) : (
-                <ul className="space-y-2">
-                    {contacts.map((contact) => (
-                        <PlanningContact key={contact.id} contact={contact} onDropBack={onDropBack} />
+                <ul className="space-y-2 relative">
+                    {contacts.map((contact, index) => (
+                        <React.Fragment key={contact.id}>
+                            {hoverIndex === index && isOver && (
+                                <div className="h-1 bg-blue-500 w-full my-1"></div>
+                            )}
+                            <PlanningContact contact={contact} onDropBack={onDropBack} />
+                        </React.Fragment>
                     ))}
+                    {hoverIndex >= contacts.length && isOver && (
+                        <div className="h-1 bg-blue-500 w-full my-1"></div>
+                    )}
                 </ul>
             )}
             <button className={`absolute right-10 bottom-10 py-2 px-4 bg-blue-500 text-white font-bold rounded ${
@@ -117,6 +157,7 @@ const PlanningPane = ({ contacts, onDrop, onDropBack }) => {
         </div>
     );
 };
+
 
 const PlanningContact = ({ contact, onDropBack }) => {
     const [{ isDragging }, drag] = useDrag(() => ({
