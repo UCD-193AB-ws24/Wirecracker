@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import Dropdown from './utils/Dropdown';
+import Localization from './pages/Localization';
 
 const HomePage = () => {
     const token = localStorage.getItem('token') || null;
@@ -162,7 +163,7 @@ const App = () => {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
                 {/* Change when localization and stimulation pages are added*/}
-                <Route path="/localization" element={<HomePage />} />
+                <Route path="/localization" element={<Localization />} />
                 <Route path="/stimulation" element={<HomePage />} />
             </Routes>
         </Router>
