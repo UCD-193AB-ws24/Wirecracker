@@ -22,7 +22,7 @@ const ContactSelection = ({ electrodes = demoContactData }) => {
         <DndProvider backend={HTML5Backend}>
             <div className="flex h-screen p-6 space-x-6">
 
-                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} droppedContacts={planningContacts} />
+                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} />
 
                 <PlanningPane contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} />
             </div>
@@ -30,7 +30,7 @@ const ContactSelection = ({ electrodes = demoContactData }) => {
     );
 };
 
-const ContactList = ({ electrodes, onDrop, droppedContacts }) => {
+const ContactList = ({ electrodes, onDrop, onClick, droppedContacts }) => {
     const [, drop] = useDrop(() => ({
         accept: "CONTACT",
         drop: (item) => onDrop(item),
@@ -48,11 +48,12 @@ const ContactList = ({ electrodes, onDrop, droppedContacts }) => {
                         <ul className="flex space-x-4">
                             {electrode.contacts.map((contact, index) => {
                                 const contactId = `${electrode.label}${index}`;
-                                const isDropped = droppedContacts.some((c) => c.id === contactId);
+                                const shouldAppear = !(droppedContacts.some((c) => c.id === contactId)) && contact.isMarked();
                                 return (
-                                    !isDropped && (
+                                    shouldAppear && (
                                         <Contact key={contactId}
-                                                contact={{ ...contact, id: contactId, electrodeLabel: electrode.label, index: index }} />
+                                                contact={{ ...contact, id: contactId, electrodeLabel: electrode.label, index: index }}
+                                                onClick={onClick} />
                                     )
                                 );
                             })}
@@ -64,7 +65,7 @@ const ContactList = ({ electrodes, onDrop, droppedContacts }) => {
     );
 };
 
-const Contact = ({ contact }) => {
+const Contact = ({ contact, onClick }) => {
     const [{ isDragging }, drag] = useDrag(() => ({
         type: "CONTACT",
         item: contact,
@@ -77,7 +78,8 @@ const Contact = ({ contact }) => {
         <li ref={drag}
             className={`min-w-[100px] p-4 border rounded-lg shadow cursor-pointer ${
                 isDragging ? "opacity-50" : "opacity-100"
-            }`} >
+            }`}
+            onClick={() => onClick(contact)} >
             <p className="text-xl font-semibold">{contact.index}</p>
             <p className="text-sm font-semibold text-gray-500">{contact.associatedLocation}</p>
             <p className="text-sm text-gray-600">{contact.mark}</p>
@@ -107,6 +109,11 @@ const PlanningPane = ({ contacts, onDrop, onDropBack }) => {
                     ))}
                 </ul>
             )}
+            <button className={`absolute right-10 bottom-10 py-2 px-4 bg-blue-500 text-white font-bold rounded ${
+                    contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
+                    }`} onClick={() => exportContacts(contacts)}>
+                export
+            </button>
         </div>
     );
 };
@@ -135,5 +142,11 @@ const PlanningContact = ({ contact, onDropBack }) => {
         </li>
     );
 };
+
+function exportContacts(contacts) {
+    for (let contact of contacts) {
+        console.log(contact.id);
+    }
+}
 
 export default ContactSelection;

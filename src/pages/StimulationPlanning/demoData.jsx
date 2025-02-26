@@ -6,6 +6,13 @@ function contact (loc, mark, surgeonMark) {
     this.surgeonMark = surgeonMark;
 }
 
+contact.prototype = {
+    constructor: contact,
+
+    isMarked: function() {
+        return this.mark || this.surgeonMark;
+    }
+}
 
 /*
 
