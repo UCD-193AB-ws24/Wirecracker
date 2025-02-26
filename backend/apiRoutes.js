@@ -14,10 +14,10 @@ router.use(cors());
 // lazy solution
 const TABLE_NAMES = [
   "cort_gm",
-  "cortical_subcortical",
+  "cort",
   "function",
   "function_test",
-  "gm_area",
+  "gm",
   "gm_function",
   "reference",
   "stimulation",
