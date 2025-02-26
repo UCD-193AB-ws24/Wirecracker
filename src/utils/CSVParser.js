@@ -10,7 +10,6 @@ const IDENTIFIER_LINE_2 = "### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELE
 export const Identifiers = Object.freeze({
     TEST_PLANNING:  "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR TEST PLANNING ###",
     LOCALIZATION:   "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR LOCALIZATION ###",
-    COORDINATES:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR COORDINATES ###", // Temporary
 });
 
 /**
@@ -33,8 +32,7 @@ export function parseCSVFile( file ) {
             const lines = fileContent.split(/\r?\n/);
 
             if (lines.length < 2 || (lines[0].trim() !== Identifiers.TEST_PLANNING && 
-                lines[0].trim() !== Identifiers.LOCALIZATION &&
-                lines[0].trim() !== Identifiers.COORDINATES) || lines[1].trim() !== IDENTIFIER_LINE_2) {
+                lines[0].trim() !== Identifiers.LOCALIZATION) || lines[1].trim() !== IDENTIFIER_LINE_2) {
                 reject(new Error("Invalid file. The first line must be the correct identifier."));
                 return;
             }
