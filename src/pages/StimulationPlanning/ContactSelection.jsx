@@ -98,7 +98,7 @@ const PlanningPane = ({ contacts, onDrop, onDropBack }) => {
     }));
 
     return (
-        <div ref={drop} className={`p-4 bg-gray-200 w-1/4 border-l shadow-lg ${isOver ? "bg-gray-300" : "bg-gray-200"}`}>
+        <div ref={drop} className={`p-4 w-1/4 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
             <h2 className="text-2xl font-bold mb-4">Planning Pane</h2>
             {contacts.length === 0 ? (
                 <p className="text-lg text-gray-500">Drag contacts here</p>
