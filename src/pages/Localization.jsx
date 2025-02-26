@@ -121,9 +121,17 @@ const Localization = () => {
     };
 
     return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold mb-4">New Localization</h1>
-            {submitFlag ? <Electrodes /> : <Electrodes />}
+        <div>
+            <div className="p-4">
+                <div className="flex">
+                    <h1 className="text-2xl font-bold mb-4">New Localization</h1>
+                    <button
+                        className="bg-blue-500 text-white font-semibold rounded">
+                        Save Localization
+                    </button>
+                </div>
+                {submitFlag ? <Electrodes /> : <Electrodes />}
+            </div>
             <Container>
                 <Popup
                     trigger={<Button
