@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { useState } from 'react';
 import Popup from 'reactjs-popup';
 import { Container, Button, Link } from 'react-floating-action-button';
@@ -8,6 +7,8 @@ const Localization = () => {
     const [expandedElectrode, setExpandedElectrode] = useState('');
     const [submitFlag, setSubmitFlag] = useState(false);
     const [electrodes, setElectrodes] = useState({});
+
+    const contactTypes = ['GM', 'GM/GM', 'GM/WM', 'WM', 'OOB'];
 
     const addElectrode = (formData) => {
         const label = formData.get('label');
@@ -24,15 +25,63 @@ const Localization = () => {
         console.log('New', electrodes);
     };
 
+    const Contact = ({
+        label,
+        number
+    }) => {
+        return (
+            <Popup
+                trigger={<button
+                    className="flex flex-col items-center border-r"
+                    key={number}>
+                    <div className="w-20 h-5">{number}</div>
+                    {electrodes[label][number] === "GM" ? (
+                        <div className="w-20 h-15">{electrodes[label].description}</div>
+                    ) : (
+                        <div className="w-20 h-15">{electrodes[label][number]}</div>
+                    )}
+                </button>}
+                modal
+                nested>
+                {close => (
+                    <div className="modal flex flex-col">
+                        <h4>Add Contact</h4>
+                        <select
+                            onChange={(event) => {
+                                let temp = electrodes;
+
+                                temp[label][number] = event.target.value;
+                                setElectrodes(temp);
+                            }}>
+                            <option></option>
+                            {contactTypes.map((option, i) => {
+                                return (
+                                    <option key={i}>{option}</option>
+                                );
+                            })}
+                        </select>
+                        <button
+                            onClick={() => {
+                                setSubmitFlag(!submitFlag);
+                                close();
+                            }}>
+                            Done
+                        </button>
+                    </div>
+                )}
+            </Popup>
+        );
+    };
+
     const Electrode = ({
         name
     }) => {
         const [label, setLabel] = useState(name);
 
         return (
-            <div>
+            <div className="w-full outline-solid rounded mb-5">
                 <button
-                    className="flex"
+                    className="w-full flex justify-start align-center border-b"
                     onClick={() => {
                         if (label === expandedElectrode) {
                             setExpandedElectrode('');
@@ -41,8 +90,8 @@ const Localization = () => {
                         }
                     }}
                     key={label}>
-                    <div className="bg-blue-300 text-white font-semibold">{label}</div>
-                    <div>{electrodes[label].description}</div>
+                    <div className="w-20 h-10 bg-blue-400 text-white font-semibold align-middle font-semibold text-2xl">{label}</div>
+                    <div className="h-10 pl-2 align-middle font-semibold text-2xl">{electrodes[label].description}</div>
                 </button>
                 {label === expandedElectrode &&
                     <>
@@ -51,14 +100,7 @@ const Localization = () => {
                                 const keyNum = parseInt(key);
 
                                 if (!isNaN(keyNum)) {
-                                    return (
-                                        <button
-                                            className="flex flex-col items-center"
-                                            key={key}>
-                                            <div>{key}</div>
-                                            <div>{electrodes[label][key]}</div>
-                                        </button>
-                                    );
+                                    return (<Contact label={label} number={key} />);
                                 }
                             })}
                         </div>
@@ -70,17 +112,17 @@ const Localization = () => {
 
     const Electrodes = () => {
         const orderedKeys = Object.keys(electrodes).sort();
-        console.log(orderedKeys);
 
         return (
-            <div className="h-screen flex justify-center items-center">
+            <div className="flex flex-col justify-start m-10">
                 {orderedKeys.map((key) => { return (<Electrode name={key} key={key} />); })}
             </div>
         );
     };
 
     return (
-        <div>
+        <div className="p-4">
+            <h1 className="text-2xl font-bold mb-4">New Localization</h1>
             {submitFlag ? <Electrodes /> : <Electrodes />}
             <Container>
                 <Popup
@@ -124,22 +166,7 @@ const Localization = () => {
                 </Popup>
             </Container>
         </div>
-        
     );
 };
 
 export default Localization;
-=======
-import React from 'react';
-
-const Localization = () => {
-    return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold mb-4">New Localization</h1>
-            {/* Add your localization form/content here */}
-        </div>
-    );
-};
-
-export default Localization; 
->>>>>>> 8ab2880aea87ce48fe9b82174a73754cb2f92970
