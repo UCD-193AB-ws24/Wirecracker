@@ -72,6 +72,62 @@ const HomePage = () => {
         }
     };
 
+    const renderTabContent = () => {
+        const currentTab = tabs.find(tab => tab.id === activeTab);
+        
+        switch (currentTab.content) {
+            case 'home':
+                return (
+                    <div className="h-screen flex justify-around items-baseline">
+                        {token ? (
+                            <>
+                                <Left />
+                                <Center 
+                                    token={token} 
+                                    onNewLocalization={() => addTab('localization')}
+                                    onFileUpload={handleFileUpload}
+                                />
+                                <Right />
+                            </>
+                        ) : (
+                            <Center 
+                                onNewLocalization={() => addTab('localization')}
+                                onFileUpload={handleFileUpload}
+                            />
+                        )}
+                    </div>
+                );
+            case 'localization':
+                return <Localization />;
+            case 'csv':
+                return (
+                    <div className="p-4">
+                        <h2 className="text-2xl font-bold mb-4">{currentTab.data.name}</h2>
+                        <table className="w-full border-collapse border">
+                            <thead>
+                                <tr>
+                                    {Object.keys(currentTab.data.data[0] || {}).map((key) => (
+                                        <th key={key} className="border p-2">{key}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {currentTab.data.data.map((row, index) => (
+                                    <tr key={index}>
+                                        {Object.values(row).map((value, i) => (
+                                            <td key={i} className="border p-2">{value}</td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
     return (
         <div className="h-screen flex flex-col">
             <div className="flex border-b">
@@ -94,27 +150,7 @@ const HomePage = () => {
 
             <div className="flex-1">
                 {error && <p className="text-red-500 p-4">{error}</p>}
-                
-                <div className="h-screen flex justify-around items-baseline">
-                    {token ? (
-                        <>
-                            <Left />
-                            <Center 
-                                token={token} 
-                                onNewLocalization={() => addTab('localization')}
-                                onFileUpload={handleFileUpload}
-                            />
-                            <Right />
-                        </>
-                    ) : (
-                        <>
-                            <Center 
-                                onNewLocalization={() => addTab('localization')}
-                                onFileUpload={handleFileUpload}
-                            />
-                        </>
-                    )}
-                </div>
+                {renderTabContent()}
             </div>
         </div>
     );
