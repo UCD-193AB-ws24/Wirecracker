@@ -2,11 +2,16 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { Resend } from 'resend';
+import apiRoutes from './apiRoutes.js';
+import oauthRoutes from './oauth.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+app.use('/', oauthRoutes);
+app.use("/api", apiRoutes);
 
 app.use(cors()); // Allow requests from frontend
 app.use(express.json()); // Parse JSON request body

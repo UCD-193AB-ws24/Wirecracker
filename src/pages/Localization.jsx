@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState } from 'react';
 import Popup from 'reactjs-popup';
 import { Container, Button, Link } from 'react-floating-action-button';
@@ -128,3 +129,17 @@ const Localization = () => {
 };
 
 export default Localization;
+=======
+import React from 'react';
+
+const Localization = () => {
+    return (
+        <div className="p-4">
+            <h1 className="text-2xl font-bold mb-4">New Localization</h1>
+            {/* Add your localization form/content here */}
+        </div>
+    );
+};
+
+export default Localization; 
+>>>>>>> 8ab2880aea87ce48fe9b82174a73754cb2f92970
