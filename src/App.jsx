@@ -191,7 +191,8 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                 id="fileInput"
             />
             <button 
-                className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5"
+                className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5 transition-colors duration-200 
+                hover:bg-sky-700 hover:text-white"
                 onClick={() => document.getElementById('fileInput').click()}
             >
                 Open File
