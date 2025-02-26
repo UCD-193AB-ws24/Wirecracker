@@ -123,10 +123,10 @@ const Localization = () => {
     return (
         <div>
             <div className="p-4">
-                <div className="flex">
+                <div className="flex justify-between">
                     <h1 className="text-2xl font-bold mb-4">New Localization</h1>
                     <button
-                        className="bg-blue-500 text-white font-semibold rounded">
+                        className="w-40 bg-blue-500 text-white font-semibold rounded">
                         Save Localization
                     </button>
                 </div>
