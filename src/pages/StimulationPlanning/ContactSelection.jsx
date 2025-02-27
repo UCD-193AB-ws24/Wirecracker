@@ -96,7 +96,7 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts }) => {
 // Function to grab two closest contacts.
 // Second one will be null if the contact is at the edge
 function getCloseContacts(contacts, index) {
-    let closest = index > 0 ? contacts[index - 1] : contacts[2];
+    let closest = index > 0 ? contacts[index - 1] : contacts[1];
     let nextClosest = index < contacts.length - 1 ? contacts[index + 1] : contacts[contacts.length - 2];
 
     if (closest == nextClosest) nextClosest = null;
