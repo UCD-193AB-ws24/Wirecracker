@@ -74,7 +74,7 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts }) => {
                         <p className="text-xl font-semibold min-w-[50px]">{electrode.label}</p>
                         <ul className="flex space-x-4">
                             {electrode.contacts.map((contact, index) => { // Horizontal list for every contact
-                                // Filter out the non-marked contacts.
+                                // Filter out the non-marked contacts. NOTE Currently it does not filter off pair of contact added
                                 let override = false; // TODO add manual override to show non-marked contacts
                                 const shouldAppear = (!(droppedContacts.some((c) => c.id === contact.id)) && contact.isMarked()) || override;
                                 return (
