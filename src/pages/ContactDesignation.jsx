@@ -1,21 +1,29 @@
 import { demoContactData } from "./demoData";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const ContactDesignation = ({ electrodes = demoContactData }) => {
-    // Create a deep copy of electrodes to avoid mutating the original data
+    // Load state from localStorage or initialize with demo data
     const [modifiedElectrodes, setModifiedElectrodes] = useState(() => {
-        return electrodes.map(electrode => ({
-            ...electrode,
-            contacts: electrode.contacts.map((contact, index) => ({
-                ...contact,
-                id: `${electrode.label}${index}`,
-                electrodeLabel: electrode.label,
-                index: index,
-                mark: contact.mark || 0, // Initialize mark if not present
-                surgeonMark: contact.surgeonMark || false
-            }))
-        }));
+        const savedState = localStorage.getItem("electrodesState");
+        return savedState
+            ? JSON.parse(savedState) // Restore saved state
+            : electrodes.map(electrode => ({
+                  ...electrode,
+                  contacts: electrode.contacts.map((contact, index) => ({
+                      ...contact,
+                      id: `${electrode.label}${index}`,
+                      electrodeLabel: electrode.label,
+                      index: index,
+                      mark: contact.mark || 0, // Initialize mark if not present
+                      surgeonMark: contact.surgeonMark || false,
+                  })),
+              }));
     });
+
+    // Save state to localStorage whenever modifiedElectrodes changes
+    useEffect(() => {
+        localStorage.setItem("electrodesState", JSON.stringify(modifiedElectrodes));
+    }, [modifiedElectrodes]);
 
     const handleMarkContact = (contactId) => {
         setModifiedElectrodes(prevElectrodes => {
