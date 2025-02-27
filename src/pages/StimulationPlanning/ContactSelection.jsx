@@ -5,8 +5,11 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
 const ContactSelection = ({ electrodes = demoContactData }) => {
-    const [planningContacts, setPlanningContacts] = useState([]);
+    const [planningContacts, setPlanningContacts] = useState([]); // TODO Connect planningContacts to backend to save the state
 
+    // Function to handle "drop" on planning pane. Takes contact and index, and insert the contact
+    // at the index or at the end if index is not specified. If the contact exist already, this function
+    // will change the contact's location to index passed (or to the end)
     const handleDropToPlanning = (contact, index = "") => {
         setPlanningContacts((prev) => {
             if (index === "") index = prev.length;
@@ -27,9 +30,20 @@ const ContactSelection = ({ electrodes = demoContactData }) => {
         });
     };
 
+    // Function to handle "drop" on contact list part. Simply removes contact from the list
     const handleDropBackToList = (contact) => {
         setPlanningContacts((prev) => prev.filter((c) => c.id !== contact.id));
     };
+
+    // Add id and such so that it can be used after making pair
+    electrodes.map((electrode) => {
+        electrode.contacts.map((contact, index) => {
+            const contactId = `${electrode.label}${index}`;
+            contact.id = contactId;
+            contact.electrodeLabel = electrode.label;
+            contact.index = index;
+        })
+    });
 
     return (
         <DndProvider backend={HTML5Backend}>
@@ -42,6 +56,7 @@ const ContactSelection = ({ electrodes = demoContactData }) => {
     );
 };
 
+// Generate list of contacts from list of electrodes
 const ContactList = ({ electrodes, onDrop, onClick, droppedContacts }) => {
     const [, drop] = useDrop(() => ({
         accept: "CONTACT",
@@ -54,30 +69,47 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts }) => {
     return (
         <div className="flex-1" ref={drop}>
             <ul className="space-y-4">
-                {electrodes.map((electrode) => (
+                {electrodes.map((electrode) => ( // Vertical list for every electrode
                     <li key={electrode.label} className="p-4 border rounded-lg shadow flex items-center space-x-6">
                         <p className="text-xl font-semibold min-w-[50px]">{electrode.label}</p>
                         <ul className="flex space-x-4">
-                            {electrode.contacts.map((contact, index) => {
-                                const contactId = `${electrode.label}${index}`;
-                                const shouldAppear = !(droppedContacts.some((c) => c.id === contactId)) && contact.isMarked();
+                            {electrode.contacts.map((contact, index) => { // Horizontal list for every contact
+                                // Filter out the non-marked contacts.
+                                let override = false; // TODO add manual override to show non-marked contacts
+                                const shouldAppear = (!(droppedContacts.some((c) => c.id === contact.id)) && contact.isMarked()) || override;
                                 return (
                                     shouldAppear && (
-                                        <Contact key={contactId}
-                                                contact={{ ...contact, id: contactId, electrodeLabel: electrode.label, index: index }}
+                                        <Contact key={contact.id}
+                                                contact={{ ...contact, pair: getCloseContacts(electrode.contacts, index) }}
                                                 onClick={onClick} />
                                     )
                                 );
-                            })}
+                            })} {/* contact */}
                         </ul>
                     </li>
-                ))}
+                ))} {/* electrode */}
             </ul>
         </div>
     );
 };
 
+// Function to grab two closest contacts.
+// Second one will be null if the contact is at the edge
+function getCloseContacts(contacts, index) {
+    let closest = index > 0 ? contacts[index - 1] : contacts[2];
+    let nextClosest = index < contacts.length - 1 ? contacts[index + 1] : contacts[contacts.length - 2];
+
+    if (closest == nextClosest) nextClosest = null;
+
+    return {
+        closest: closest,
+        alternative: nextClosest
+    }
+}
+
+// Draggable contact in contact list
 const Contact = ({ contact, onClick }) => {
+    // Handle "drag"
     const [{ isDragging }, drag] = useDrag(() => ({
         type: "CONTACT",
         item: contact,
@@ -100,19 +132,22 @@ const Contact = ({ contact, onClick }) => {
     );
 };
 
+// Planning pane on the right
 const PlanningPane = ({ contacts, onDrop, onDropBack }) => {
     const [hoverIndex, setHoverIndex] = useState(null);
 
     let index = hoverIndex; // For synchronization between hover and drop
 
+    // Handle "Drop" and hover
     const [{ isOver }, drop] = useDrop(() => ({
         accept: "CONTACT",
         hover: (item, monitor) => {
             if (!monitor.isOver()) return;
             const clientOffset = monitor.getClientOffset();
             if (!clientOffset) return;
+            // Estimate the index based on y coordinate
             const hoverY = clientOffset.y;
-            let elementSize = 114; // TODO fix this to get value more programmatically
+            let elementSize = 114; // TODO get value more programmatically
             const newIndex = Math.max(0, Math.floor((hoverY - elementSize / 2) / elementSize));
             setHoverIndex(newIndex);
             index = newIndex;
@@ -133,22 +168,23 @@ const PlanningPane = ({ contacts, onDrop, onDropBack }) => {
         <div ref={drop} className={`p-4 w-1/4 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
             <h2 className="text-2xl font-bold mb-4">Planning Pane</h2>
             {contacts.length === 0 ? (
-                <p className="text-lg text-gray-500">Drag contacts here</p>
+                <p className="text-lg text-gray-500">Drag contacts here</p> // Show text if there are no contacts in the pane
             ) : (
                 <ul className="space-y-2 relative">
                     {contacts.map((contact, index) => (
                         <React.Fragment key={contact.id}>
                             {hoverIndex === index && isOver && (
-                                <div className="h-1 bg-blue-500 w-full my-1"></div>
+                                <div className="h-1 bg-blue-500 w-full my-1"></div> // Blue bar within the list
                             )}
                             <PlanningContact contact={contact} onDropBack={onDropBack} />
                         </React.Fragment>
                     ))}
                     {hoverIndex >= contacts.length && isOver && (
-                        <div className="h-1 bg-blue-500 w-full my-1"></div>
+                        <div className="h-1 bg-blue-500 w-full my-1"></div> // Blue bar at the end of list
                     )}
                 </ul>
             )}
+            {/* export button. Disabled if no contact is in the list */}
             <button className={`absolute right-10 bottom-10 py-2 px-4 bg-blue-500 text-white font-bold rounded ${
                     contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
                     }`} onClick={() => exportContacts(contacts)}>
@@ -158,8 +194,9 @@ const PlanningPane = ({ contacts, onDrop, onDropBack }) => {
     );
 };
 
-
+// Draggable contact in planning pane area
 const PlanningContact = ({ contact, onDropBack }) => {
+    // Handle "Drag"
     const [{ isDragging }, drag] = useDrag(() => ({
         type: "CONTACT",
         item: contact,
@@ -174,8 +211,8 @@ const PlanningContact = ({ contact, onDropBack }) => {
                 isDragging ? "opacity-50" : "opacity-100"
             }`} >
             <p className="text-lg font-semibold">{contact.id}</p>
-            <p className="text-sm text-gray-600">{contact.mark}</p>
-            <p className="text-sm font-semibold text-gray-500">{contact.associatedLocation}</p>
+            <p className="text-sm font-semibold text-gray-500">Location: {contact.associatedLocation}</p>
+            <p className="text-sm font-semibold text-gray-500">Pair:  {contact.pair.closest.id}</p>
             <button onClick={() => onDropBack(contact)}
                     className="text-red-500 text-sm mt-2 underline" >
                 Remove
@@ -186,7 +223,7 @@ const PlanningContact = ({ contact, onDropBack }) => {
 
 function exportContacts(contacts) {
     for (let contact of contacts) {
-        console.log(contact.id);
+        console.log(contact.id); // Simply put in console for now...
     }
 }
 
