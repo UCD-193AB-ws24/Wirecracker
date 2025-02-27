@@ -212,7 +212,7 @@ const PlanningContact = ({ contact, onDropBack }) => {
             }`} >
             <p className="text-lg font-semibold">{contact.id}</p>
             <p className="text-sm font-semibold text-gray-500">Location: {contact.associatedLocation}</p>
-            <p className="text-sm font-semibold text-gray-500">Pair:  {contact.pair.closest.id}</p>
+            <p className="text-sm font-semibold text-gray-500">Pair:  {contact.pair.closest.id}</p> {/* TODO add ability to change closest contact */}
             <button onClick={() => onDropBack(contact)}
                     className="text-red-500 text-sm mt-2 underline" >
                 Remove
