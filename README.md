@@ -33,16 +33,16 @@ Almost all the comments are left untouched.
 
 
   <p align="center">
-    Web app for brain surgery planning
+    A planning tool for epileptologists
     <br />
-    <a href="#"><strong>Visit documentations</strong></a>
+    <a href="https://www.wirecracker.com/documentations"><strong>Visit documentations</strong></a>
     <br />
     <br />
-    <a href="#">Visit site</a>
+    <a href="https://www.wirecracker.com">Visit site</a>
     &middot;
-    <a href="https://github.com/UCD-193AB-ws24/Wirecracker/issues/new?labels=bug">Report Bug</a>
+    <a href="https://github.com/UCD-193AB-ws24/Wirecracker/issues/new?template=bug_report.md">Report Bug</a>
     &middot;
-    <a href="https://github.com/UCD-193AB-ws24/Wirecracker/issues/new?labels=enhancement">Request Feature</a>
+    <a href="https://github.com/UCD-193AB-ws24/Wirecracker/issues/new?template=feature_request.md">Request Feature</a>
   </p>
 </div>
 
@@ -77,47 +77,50 @@ Almost all the comments are left untouched.
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 _[Add screenshot of "home page"]_
 
-Wirecracker is a unified platform that streamlines the coordination and sharing of brain function tests used by researchers and clinicians.
-* Centralizing Test Resources: Wirecracker hosts a curated library of tests designed to evaluate diverse aspects of brain functionality.
-* Facilitating Collaboration: The platform allows teams from different specialties to plan, review, and edit stimulation protocols in real time, ensuring smooth communication during time-sensitive procedures.
-* Standardizing Data Sharing: By providing a centralized repository, Wirecracker makes it easy to share test methodologies and results across health centers, promoting consistency and innovation in research and clinical practices.
+Wirecracker provides a intuitive solution for designing, executing, and managing localization and stimulation plans.
+Key Development Goalst:
+- Replace traditional CSV-based interfaces with a modern, user-friendly GUI for improved usability and efficiency.
+- Facilitate smooth communication and data sharing between teams to enhance productivity and reduce errors.
+- Build a centralized, well-organized database to store plans, enabling quick retrieval and analysis.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This area can provide how to host on their own environment.
-To get a local copy up and running follow these simple example steps.
+This section provides a guide for self-hosting. If you are developer, please visit [documentation for developers page](https://www.wirecracker.com/documentations/code)
 
 ### Prerequisites
 
-This is an example of how to list things they need to host the site and how to install them.
+Followings are required to host your own Wirecracker
+* [node.js](https://nodejs.org/en)
 * [npm](https://www.npmjs.com/)
-  ```sh
-  npm install npm@latest -g
-  ```
-* [Tailwind CSS](https://tailwindcss.com/docs/installation/using-vite)
-  ```sh
-  npm install tailwindcss @tailwindcss/postcss
-  ```
-* [PostgreSQL](https://www.postgresql.org/download/)
+* [supabase token](https://supabase.com/)
+* [Google OAuth 2 token](https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow)
 
 ### Installation
 
 1. Clone the repo
    ```sh
-   git clone project_url
+   git clone https://github.com/UCD-193AB-ws24/Wirecracker.git
    ```
-2. Install NPM packages
+2. Go into project folder
    ```sh
-   npm install react react-dom x y z ...
+   cd Wirecracker
    ```
-3. Configure hosting environment variables in `config.js`
+3. Configure hosting environment variables in `config.js` and `.enc\v`
    ```js
    const IP_ADDR = 'ENTER YOUR IP';
    ```
-4. Change git remote url to avoid accidental pushes to base project
+4. Install NPM packages for backend and start it
+   ```sh
+   (cd backend; npm install; npm start)&
+   ```
+5. Install NPM packages for frontend and start it 
+   ```sh
+   npm install; npm run dev
+   ```
+6. Change git remote url to avoid accidental pushes to base project
    ```sh
    git remote set-url origin github_username/repo_name
    git remote -v # confirm the changes
@@ -132,7 +135,7 @@ This is an example of how to list things they need to host the site and how to i
 
 How to use the web app. Additional screenshots and demos. Can be linked to more resources.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+_For more examples, please refer to the [Documentation](https://www.wirecracker.com/documentations)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -171,8 +174,6 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 Name - email@email_client.com
 
-Name - email@email_client.com
-
 Project Link: [https://github.com/UCD-193AB-ws24/Wirecracker](https://github.com/UCD-193AB-ws24/Wirecracker)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -182,7 +183,7 @@ Project Link: [https://github.com/UCD-193AB-ws24/Wirecracker](https://github.com
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* [GitHub Pages](https://pages.github.com/)
+* [Tools for NIfTI and ANALYZE image](https://www.mathworks.com/matlabcentral/fileexchange/8797-tools-for-nifti-and-analyze-image) by Jimmy Shen
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
