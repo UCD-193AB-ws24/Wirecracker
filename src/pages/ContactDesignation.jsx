@@ -1,4 +1,4 @@
-import { demoContactData } from "./StimulationPlanning/demoData";
+import { demoContactData } from "./demoData";
 import { useState } from "react";
 
 const ContactDesignation = ({ electrodes = demoContactData }) => {

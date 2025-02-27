@@ -8,6 +8,7 @@ import DatabaseTable from "./pages/DatabaseTable";
 import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
 import { parseCSVFile, Identifiers } from './utils/CSVParser';
 import Localization from './pages/Localization';
+import ContactDesignation from './pages/ContactDesignation';
 
 const Tab = ({ title, isActive, onClick, onClose }) => {
     return (
@@ -174,8 +175,8 @@ const Center = ({ token, onNewLocalization, onFileUpload }) => {
                 openText="Create New ▾"
                 closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
                 openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
-                options="Localization Stimulation"
-                optionRefs="/localization /stimulation"
+                options="Localization Stimulation ContactDesignation"
+                optionRefs="/localization /stimulation /contact-designation"
                 optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
                 onOptionClick={(option) => {
@@ -319,6 +320,7 @@ const App = () => {
                 <Route path="/auth-success" element={<GoogleAuthSuccess />} />
                 <Route path="/localization" element={<Localization />} />
                 <Route path="/stimulation" element={<HomePage />} />
+                <Route path="/contact-designation" element={<ContactDesignation />} />
             </Routes>
         </Router>
     );
