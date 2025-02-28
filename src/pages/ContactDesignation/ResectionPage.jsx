@@ -136,27 +136,32 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
         const oldMainDirection = direction;
         const targetSubDirection = clickedSubIndex === 0 ? subCanvas0Direction : subCanvas1Direction;
 
+        const oldMainSliceIndex = sliceIndex;
+        let oldSubCanvasSliceIndex;
+
         // Update main view to clicked subcanvas's direction
         setDirection(targetSubDirection);
 
         // Update clicked subcanvas to old main direction
         if (clickedSubIndex === 0) {
+            oldSubCanvasSliceIndex = subCanvas0SliceIndex;
             setSubCanvas0Direction(oldMainDirection);
             const newMax = niiData.hdr.dime.dim[getDirectionDimension(oldMainDirection)];
             setMaxSubCanvas0Slices(newMax);
-            setSubCanvas0SliceIndex(Math.min(Math.floor(newMax / 2), newMax - 1));
+            setSubCanvas0SliceIndex(oldMainSliceIndex);
         } else {
+            oldSubCanvasSliceIndex = subCanvas1SliceIndex;
             setSubCanvas1Direction(oldMainDirection);
             const newMax = niiData.hdr.dime.dim[getDirectionDimension(oldMainDirection)];
             setMaxSubCanvas1Slices(newMax);
-            setSubCanvas1SliceIndex(Math.min(Math.floor(newMax / 2), newMax - 1));
+            setSubCanvas1SliceIndex(oldMainSliceIndex);
         }
 
         // Update main view parameters
         const newMainMax = niiData.hdr.dime.dim[getDirectionDimension(targetSubDirection)];
         setMaxSlices(newMainMax);
-        setSliceIndex(Math.min(Math.floor(newMainMax / 2), newMainMax - 1));
-    }, [direction, subCanvas0Direction, subCanvas1Direction, niiData]);
+        setSliceIndex(oldSubCanvasSliceIndex);
+    }, [direction, sliceIndex, subCanvas0SliceIndex, subCanvas1SliceIndex, subCanvas0Direction, subCanvas1Direction, niiData]);
 
     useEffect(() => {
         if (!isLoaded) return;
