@@ -1,6 +1,6 @@
 import { demoContactData } from "./demoData";
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom"; // Assuming you're using React Router
+import { useSearchParams } from "react-router-dom";
 import Resection from "./ResectionPage";
 import Designation from "./DesignationPage";
 
@@ -51,7 +51,7 @@ const ContactDesignation = ({ electrodes = demoContactData }) => {
     };
 
     return (
-        <div className="flex flex-col h-screen p-6 ">
+        <div className="flex flex-col h-screen p-4 ">
             {/* Floating Toggle Switch at the Top Right */}
             <button
                 onClick={toggleLayout}
