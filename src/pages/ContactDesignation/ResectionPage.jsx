@@ -111,7 +111,6 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
     useEffect(redrawSubCanvas0, [subCanvas0SliceIndex, subCanvas0Direction, niiData]);
     useEffect(redrawSubCanvas1, [subCanvas1SliceIndex, subCanvas1Direction, niiData]);
 
-
     // Unified scroll handler using refs
     const handleScroll = (event, setter, currentSliceRef, maxRef) => {
         event.preventDefault();
@@ -306,89 +305,110 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
     };
 
     return (
-        <div>
-            <input
-                type="file"
-                accept=".csv"
-                onChange={handleCSVFileUpload}
-                style={{ display: 'none' }}
-                id="coorInput"
-            />
-            <button
-                className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5"
-                onClick={() => document.getElementById('coorInput').click()}
-            >
-                Open Coordinate File
-            </button>
-            <input
-                type="file"
-                accept=".nii"
-                onChange={handleNIfTIFileUpload}
-                style={{ display: 'none' }}
-                id="niftiInput"
-            />
-            <button
-                className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5"
-                onClick={() => document.getElementById('niftiInput').click()}
-            >
-                Open NIfTI File
-            </button>
+        <div className="p-8 bg-gray-100">
+            <div className="flex space-x-4 mb-8">
+                <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCSVFileUpload}
+                    style={{ display: 'none' }}
+                    id="coorInput"
+                />
+                <button
+                    className="border-solid border-2 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 hover:bg-sky-700 hover:text-white transition-colors duration-200"
+                    onClick={() => document.getElementById('coorInput').click()}
+                >
+                    Open Coordinate File
+                </button>
+                <input
+                    type="file"
+                    accept=".nii"
+                    onChange={handleNIfTIFileUpload}
+                    style={{ display: 'none' }}
+                    id="niftiInput"
+                />
+                <button
+                    className="border-solid border-2 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 hover:bg-sky-700 hover:text-white transition-colors duration-200"
+                    onClick={() => document.getElementById('niftiInput').click()}
+                >
+                    Open NIfTI File
+                </button>
+            </div>
             {isLoaded && (
-                <div className="space-y-4">
-                    <div className="flex">
-                        <canvas ref={mainCanvasRef} width={fixedMainViewSize} height={fixedMainViewSize} />
-                        <div className="flex flex-col ml-4">
-                            <canvas ref={subCanvas0Ref} width={fixedSubViewSize} height={fixedSubViewSize} />
-                            <canvas ref={subCanvas1Ref} width={fixedSubViewSize} height={fixedSubViewSize} className="mt-4" />
+                <div className="space-y-6">
+                    <div className="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
+                        <canvas ref={mainCanvasRef} width={fixedMainViewSize} height={fixedMainViewSize} className="border border-gray-300 rounded-lg shadow-sm" />
+                        <div className="flex flex-col space-y-6">
+                            <canvas ref={subCanvas0Ref} width={fixedSubViewSize} height={fixedSubViewSize} className="border border-gray-300 rounded-lg shadow-sm" />
+                            <canvas ref={subCanvas1Ref} width={fixedSubViewSize} height={fixedSubViewSize} className="border border-gray-300 rounded-lg shadow-sm" />
                         </div>
                     </div>
-                    <div className="controls">
-                        <div>
-                            <label>Main View Slice:</label>
-                            <input type="range" min="0" max={maxSlices - 1} value={sliceIndex}
-                                   onChange={(e) => setSliceIndex(parseInt(e.target.value))}
+                    <div className="controls bg-white p-6 rounded-lg shadow-sm space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-lg font-semibold text-gray-800">{`${direction} View Slice:`}</label>
+                            <input
+                                type="range"
+                                min="0"
+                                max={maxSlices - 1}
+                                value={sliceIndex}
+                                onChange={(e) => setSliceIndex(parseInt(e.target.value))}
+                                className="w-full"
                             />
                         </div>
-                        <div>
-                            <label>Coronal View Slice:</label>
-                            <input type="range" min="0" max={maxSubCanvas0Slices - 1} value={subCanvas0SliceIndex}
-                                   onChange={(e) => setSubCanvas0SliceIndex(parseInt(e.target.value))}
+                        <div className="space-y-2">
+                            <label className="text-lg font-semibold text-gray-800">{`${subCanvas0Direction} View Slice:`}</label>
+                            <input
+                                type="range"
+                                min="0"
+                                max={maxSubCanvas0Slices - 1}
+                                value={subCanvas0SliceIndex}
+                                onChange={(e) => setSubCanvas0SliceIndex(parseInt(e.target.value))}
+                                className="w-full"
                             />
                         </div>
-                        <div>
-                            <label>Sagittal View Slice:</label>
-                            <input type="range" min="0" max={maxSubCanvas1Slices - 1} value={subCanvas1SliceIndex}
-                                   onChange={(e) => setSubCanvas1SliceIndex(parseInt(e.target.value))}
+                        <div className="space-y-2">
+                            <label className="text-lg font-semibold text-gray-800">{`${subCanvas1Direction} View Slice:`}</label>
+                            <input
+                                type="range"
+                                min="0"
+                                max={maxSubCanvas1Slices - 1}
+                                value={subCanvas1SliceIndex}
+                                onChange={(e) => setSubCanvas1SliceIndex(parseInt(e.target.value))}
+                                className="w-full"
                             />
                         </div>
-                        <select
-                            value={direction}
-                            onChange={(e) => {
-                                const oldDirection = direction;
-                                const newDirection = e.target.value;
-                                setDirection(newDirection);
-                                const dirDim = getDirectionDimension(newDirection);
-                                const newMax = niiData.hdr.dime.dim[dirDim];
-                                setMaxSlices(newMax);
-                                setSliceIndex(Math.min(Math.floor(newMax / 2), newMax - 1));
+                        <div className="space-y-2">
+                            <label className="text-lg font-semibold text-gray-800">View Direction:</label>
+                            <select
+                                value={direction}
+                                onChange={(e) => {
+                                    const oldDirection = direction;
+                                    const newDirection = e.target.value;
+                                    setDirection(newDirection);
+                                    const dirDim = getDirectionDimension(newDirection);
+                                    const newMax = niiData.hdr.dime.dim[dirDim];
+                                    setMaxSlices(newMax);
+                                    setSliceIndex(Math.min(Math.floor(newMax / 2), newMax - 1));
 
-                                if (newDirection == subCanvas0Direction) {
-                                    setSubCanvas0Direction(oldDirection);
-                                    const newSubCanvas0Max = niiData.hdr.dime.dim[getDirectionDimension(oldDirection)];
-                                    setMaxSubCanvas0Slices(newSubCanvas0Max);
-                                    setSubCanvas0SliceIndex(Math.min(Math.floor(newSubCanvas0Max / 2), newSubCanvas0Max - 1));
-                                } else {
-                                    setSubCanvas1Direction(oldDirection);
-                                    const newSubCanvas1Max = niiData.hdr.dime.dim[getDirectionDimension(oldDirection)];
-                                    setMaxSubCanvas1Slices(newSubCanvas1Max);
-                                    setSubCanvas1SliceIndex(Math.min(Math.floor(newSubCanvas1Max / 2), newSubCanvas1Max - 1));
-                                }
-                            }}
-                        >
-                            <option value="Axial">Axial</option>
-                            <option value="Coronal">Coronal</option>
-                            <option value="Sagittal">Sagittal</option>
-                        </select>
+                                    if (newDirection == subCanvas0Direction) {
+                                        setSubCanvas0Direction(oldDirection);
+                                        const newSubCanvas0Max = niiData.hdr.dime.dim[getDirectionDimension(oldDirection)];
+                                        setMaxSubCanvas0Slices(newSubCanvas0Max);
+                                        setSubCanvas0SliceIndex(Math.min(Math.floor(newSubCanvas0Max / 2), newSubCanvas0Max - 1));
+                                    } else {
+                                        setSubCanvas1Direction(oldDirection);
+                                        const newSubCanvas1Max = niiData.hdr.dime.dim[getDirectionDimension(oldDirection)];
+                                        setMaxSubCanvas1Slices(newSubCanvas1Max);
+                                        setSubCanvas1SliceIndex(Math.min(Math.floor(newSubCanvas1Max / 2), newSubCanvas1Max - 1));
+                                    }
+                                }}
+                                className="w-full p-2 border border-gray-300 rounded-lg"
+                            >
+                                <option value="Axial">Axial</option>
+                                <option value="Coronal">Coronal</option>
+                                <option value="Sagittal">Sagittal</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             )}
