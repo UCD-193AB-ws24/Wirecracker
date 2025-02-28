@@ -1,6 +1,8 @@
 import { demoContactData } from "./demoData";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom"; // Assuming you're using React Router
+import Resection from "./ResectionPage";
+import Designation from "./DesignationPage";
 
 const PAGE_NAME = ["designation", "resection"]
 
@@ -34,33 +36,14 @@ const ContactDesignation = ({ electrodes = demoContactData }) => {
         localStorage.setItem("electrodesState", JSON.stringify(modifiedElectrodes));
     }, [modifiedElectrodes]);
 
-    const handleMark = (contactId) => {
+    // Function to update a contact's element
+    const updateContact = (contactId, change) => {
         setModifiedElectrodes(prevElectrodes => {
             return prevElectrodes.map(electrode => ({
                 ...electrode,
                 contacts: electrode.contacts.map(contact => {
                     if (contact.id === contactId) {
-                        return {
-                            ...contact,
-                            mark: (contact.mark + 1) % 3
-                        };
-                    }
-                    return contact;
-                }),
-            }));
-        });
-    };
-
-    const handleSurgeonMark = (contactId) => {
-        setModifiedElectrodes(prevElectrodes => {
-            return prevElectrodes.map(electrode => ({
-                ...electrode,
-                contacts: electrode.contacts.map(contact => {
-                    if (contact.id === contactId) {
-                        return {
-                            ...contact,
-                            surgeonMark: !(contact.surgeonMark)
-                        };
+                        return change(contact);
                     }
                     return contact;
                 }),
@@ -108,9 +91,9 @@ const ContactDesignation = ({ electrodes = demoContactData }) => {
 
             {/* Render the appropriate layout based on the URL parameter */}
             {layout === PAGE_NAME[0] ? (
-                <ContactList electrodes={modifiedElectrodes} onMark={handleMark} />
+                <Designation electrodes={modifiedElectrodes} onClick={updateContact} />
             ) : (
-                <ContactGrid electrodes={modifiedElectrodes} onMark={handleSurgeonMark} />
+                <Resection electrodes={modifiedElectrodes} onClick={updateContact} />
             )}
 
             <button
@@ -123,93 +106,6 @@ const ContactDesignation = ({ electrodes = demoContactData }) => {
     );
 };
 
-const ContactList = ({ electrodes, onMark }) => {
-    return (
-        <div className="flex-1">
-            <ul className="space-y-4">
-                {electrodes.map((electrode) => (
-                    <li key={electrode.label} className="p-4 border rounded-lg shadow flex items-center space-x-6">
-                        <p className="text-xl font-semibold min-w-[50px]">{electrode.label}</p>
-                        <ul className="flex space-x-4">
-                            {electrode.contacts.map((contact) => (
-                                <Contact
-                                    key={contact.id}
-                                    contact={contact}
-                                    onMark={onMark}
-                                />
-                            ))}
-                        </ul>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
-};
-
-const ContactGrid = ({ electrodes, onMark }) => {
-    return (
-        <div className="flex-1">
-            <ul className="space-y-4">
-                {electrodes.map((electrode) => (
-                    <li key={electrode.label} className="p-4 border rounded-lg shadow flex items-center space-x-6">
-                        <p className="text-xl font-semibold min-w-[50px]">{electrode.label}</p>
-                        <ul className="flex space-x-4">
-                            {electrode.contacts.map((contact) => (
-                                <ContactResection
-                                    key={contact.id}
-                                    contact={contact}
-                                    onMark={onMark}
-                                />
-                            ))}
-                        </ul>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
-};
-
-const Contact = ({ contact, onMark }) => {
-    return (
-        <li
-            className={`min-w-[100px] p-4 border rounded-lg shadow cursor-pointer opacity-100 ${getMarkColor(contact)}`}
-            onClick={() => onMark(contact.id)}
-        >
-            <p className="text-xl font-semibold">{contact.index}</p>
-            <p className="text-sm font-semibold text-gray-500">{contact.associatedLocation}</p>
-        </li>
-    );
-};
-
-const ContactResection = ({ contact, onMark }) => {
-    return (
-        <li
-            className={`min-w-[100px] p-4 border rounded-lg shadow cursor-pointer opacity-100 ${getMarkColor(contact)}`}
-            onClick={() => onMark(contact.id)}
-        >
-            <p className="text-xl font-semibold">{contact.index}</p>
-            <p className="text-sm font-semibold text-gray-500">{contact.associatedLocation}</p>
-        </li>
-    );
-};
-
-function getMarkColor(contact) {
-    let mark = "";
-    switch (contact.mark) {
-        case 0:
-            mark = "bg-white ";
-            break;
-        case 1:
-            mark = "bg-rose-300 ";
-            break;
-        case 2:
-            mark = "bg-amber-300 ";
-            break;
-    }
-
-    if (contact.surgeonMark) mark += "border-3";
-    return mark;
-}
 
 function exportContacts(electrodes) {
     for (let electrode of electrodes) {
