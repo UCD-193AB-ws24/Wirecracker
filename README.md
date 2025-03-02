@@ -88,7 +88,7 @@ Key Development Goalst:
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This section provides a guide for self-hosting. If you are developer, please visit [documentation for developers page](https://www.wirecracker.com/documentations/code)
+This section provides a guide for self-hosting. If you are developer, please visit [documentation for developers](https://www.wirecracker.com/documentations/code)
 
 ### Prerequisites
 
@@ -108,19 +108,31 @@ Followings are required to host your own Wirecracker
    ```sh
    cd Wirecracker
    ```
-3. Configure hosting environment variables in `config.js` and `.enc\v`
-   ```js
-   const IP_ADDR = 'ENTER YOUR IP';
+3. Configure hosting environment variables in `.env`
+   
+   `./.env`
+   ```filename="./.env"
+   VITE_SUPABASE_URL=
+   VITE_SUPABASE_ANON_KEY=
    ```
-4. Install NPM packages for backend and start it
+   `./backend/.env`
+   ```flename="backend/.env"
+   RESEND_API_KEY=
+   SUPABASE_URL=
+   SUPABASE_KEY=
+   GOOGLE_CLIENT_ID=
+   GOOGLE_CLIENT_SECRET=
+   SESSION_SECRET=
+   ```
+5. Install NPM packages for backend and start it
    ```sh
    (cd backend; npm install; npm start)&
    ```
-5. Install NPM packages for frontend and start it 
+6. Install NPM packages for frontend and start it 
    ```sh
    npm install; npm run dev
    ```
-6. Change git remote url to avoid accidental pushes to base project
+7. Change git remote url to avoid accidental pushes to base project
    ```sh
    git remote set-url origin github_username/repo_name
    git remote -v # confirm the changes
