@@ -31,6 +31,7 @@ const Localization = ({ initialData = {} }) => {
         });
     };
 
+<<<<<<< HEAD
     const handleSaveLocalization = async () => {
         try {
             const response = await fetch('http://localhost:5000/api/save-localization', {
@@ -55,6 +56,11 @@ const Localization = ({ initialData = {} }) => {
         catch (error) {
             console.error('Error:', error);
             alert('Failed to save localization. Please try again.');
+=======
+        tempElectrodes[label] = {'description': description};
+        for (let i = 1; i <= numContacts; i++) {
+            tempElectrodes[label][i] = { electrodeDescription: description, contactDescription: description, associatedLocation: '' };
+>>>>>>> d2ad846 (Localization page loads data from CSV. GM naming now inline with client requirements)
         }
     };
 
@@ -62,17 +68,27 @@ const Localization = ({ initialData = {} }) => {
         label,
         number
     }) => {
+        const contactData = electrodes[label][number];
+        const associatedLocation = contactData.associatedLocation;
+
+        let displayText = associatedLocation;
+
+        if (associatedLocation === 'GM') {
+            displayText = contactData.contactDescription;
+        } else if (associatedLocation === 'GM/WM') {
+            displayText = `${contactData.contactDescription}/WM`;
+        } else if (associatedLocation === 'GM/GM') {
+            const [desc1, desc2] = contactData.contactDescription.split('+');
+            displayText = `${desc1}/${desc2}`;
+        }
+
         return (
             <Popup
                 trigger={<button
                     className="flex flex-col items-center border-r"
                     key={number}>
                     <div className="w-20 h-5">{number}</div>
-                    {electrodes[label][number] === "GM" ? (
-                        <div className="w-20 h-15">{electrodes[label].description}</div>
-                    ) : (
-                        <div className="w-20 h-15">{electrodes[label][number]}</div>
-                    )}
+                    <div className="w-20 h-15">{displayText}</div>
                 </button>}
                 modal
                 nested>
@@ -83,7 +99,7 @@ const Localization = ({ initialData = {} }) => {
                             onChange={(event) => {
                                 let temp = electrodes;
 
-                                temp[label][number] = event.target.value;
+                                temp[label][number].associatedLocation = event.target.value;
                                 setElectrodes(temp);
                             }}>
                             <option></option>
@@ -124,7 +140,7 @@ const Localization = ({ initialData = {} }) => {
                     }}
                     key={label}>
                     <div className="w-20 h-10 bg-blue-400 text-white font-semibold align-middle font-semibold text-2xl">{label}</div>
-                    <div className="h-10 pl-2 align-middle font-semibold text-2xl">{electrodes[label].description}</div>
+                    <div className="h-10 pl-2 align-middle font-semibold text-2xl">{electrodes[label][1].electrodeDescription}</div>
                 </button>
                 {label === expandedElectrode &&
                     <>
