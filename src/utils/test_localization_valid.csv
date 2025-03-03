@@ -1,5 +1,5 @@
-### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR LOCALIZATION ###,,,,,,,,,
-### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###,,,,,,,,,
+### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR LOCALIZATION ###
+### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###
 Label,ContactNumber,ElectrodeDescription,ContactDescription,AssociatedLocation,Mark,SurgeonMark,x,y,z
 D',1,Left Entorhinal,Left Entorhinal,GM,1,TRUE,22,26,24
 D',2,Left Entorhinal,Left Entorhinal,GM,1,TRUE,32,36,34
