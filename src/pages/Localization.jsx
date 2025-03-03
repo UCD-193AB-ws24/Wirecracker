@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Popup from 'reactjs-popup';
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import 'reactjs-popup/dist/index.css';
+import { saveCSVFile, Identifiers } from '../utils/CSVParser.js';
 
 const Localization = ({ initialData = {} }) => {
     const [expandedElectrode, setExpandedElectrode] = useState('');
@@ -29,6 +30,10 @@ const Localization = ({ initialData = {} }) => {
 
         setElectrodes(tempElectrodes);
         console.log('New', electrodes);
+    };
+
+    const handleSaveLocalization = () => {
+        saveCSVFile(Identifiers.LOCALIZATION, electrodes);
     };
 
     const Contact = ({
@@ -142,7 +147,9 @@ const Localization = ({ initialData = {} }) => {
                 <div className="flex justify-between">
                     <h1 className="text-2xl font-bold mb-4">New Localization</h1>
                     <button
-                        className="w-40 bg-sky-700 text-white font-semibold rounded">
+                        className="w-40 bg-sky-700 text-white font-semibold rounded"
+                        onClick={handleSaveLocalization}
+                    >
                         Save Localization
                     </button>
                 </div>
