@@ -71,7 +71,7 @@ export function parseCSVFile( file ) {
  * Parses localization CSV data into a nested dictionary format.
  *
  * @param {Object[]} data - Parsed CSV data from PapaParse
- * @returns {Object} A nested dictionary with the format { Label: { ContactNumber: AssociatedLocation, ... }, ... }
+ * @returns {Object} A nested dictionary with the format { Label: { ContactNumber: {"electrodeDescription": "Left Entorhinal", "contactDescription": "Left Entorhinal", "associatedLocation": "GM"}, ... }, ... }
  */
 function parseLocalization(csvData) {
     const parsedData = {};
@@ -80,12 +80,18 @@ function parseLocalization(csvData) {
     rows.forEach(row => {
         const label = row.Label.trim();
         const contactNumber = row.ContactNumber.trim();
+        const electrodeDescription = row.ElectrodeDescription.trim();
+        const contactDescription = row.ContactDescription.trim();
         const associatedLocation = row.AssociatedLocation.trim();
         
         if (!parsedData[label]) {
             parsedData[label] = {};
         }
-        parsedData[label][contactNumber] = associatedLocation;
+        parsedData[label][contactNumber] = {
+            electrodeDescription,
+            contactDescription,
+            associatedLocation
+        };
     });
     
     return parsedData;

@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Popup from 'reactjs-popup';
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import 'reactjs-popup/dist/index.css';
 
-const Localization = () => {
+const Localization = ({ initialData = {} }) => {
     const [expandedElectrode, setExpandedElectrode] = useState('');
     const [submitFlag, setSubmitFlag] = useState(false);
-    const [electrodes, setElectrodes] = useState({});
+    const [electrodes, setElectrodes] = useState(initialData.data || {});
+
+    useEffect(() => {
+        if (initialData.data) {
+            setElectrodes(initialData.data);
+        }
+    }, [initialData]);
 
     const contactTypes = ['GM', 'GM/GM', 'GM/WM', 'WM', 'OOB'];
 

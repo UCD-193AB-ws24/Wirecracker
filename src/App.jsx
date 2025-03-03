@@ -67,7 +67,7 @@ const HomePage = () => {
         try {
             const { identifier, data } = await parseCSVFile(file);
             if (identifier === Identifiers.LOCALIZATION) {
-                addTab('csv-localization', { name: file.name, data });
+                addTab('csv-localization', { type: 'localization', data });
             } else {
                 addTab('csv-test_plan', { name: file.name, data });
             }
@@ -106,31 +106,7 @@ const HomePage = () => {
             case 'localization':
                 return <Localization />;
             case 'csv-localization':
-                return (
-                    <div className="p-4">
-                        <h2 className="text-2xl font-bold mb-4">{currentTab.data.name}</h2>
-                        <table className="w-full border-collapse border">
-                            <thead>
-                                <tr>
-                                    <th className="border p-2">Label</th>
-                                    <th className="border p-2">Contact Number</th>
-                                    <th className="border p-2">Associated Location</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {Object.entries(currentTab.data.data).map(([label, contacts]) => (
-                                    Object.entries(contacts).map(([contactNumber, associatedLocation], index) => (
-                                        <tr key={label + contactNumber + index}>
-                                            <td className="border p-2">{label}</td>
-                                            <td className="border p-2">{contactNumber}</td>
-                                            <td className="border p-2">{associatedLocation}</td>
-                                        </tr>
-                                    ))
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                );
+                return <Localization initialData={currentTab.data} />;
             case 'csv-test_plan':
                 return (
                     <div className="p-4">
