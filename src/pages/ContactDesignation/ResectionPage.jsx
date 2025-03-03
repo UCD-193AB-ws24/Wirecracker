@@ -67,6 +67,10 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
     useEffect(() => { maxSubCanvas0SlicesRef.current = maxSubCanvas0Slices; }, [maxSubCanvas0Slices]);
     useEffect(() => { maxSubCanvas1SlicesRef.current = maxSubCanvas1Slices; }, [maxSubCanvas1Slices]);
 
+    const clearImageDataCache = () => {
+        imageDataCache.current = {};
+    };
+
     // Throttled redraw functions using requestAnimationFrame
     const redrawCanvas = (canvasRef, dir, slice, viewSize, cacheKey) => {
         const canvas = canvasRef.current;
@@ -96,13 +100,13 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
 
     const redrawSubCanvas0 = () => {
         const dir = getDirectionDimension(subCanvas0Direction);
-        const cacheKey = `sub0-${dir}-${subCanvas0SliceIndex}-${fixedSubViewSize}`;
+        const cacheKey = `sub-${dir}-${subCanvas0SliceIndex}-${fixedSubViewSize}`;
         redrawCanvas(subCanvas0Ref, dir, subCanvas0SliceIndex, fixedSubViewSize, cacheKey);
     };
 
     const redrawSubCanvas1 = () => {
         const dir = getDirectionDimension(subCanvas1Direction);
-        const cacheKey = `sub1-${dir}-${subCanvas1SliceIndex}-${fixedSubViewSize}`;
+        const cacheKey = `sub-${dir}-${subCanvas1SliceIndex}-${fixedSubViewSize}`;
         redrawCanvas(subCanvas1Ref, dir, subCanvas1SliceIndex, fixedSubViewSize, cacheKey);
     };
 
@@ -231,6 +235,8 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
             setSubCanvas0SliceIndex(Math.floor(subCanvas0Slices / 2));
             setSubCanvas1SliceIndex(Math.floor(subCanvas1Slices / 2));
 
+            clearImageDataCache();
+
             onLoad(true);
         } catch (error) {
             console.error('Error loading NIfTI file:', error);
@@ -267,29 +273,44 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
     const populateImageData = (imageData, nii, dir, slice, imageSize) => {
         const [cols, rows] = getCanvasDimensions(nii, dir);
         const maxDim = imageSize || Math.max(cols, rows);
-        const scaleRow = rows / maxDim;
-        const scaleCol = cols / maxDim;
+        const scale = maxDim / Math.max(cols, rows);
         const isRGB = nii.isRGB;
         const data = imageData.data;
 
+        // Calculate the offsets to center the image
+        const offsetX = Math.floor((maxDim - cols * scale) / 2);
+        const offsetY = Math.floor((maxDim - rows * scale) / 2);
+
+        // Initialize the entire imageData with black pixels
+        for (let i = 0; i < data.length; i += 4) {
+            data[i] = 0;     // R
+            data[i + 1] = 0; // G
+            data[i + 2] = 0; // B
+            data[i + 3] = 255; // A (fully opaque)
+        }
+
         // Precompute row and column mappings
-        const rowMap = new Array(maxDim).fill().map((_, row) => Math.floor((maxDim - 1 - row) * scaleRow));
-        const colMap = new Array(maxDim).fill().map((_, col) => Math.floor(col * scaleCol));
+        const rowMap = new Array(maxDim).fill().map((_, row) => Math.floor((maxDim - 1 - row - offsetY) / scale));
+        const colMap = new Array(maxDim).fill().map((_, col) => Math.floor((col - offsetX) / scale));
 
         for (let y = 0; y < maxDim; y++) {
             const originalY = rowMap[y];
             for (let x = 0; x < maxDim; x++) {
                 const originalX = colMap[x];
                 let pixelValue = 0;
-                try {
-                    switch(dir) {
-                        case 1: pixelValue = nii.img[originalY][originalX][slice]; break;
-                        case 2: pixelValue = nii.img[originalY][slice][originalX]; break;
-                        case 3: pixelValue = nii.img[slice][originalY][originalX]; break;
+
+                // Only process pixels within the bounds of the original image
+                if (originalX >= 0 && originalX < cols && originalY >= 0 && originalY < rows) {
+                    try {
+                        switch(dir) {
+                            case 1: pixelValue = nii.img[originalY][originalX][slice]; break;
+                            case 2: pixelValue = nii.img[originalY][slice][originalX]; break;
+                            case 3: pixelValue = nii.img[slice][originalY][originalX]; break;
+                        }
+                    } catch(e) {
+                        console.warn(`Error accessing NIfTI data at [${originalX}, ${originalY}, ${slice}]`);
+                        pixelValue = 0;
                     }
-                } catch(e) {
-                    console.warn(`Error accessing NIfTI data at [${originalX}, ${originalY}, ${slice}]`);
-                    pixelValue = 0;
                 }
 
                 const offset = (y * maxDim + x) * 4;
