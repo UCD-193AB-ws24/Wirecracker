@@ -102,12 +102,21 @@ export function saveCSVFile(identifier, data) {
     let csvContent = `${identifier}\n${IDENTIFIER_LINE_2}\n`;
     
     if (identifier === Identifiers.LOCALIZATION) {
-        const headers = ["Label", "ContactNumber", "AssociatedLocation", "Mark", "SurgeonMark", "x", "y", "z"];
+        const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "x", "y", "z"];
         csvContent += headers.join(",") + "\n";
         
         Object.entries(data).forEach(([label, contacts]) => {
-            Object.entries(contacts).forEach(([contactNumber, associatedLocation]) => {
-                const row = [label, contactNumber, associatedLocation, "", "", "", "", ""];
+            Object.entries(contacts).forEach(([contactNumber, contactData]) => {
+                // Skip the 'description' key, as it's not a contact
+                if (contactNumber === 'description') return;
+
+                const {
+                    electrodeDescription,
+                    contactDescription,
+                    associatedLocation
+                } = contactData;
+
+                const row = [label, contactNumber, electrodeDescription, contactDescription, associatedLocation, "", "", "", "", ""];
                 csvContent += row.join(",") + "\n";
             });
         });
