@@ -88,10 +88,9 @@ function parseLocalization(csvData) {
         const associatedLocation = row.AssociatedLocation.trim();
         
         if (!parsedData[label]) {
-            parsedData[label] = {};
+            parsedData[label] = { 'description' : electrodeDescription };
         }
         parsedData[label][contactNumber] = {
-            electrodeDescription,
             contactDescription,
             associatedLocation
         };
@@ -114,12 +113,12 @@ export function saveCSVFile(identifier, data) {
         csvContent += headers.join(",") + "\n";
         
         Object.entries(data).forEach(([label, contacts]) => {
+            const electrodeDescription = contacts.description;
             Object.entries(contacts).forEach(([contactNumber, contactData]) => {
                 // Skip the 'description' key, as it's not a contact
                 if (contactNumber === 'description') return;
 
                 const {
-                    electrodeDescription,
                     contactDescription,
                     associatedLocation
                 } = contactData;
