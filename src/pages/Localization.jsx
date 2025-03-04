@@ -20,15 +20,42 @@ const Localization = ({ initialData = {} }) => {
         const label = formData.get('label');
         const description = formData.get('description');
         const numContacts = formData.get('contacts');
-        let tempElectrodes = electrodes;
+        
+        setElectrodes((prevElectrodes) => {
+            const tempElectrodes = { ...prevElectrodes };
+            tempElectrodes[label] = { description: description };
+            for (let i = 1; i <= numContacts; i++) {
+                tempElectrodes[label][i] = { contactDescription: description, associatedLocation: '' };
+            }
+            return tempElectrodes;
+        });
+    };
 
-        tempElectrodes[label] = {'description': description};
-        for (let i = 1; i <= numContacts; i++) {
-            tempElectrodes[label][i] = '';
+    const handleSaveLocalization = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/save-localization', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(electrodes), // Send localization data to the backend
+            });
+
+            console.log(JSON.stringify(electrodes));
+        
+            if (!response.ok) {
+              throw new Error('Failed to save localization');
+            }
+        
+            const result = response.json();
+            console.log('Save successful:', result);
+
+            saveCSVFile(Identifiers.LOCALIZATION, electrodes);
         }
-
-        setElectrodes(tempElectrodes);
-        console.log('New', electrodes);
+        catch (error) {
+            console.error('Error:', error);
+            alert('Failed to save localization. Please try again.');
+        }
     };
 
     const Contact = ({
