@@ -177,11 +177,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
                         ctx.fillStyle = "rgb(255 58 68)"; break;
                     case 2:
                         ctx.fillStyle = "rgb(237 255 68)"; break;
-                    default:
+                    case 3:
                         ctx.fillStyle = "rgb(139 139 139)"; break;
                 }
                 ctx.fill();
-                ctx.strokeStyle = targetContact.surgeonMark ? 'rgb(199 199 199)' : ctx.fillStyle;
+                ctx.strokeStyle = targetContact.surgeonMark ? 'black' : ctx.fillStyle;
                 ctx.stroke();
 
                 // Store the marker position
@@ -617,6 +617,9 @@ function getMarkColor(contact) {
         case 2:
             mark = "bg-amber-300 ";
             break;
+        case 3:
+            mark = "bg-stone-300 ";
+            break;
     }
 
     if (contact.surgeonMark) {
@@ -626,6 +629,19 @@ function getMarkColor(contact) {
         mark += "border border-gray-300";
     }
     return mark;
+}
+
+function getMarkName(contact) {
+    switch (contact.mark) {
+        case 0:
+            return "Not Involved";
+        case 1:
+            return "Seizure Onset Zone";
+        case 2:
+            return "Seizure Network";
+        case 3:
+            return "Out Of Brain";
+    }
 }
 
 export default Resection

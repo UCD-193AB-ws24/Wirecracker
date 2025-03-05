@@ -28,7 +28,7 @@ const Contact = ({ contact, onClick }) => {
             onClick={() => onClick(contact.id, (contact) => {
                 return {
                     ...contact,
-                    mark: (contact.mark + 1) % 3
+                    mark: (contact.mark + 1) % 4
                 };
             })}
         >
@@ -51,6 +51,9 @@ function getMarkColor(contact) {
             break;
         case 2:
             mark = "bg-amber-300 ";
+            break;
+        case 3:
+            mark = "bg-stone-300 ";
             break;
     }
 
