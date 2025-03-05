@@ -96,7 +96,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
         });
     };
 
-    // Function to transform CSV coordinates to NIfTI coordinates
+    // Function to transform RAS coordinates to NIfTI coordinates
     const transformCoordinates = (coord) => {
         if (!niiData) return coord; // Return original if NIfTI data is not loaded
 
@@ -104,9 +104,9 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
         const dims = hdr.dime.dim;
 
         // NIfTI dimensions (x, y, z)
-        const nx = dims[1];
-        const ny = dims[2];
-        const nz = dims[3];
+        const nx = dims[1] - 1;
+        const ny = dims[2] - 1;
+        const nz = dims[3] - 1;
 
         // Transform coordinates (center origin to corner origin)
         return {
@@ -115,7 +115,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
             z: coord.z + nz / 2,
             label: coord.Electrode,
             id: coord.Electrode + coord.Contact,
-            // Throw away other properties
         };
     };
 
@@ -138,19 +137,19 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
             let canvasX, canvasY;
             switch (dir) {
                 case 1:
-                    if (Math.abs(Math.round(x) - slice) < 2) {
+                    if (Math.round(x) == slice) {
                         canvasX = (y * scale) + offsetX;
                         canvasY = maxDim - (z * scale) - offsetY;
                     }
                     break;
                 case 2:
-                    if (Math.abs(Math.round(y) - slice) < 2) {
+                    if (Math.round(y) == slice) {
                         canvasX = (x * scale) + offsetX;
                         canvasY = maxDim - (z * scale) - offsetY;
                     }
                     break;
                 case 3:
-                    if (Math.abs(Math.round(z) - slice) < 2) {
+                    if (Math.round(z) == slice) {
                         canvasX = (x * scale) + offsetX;
                         canvasY = maxDim - (y * scale) - offsetY;
                     }
@@ -169,7 +168,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
                         }
                     }
                 }
-                console.log(transformedCoord.id, ": ", Math.round(x), ",", Math.round(y), ",", Math.round(z), ",", slice)
 
                 ctx.beginPath();
                 const markSize = viewSize / 100 - 1;
@@ -237,10 +235,12 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
         const clickX = event.clientX - rect.left;
         const clickY = event.clientY - rect.top;
 
+        console.log(clickX, ", ", clickY)
+
         // Check if the click is within any marker's bounds
         markers.forEach(marker => {
             const distance = Math.sqrt((clickX - marker.x) ** 2 + (clickY - marker.y) ** 2);
-            if (distance <= 10) { // 5 is the radius of the marker
+            if (distance <= 6) {
                 console.log('Marker clicked:', marker);
                 // You can trigger a callback or perform any action here
             }
@@ -401,13 +401,35 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
     const populateImageData = (imageData, nii, dir, slice, imageSize) => {
         const [cols, rows] = getCanvasDimensions(nii, dir);
         const maxDim = imageSize || Math.max(cols, rows);
-        const scale = maxDim / Math.max(cols, rows);
+
+        let scaleX, scaleY;
+
+        switch(dir) {
+            case 3:
+                scaleX = nii.hdr.dime.pixdim[1];
+                scaleY = nii.hdr.dime.pixdim[2];
+                break;
+            case 2:
+                scaleX = nii.hdr.dime.pixdim[1];
+                scaleY = nii.hdr.dime.pixdim[3];
+                break;
+            case 1:
+                scaleX = nii.hdr.dime.pixdim[2];
+                scaleY = nii.hdr.dime.pixdim[3];
+                break;
+        }
+
+        const effectiveCols = cols * scaleX;
+        const effectiveRows = rows * scaleY;
+
+        const scale = maxDim / Math.max(effectiveCols, effectiveRows);
+
         const isRGB = nii.isRGB;
         const data = imageData.data;
 
         // Calculate the offsets to center the image
-        const offsetX = Math.floor((maxDim - cols * scale) / 2);
-        const offsetY = Math.floor((maxDim - rows * scale) / 2);
+        const offsetX = Math.floor((maxDim - effectiveCols * scale) / 2);
+        const offsetY = Math.floor((maxDim - effectiveRows * scale) / 2);
 
         // Initialize the entire imageData with black pixels
         for (let i = 0; i < data.length; i += 4) {
@@ -418,8 +440,8 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
         }
 
         // Precompute row and column mappings)
-        const rowMap = new Array(maxDim).fill().map((_, row) => Math.floor((maxDim - 1 - row - offsetY) / scale));
-        const colMap = new Array(maxDim).fill().map((_, col) => Math.floor((col + offsetX) / scale));
+        const rowMap = new Array(maxDim).fill().map((_, row) => Math.floor((maxDim - 1 - row - offsetY) / scale / scaleY));
+        const colMap = new Array(maxDim).fill().map((_, col) => Math.floor((col + offsetX) / scale / scaleX));
 
         for (let y = 0; y < maxDim; y++) {
             const originalY = rowMap[y];
