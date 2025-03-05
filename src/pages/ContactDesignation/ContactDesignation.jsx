@@ -18,9 +18,9 @@ const ContactDesignation = ({ electrodes = demoContactData }) => {
                   ...electrode,
                   contacts: electrode.contacts.map((contact, index) => ({
                       ...contact,
-                      id: `${electrode.label}${index}`,
+                      id: `${electrode.label}${index + 1}`,
                       electrodeLabel: electrode.label,
-                      index: index,
+                      index: index + 1,
                       mark: contact.mark || 0,
                       surgeonMark: contact.surgeonMark || false,
                   })),

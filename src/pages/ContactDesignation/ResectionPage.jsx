@@ -1,12 +1,13 @@
 import { parseCSVFile, Identifiers } from '../../utils/CSVParser';
 import load_untouch_nii from '../../utils/Nifti_viewer/load_untouch_nifti.js'
+import nifti_anatomical_conversion from '../../utils/Nifti_viewer/nifti_anatomical_conversion.js'
 import React, { useState, useRef, useEffect, useCallback } from "react";
 
 const Resection = ({ electrodes, onClick }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     return (
         <div className="flex-1">
-            <NIFTIimage isLoaded={imageLoaded} onLoad={setImageLoaded} />
+            <NIFTIimage isLoaded={imageLoaded} onLoad={setImageLoaded} electrodes={electrodes} />
             {!imageLoaded ? (
                 <div className="flex-1 p-8 bg-gray-100 min-h-screen">
                     <ul className="space-y-6">
@@ -33,10 +34,12 @@ const Resection = ({ electrodes, onClick }) => {
     );
 };
 
-const NIFTIimage = ({ isLoaded, onLoad }) => {
+const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
     const fixedMainViewSize = 600;
     const fixedSubViewSize = 300;
     const [niiData, setNiiData] = useState(null);
+    const [coordinates, setCoordinates] = useState([]);
+    const [markers, setMarkers] = useState([]);
     const [sliceIndex, setSliceIndex] = useState(0);
     const [direction, setDirection] = useState('Axial');
     const [subCanvas0Direction, setSubCanvas0Direction] = useState('Coronal');
@@ -88,8 +91,111 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
                 imageDataCache.current[cacheKey] = imageData;
                 ctx.putImageData(imageData, 0, 0);
             }
+            drawMarkers(ctx, dir, slice, viewSize);
             canvas.rafId = null;
         });
+    };
+
+    // Function to transform CSV coordinates to NIfTI coordinates
+    const transformCoordinates = (coord) => {
+        if (!niiData) return coord; // Return original if NIfTI data is not loaded
+
+        const { hdr } = niiData;
+        const dims = hdr.dime.dim;
+
+        // NIfTI dimensions (x, y, z)
+        const nx = dims[1];
+        const ny = dims[2];
+        const nz = dims[3];
+
+        // Transform coordinates (center origin to corner origin)
+        return {
+            x: coord.x + nx / 2,
+            y: coord.y + ny / 2,
+            z: coord.z + nz / 2,
+            label: coord.Electrode,
+            id: coord.Electrode + coord.Contact,
+            // Throw away other properties
+        };
+    };
+
+    // Function to draw markers on the canvas
+    const drawMarkers = (ctx, dir, slice, viewSize) => {
+
+        if (!niiData || coordinates.length === 0) return;
+
+        const [cols, rows] = getCanvasDimensions(niiData, dir);
+        const maxDim = viewSize || Math.max(cols, rows);
+        const scale = maxDim / Math.max(cols, rows);
+        const offsetX = Math.floor((maxDim - cols * scale) / 2);
+        const offsetY = Math.floor((maxDim - rows * scale) / 2);
+
+        const newMarkers = [];
+
+        coordinates.forEach(coord => {
+            const transformedCoord = transformCoordinates(coord);
+            const { x, y, z } = transformedCoord;
+            let canvasX, canvasY;
+            switch (dir) {
+                case 1:
+                    if (Math.abs(Math.round(x) - slice) < 2) {
+                        canvasX = (y * scale) + offsetX;
+                        canvasY = maxDim - (z * scale) - offsetY;
+                    }
+                    break;
+                case 2:
+                    if (Math.abs(Math.round(y) - slice) < 2) {
+                        canvasX = (x * scale) + offsetX;
+                        canvasY = maxDim - (z * scale) - offsetY;
+                    }
+                    break;
+                case 3:
+                    if (Math.abs(Math.round(z) - slice) < 2) {
+                        canvasX = (x * scale) + offsetX;
+                        canvasY = maxDim - (y * scale) - offsetY;
+                    }
+                    break;
+            }
+
+
+            if (canvasX !== undefined && canvasY !== undefined) {
+
+                let targetContact;
+
+                for (let electrode of electrodes) {
+                    if (electrode.label === transformedCoord.label) {
+                        for (let contact of electrode.contacts) {
+                            if (contact.id === transformedCoord.id) targetContact = contact;
+                        }
+                    }
+                }
+                console.log(transformedCoord.id, ": ", Math.round(x), ",", Math.round(y), ",", Math.round(z), ",", slice)
+
+                ctx.beginPath();
+                const markSize = viewSize / 100 - 1;
+                ctx.arc(canvasX, canvasY, markSize, 0, 2 * Math.PI);
+
+                switch (targetContact.mark) {
+                    case 0:
+                        ctx.fillStyle = "rgb(249 249 249)"; break;
+                    case 1:
+                        ctx.fillStyle = "rgb(255 58 68)"; break;
+                    case 2:
+                        ctx.fillStyle = "rgb(237 255 68)"; break;
+                    default:
+                        ctx.fillStyle = "rgb(139 139 139)"; break;
+                }
+                ctx.fill();
+                ctx.strokeStyle = targetContact.surgeonMark ? 'rgb(199 199 199)' : ctx.fillStyle;
+                ctx.stroke();
+
+                // Store the marker position
+                newMarkers.push({ x: canvasX, y: canvasY, contact: targetContact });
+            }
+        });
+
+        // Update the markers state
+        setMarkers(newMarkers);
     };
 
     const redrawMainCanvas = () => {
@@ -111,9 +217,9 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
     };
 
     // Effects to redraw canvases when dependencies change
-    useEffect(redrawMainCanvas, [sliceIndex, direction, niiData]);
-    useEffect(redrawSubCanvas0, [subCanvas0SliceIndex, subCanvas0Direction, niiData]);
-    useEffect(redrawSubCanvas1, [subCanvas1SliceIndex, subCanvas1Direction, niiData]);
+    useEffect(redrawMainCanvas, [sliceIndex, direction, niiData, coordinates]);
+    useEffect(redrawSubCanvas0, [subCanvas0SliceIndex, subCanvas0Direction, niiData, coordinates]);
+    useEffect(redrawSubCanvas1, [subCanvas1SliceIndex, subCanvas1Direction, niiData, coordinates]);
 
     // Unified scroll handler using refs
     const handleScroll = (event, setter, currentSliceRef, maxRef) => {
@@ -123,18 +229,41 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
         setter(newSlice);
     };
 
+    const handleCanvasClick = (event, canvasRef) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const clickY = event.clientY - rect.top;
+
+        // Check if the click is within any marker's bounds
+        markers.forEach(marker => {
+            const distance = Math.sqrt((clickX - marker.x) ** 2 + (clickY - marker.y) ** 2);
+            if (distance <= 10) { // 5 is the radius of the marker
+                console.log('Marker clicked:', marker);
+                // You can trigger a callback or perform any action here
+            }
+        });
+    };
+
     // Stable event listeners using refs and proper dependencies
     useEffect(() => {
         if (!isLoaded) return;
 
         const mainCanvas = mainCanvasRef.current;
         const handleWheel = (e) => handleScroll(e, setSliceIndex, sliceIndexRef, maxSlicesRef);
+        const handleClick = (e) => handleCanvasClick(e, mainCanvasRef);
 
         if (mainCanvas) {
             mainCanvas.addEventListener('wheel', handleWheel);
-            return () => mainCanvas.removeEventListener('wheel', handleWheel);
+            mainCanvas.addEventListener('click', handleClick);
+            return () => {
+                mainCanvas.removeEventListener('wheel', handleWheel);
+                mainCanvas.removeEventListener('click', handleClick);
+            };
         }
-    }, [isLoaded]); // Re-attach when canvas becomes available
+    }, [isLoaded, markers]); // Re-attach when canvas becomes available
 
     const handleSubCanvasClick = useCallback((clickedSubIndex) => {
         // Get current directions before any updates
@@ -217,7 +346,8 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
 
         try {
             const arrayBuffer = await file.arrayBuffer();
-            const nii = load_untouch_nii(file.name, arrayBuffer);
+            let nii = load_untouch_nii(file.name, arrayBuffer);
+            nii = nifti_anatomical_conversion(nii);
 
             const isRGB = (nii.hdr.dime.datatype === 128 && nii.hdr.dime.bitpix === 24) ||
                     (nii.hdr.dime.datatype === 511 && nii.hdr.dime.bitpix === 96);
@@ -247,17 +377,15 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
         const file = event.target.files[0];
         if (!file) return;
 
-        setError("");
-
         try {
             const { identifier, data } = await parseCSVFile(file);
-            if (identifier === Identifiers.LOCALIZATION) {
-                addTab('csv-localization', { name: file.name, data });
+            if (identifier === Identifiers.COORDINATES) {
+                setCoordinates(data); // Store CSV coordinates in state
             } else {
-                addTab('csv-test_plan', { name: file.name, data });
+                // Handle other CSV types if needed
             }
         } catch (err) {
-            setError(err.message);
+            console.error('Error parsing CSV file:', err);
         }
     };
 
@@ -289,9 +417,9 @@ const NIFTIimage = ({ isLoaded, onLoad }) => {
             data[i + 3] = 255; // A (fully opaque)
         }
 
-        // Precompute row and column mappings
+        // Precompute row and column mappings)
         const rowMap = new Array(maxDim).fill().map((_, row) => Math.floor((maxDim - 1 - row - offsetY) / scale));
-        const colMap = new Array(maxDim).fill().map((_, col) => Math.floor((col - offsetX) / scale));
+        const colMap = new Array(maxDim).fill().map((_, col) => Math.floor((col + offsetX) / scale));
 
         for (let y = 0; y < maxDim; y++) {
             const originalY = rowMap[y];
