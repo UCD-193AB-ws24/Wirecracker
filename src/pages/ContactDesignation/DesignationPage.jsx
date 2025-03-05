@@ -5,17 +5,24 @@ const Designation = ({ electrodes, onClick }) => {
     const [filteredElectrodes, setFilteredElectrodes] = useState(electrodes);
 
     useEffect(() => {
+        if (filterChar === '') {
+            setFilteredElectrodes(electrodes);
+        } else {
+            const filtered = electrodes.filter(electrode =>
+                electrode.label.toLowerCase().startsWith(filterChar)
+            );
+            setFilteredElectrodes(filtered);
+        }
+    }, [electrodes, filterChar]);
+
+    // Handle keydown events
+    useEffect(() => {
         const handleKeyDown = (event) => {
-            if (event.key === 'Escape' || event.key === 'Backspace' || event.keyCode === 8) {
+            if (event.key === 'Escape' || event.key === 'Backspace' || event.keyCode === 8 || event.key.toLowerCase() === filterChar) {
                 setFilterChar('');
-                setFilteredElectrodes(electrodes);
-            } else if (event.key.length === 1 && /[a-zA-Z0-9]/.test(event.key)) {
+            } else if (event.key.length === 1 && /[a-zA-Z]/.test(event.key)) {
                 const char = event.key.toLowerCase();
                 setFilterChar(char);
-                const filtered = electrodes.filter(electrode =>
-                    electrode.label.toLowerCase().startsWith(char)
-                );
-                setFilteredElectrodes(filtered);
             }
         };
 
@@ -23,7 +30,7 @@ const Designation = ({ electrodes, onClick }) => {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [electrodes]);
+    }, [filterChar]);
 
     return (
         <div className="flex-1 p-8 bg-gray-100 min-h-screen">
