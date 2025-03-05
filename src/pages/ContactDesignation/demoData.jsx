@@ -210,6 +210,7 @@ let demoContactData = [
             new contact("Loc0", 0, true),
             new contact("Loc1", 2, false),
             new contact("Loc2", 1, true),
+            new contact("Loc3", 0, false),
         ]
     },
     {
@@ -235,7 +236,7 @@ let demoContactData = [
         ]
     },
     {
-        label: "PT'",
+        label: "PI'",
         contacts: [
             new contact("Loc0", 1, false),
             new contact("Loc1", 0, true),
