@@ -1,12 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Popup from 'reactjs-popup';
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import 'reactjs-popup/dist/index.css';
+import { saveCSVFile, Identifiers } from '../utils/CSVParser.js';
 
-const Localization = () => {
+const Localization = ({ initialData = {} }) => {
     const [expandedElectrode, setExpandedElectrode] = useState('');
     const [submitFlag, setSubmitFlag] = useState(false);
-    const [electrodes, setElectrodes] = useState({});
+    const [electrodes, setElectrodes] = useState(initialData.data || {});
+
+    useEffect(() => {
+        if (initialData.data) {
+            setElectrodes(initialData.data);
+        }
+    }, [initialData]);
 
     const contactTypes = ['GM', 'GM/GM', 'GM/WM', 'WM', 'OOB'];
 
@@ -14,32 +21,69 @@ const Localization = () => {
         const label = formData.get('label');
         const description = formData.get('description');
         const numContacts = formData.get('contacts');
-        let tempElectrodes = electrodes;
+        
+        setElectrodes((prevElectrodes) => {
+            const tempElectrodes = { ...prevElectrodes };
+            tempElectrodes[label] = { description: description };
+            for (let i = 1; i <= numContacts; i++) {
+                tempElectrodes[label][i] = { contactDescription: description, associatedLocation: '' };
+            }
+            return tempElectrodes;
+        });
+    };
 
-        tempElectrodes[label] = {'description': description};
-        for (let i = 1; i <= numContacts; i++) {
-            tempElectrodes[label][i] = '';
+    const handleSaveLocalization = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/save-localization', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(electrodes), // Send localization data to the backend
+            });
+
+            console.log(JSON.stringify(electrodes));
+        
+            if (!response.ok) {
+              throw new Error('Failed to save localization');
+            }
+        
+            const result = response.json();
+            console.log('Save successful:', result);
+
+            saveCSVFile(Identifiers.LOCALIZATION, electrodes);
         }
-
-        setElectrodes(tempElectrodes);
-        console.log('New', electrodes);
+        catch (error) {
+            console.error('Error:', error);
+            alert('Failed to save localization. Please try again.');
+        }
     };
 
     const Contact = ({
         label,
         number
     }) => {
+        const contactData = electrodes[label][number];
+        const associatedLocation = contactData.associatedLocation;
+
+        let displayText = associatedLocation;
+
+        if (associatedLocation === 'GM') {
+            displayText = contactData.contactDescription;
+        } else if (associatedLocation === 'GM/WM') {
+            displayText = `${contactData.contactDescription}/WM`;
+        } else if (associatedLocation === 'GM/GM') {
+            const [desc1, desc2] = contactData.contactDescription.split('+');
+            displayText = `${desc1}/${desc2}`;
+        }
+
         return (
             <Popup
                 trigger={<button
                     className="flex flex-col items-center border-r"
                     key={number}>
                     <div className="w-20 h-5">{number}</div>
-                    {electrodes[label][number] === "GM" ? (
-                        <div className="w-20 h-15">{electrodes[label].description}</div>
-                    ) : (
-                        <div className="w-20 h-15">{electrodes[label][number]}</div>
-                    )}
+                    <div className="w-20 h-15">{displayText}</div>
                 </button>}
                 modal
                 nested>
@@ -50,7 +94,7 @@ const Localization = () => {
                             onChange={(event) => {
                                 let temp = electrodes;
 
-                                temp[label][number] = event.target.value;
+                                temp[label][number].associatedLocation = event.target.value;
                                 setElectrodes(temp);
                             }}>
                             <option></option>
@@ -126,7 +170,9 @@ const Localization = () => {
                 <div className="flex justify-between">
                     <h1 className="text-2xl font-bold mb-4">New Localization</h1>
                     <button
-                        className="w-40 bg-sky-700 text-white font-semibold rounded">
+                        className="w-40 bg-sky-700 text-white font-semibold rounded"
+                        onClick={handleSaveLocalization}
+                    >
                         Save Localization
                     </button>
                 </div>

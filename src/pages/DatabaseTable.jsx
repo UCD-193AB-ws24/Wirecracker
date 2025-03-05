@@ -25,9 +25,9 @@ const DatabaseTable = () => {
 
     const getTableURLFromKey = (key) => {
         if (key == "cort_id")
-            return "/database/cortical_subcortical";
+            return "/database/cort";
         if (key == "gm_id")
-            return "/database/gm_area";
+            return "/database/gm";
 
         return `/database/${key.replace("_id", "")}`;
     };

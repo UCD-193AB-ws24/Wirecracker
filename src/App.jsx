@@ -65,8 +65,12 @@ const HomePage = () => {
         setError("");
 
         try {
-            const parsedData = await parseCSVFile(file, Identifiers.LOCALIZATION);
-            addTab('csv', { name: file.name, data: parsedData });
+            const { identifier, data } = await parseCSVFile(file);
+            if (identifier === Identifiers.LOCALIZATION) {
+                addTab('csv-localization', { type: 'localization', data });
+            } else {
+                addTab('csv-test_plan', { name: file.name, data });
+            }
         } catch (err) {
             setError(err.message);
         }
@@ -86,6 +90,7 @@ const HomePage = () => {
                                     token={token} 
                                     onNewLocalization={() => addTab('localization')}
                                     onFileUpload={handleFileUpload}
+                                    error={error}
                                 />
                                 <Right />
                             </>
@@ -93,13 +98,16 @@ const HomePage = () => {
                             <Center 
                                 onNewLocalization={() => addTab('localization')}
                                 onFileUpload={handleFileUpload}
+                                error={error}
                             />
                         )}
                     </div>
                 );
             case 'localization':
                 return <Localization />;
-            case 'csv':
+            case 'csv-localization':
+                return <Localization initialData={currentTab.data} />;
+            case 'csv-test_plan':
                 return (
                     <div className="p-4">
                         <h2 className="text-2xl font-bold mb-4">{currentTab.data.name}</h2>
@@ -149,14 +157,13 @@ const HomePage = () => {
             </div>
 
             <div className="flex-1">
-                {error && <p className="text-red-500 p-4">{error}</p>}
                 {renderTabContent()}
             </div>
         </div>
     );
 };
 
-const Center = ({ token, onNewLocalization, onFileUpload }) => {
+const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     return (
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
             {/* Add Link to database search */}
@@ -190,11 +197,13 @@ const Center = ({ token, onNewLocalization, onFileUpload }) => {
                 id="fileInput"
             />
             <button 
-                className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5"
+                className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5 transition-colors duration-200 
+                hover:bg-sky-700 hover:text-white"
                 onClick={() => document.getElementById('fileInput').click()}
             >
                 Open File
             </button>
+            {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
     );
 };
