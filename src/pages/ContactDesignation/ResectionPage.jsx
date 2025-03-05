@@ -8,28 +8,25 @@ const Resection = ({ electrodes, onClick }) => {
     return (
         <div className="flex-1">
             <NIFTIimage isLoaded={imageLoaded} onLoad={setImageLoaded} electrodes={electrodes} onContactClick={onClick} />
-            {!imageLoaded ? (
-                <div className="flex-1 p-8 bg-gray-100 min-h-screen">
-                    <ul className="space-y-6">
-                        {electrodes.map((electrode) => (
-                            <li key={electrode.label} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                                <p className="text-2xl font-bold text-gray-800 mb-4">{electrode.label}</p>
-                                <ul className="flex flex-wrap gap-4">
-                                    {electrode.contacts.map((contact) => (
-                                        <Contact
-                                            key={contact.id}
-                                            contact={contact}
-                                            onClick={onClick}
-                                        />
-                                    ))}
-                                </ul>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            ) : (
-                <div></div>
-            )}
+
+            <div className="flex-1 p-8 bg-gray-100 min-h-screen">
+                <ul className="space-y-6">
+                    {electrodes.map((electrode) => (
+                        <li key={electrode.label} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <p className="text-2xl font-bold text-gray-800 mb-4">{electrode.label}</p>
+                            <ul className="flex flex-wrap gap-4">
+                                {electrode.contacts.map((contact) => (
+                                    <Contact
+                                        key={contact.id}
+                                        contact={contact}
+                                        onClick={onClick}
+                                    />
+                                ))}
+                            </ul>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </div>
     );
 };
@@ -239,6 +236,12 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
             const distance = Math.sqrt((clickX - marker.x) ** 2 + (clickY - marker.y) ** 2);
             if (distance <= 6) {
                 console.log('Marker clicked:', marker);
+                onContactClick(marker.contact.id, (contact) => {
+                    return {
+                        ...contact,
+                        surgeonMark: !(contact.surgeonMark)
+                    };
+                })
             }
         });
     };
