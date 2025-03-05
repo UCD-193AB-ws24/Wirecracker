@@ -1,8 +1,39 @@
+import React, { useState, useEffect } from 'react';
+
 const Designation = ({ electrodes, onClick }) => {
+    const [filterChar, setFilterChar] = useState('');
+    const [filteredElectrodes, setFilteredElectrodes] = useState(electrodes);
+
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape' || event.key === 'Backspace' || event.keyCode === 8) {
+                setFilterChar('');
+                setFilteredElectrodes(electrodes);
+            } else if (event.key.length === 1 && /[a-zA-Z0-9]/.test(event.key)) {
+                const char = event.key.toLowerCase();
+                setFilterChar(char);
+                const filtered = electrodes.filter(electrode =>
+                    electrode.label.toLowerCase().startsWith(char)
+                );
+                setFilteredElectrodes(filtered);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [electrodes]);
+
     return (
         <div className="flex-1 p-8 bg-gray-100 min-h-screen">
+            <div className="mb-6">
+                <p className="text-lg text-gray-700">
+                    Filtering electrodes by: {filterChar || 'None'} (Press a key to filter, Esc or Backspace to reset)
+                </p>
+            </div>
             <ul className="space-y-6">
-                {electrodes.map((electrode) => (
+                {filteredElectrodes.map((electrode) => (
                     <li key={electrode.label} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
                         <p className="text-2xl font-bold text-gray-800 mb-4">{electrode.label}</p>
                         <ul className="flex flex-wrap gap-4">
