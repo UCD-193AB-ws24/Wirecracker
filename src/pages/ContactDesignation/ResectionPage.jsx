@@ -46,6 +46,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
     const [subCanvas1SliceIndex, setSubCanvas1SliceIndex] = useState(0);
     const [maxSubCanvas0Slices, setMaxSubCanvas0Slices] = useState(0);
     const [maxSubCanvas1Slices, setMaxSubCanvas1Slices] = useState(0);
+    const [hoveredMarker, setHoveredMarker] = useState(null);
     const mainCanvasRef = useRef(null);
     const subCanvas0Ref = useRef(null);
     const subCanvas1Ref = useRef(null);
@@ -216,6 +217,28 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
     useEffect(redrawSubCanvas0, [subCanvas0SliceIndex, subCanvas0Direction, niiData, coordinates]);
     useEffect(redrawSubCanvas1, [subCanvas1SliceIndex, subCanvas1Direction, niiData, coordinates]);
 
+    // Handle mouse move to detect hover over markers
+    const handleMouseMove = (event, canvasRef) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const mouseX = event.offsetX;
+        const mouseY = event.offsetY - 12;
+
+        // Check if the mouse is over any marker
+        const hovered = markers.find(marker => {
+            const distance = Math.sqrt((mouseX - marker.x) ** 2 + (mouseY - marker.y) ** 2);
+            return distance <= 6;
+        });
+
+        setHoveredMarker(hovered ? hovered.contact : null);
+    };
+
+    // Handle mouse leave to clear hovered marker
+    const handleMouseLeave = () => {
+        setHoveredMarker(null);
+    };
+
     // Unified scroll handler using refs
     const handleScroll = (event, setter, currentSliceRef, maxRef) => {
         event.preventDefault();
@@ -235,13 +258,18 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
         markers.forEach(marker => {
             const distance = Math.sqrt((clickX - marker.x) ** 2 + (clickY - marker.y) ** 2);
             if (distance <= 6) {
-                console.log('Marker clicked:', marker);
                 onContactClick(marker.contact.id, (contact) => {
                     return {
                         ...contact,
                         surgeonMark: !(contact.surgeonMark)
                     };
                 })
+                setHoveredMarker(
+                    {
+                        ...marker.contact,
+                        surgeonMark: !(marker.contact.surgeonMark)
+                    }
+                );
             }
         });
     };
@@ -253,13 +281,19 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
         const mainCanvas = mainCanvasRef.current;
         const handleWheel = (e) => handleScroll(e, setSliceIndex, sliceIndexRef, maxSlicesRef);
         const handleClick = (e) => handleCanvasClick(e, mainCanvasRef);
+        const handleMove = (e) => handleMouseMove(e, mainCanvasRef);
+        const handleLeave = () => handleMouseLeave();
 
         if (mainCanvas) {
             mainCanvas.addEventListener('wheel', handleWheel);
             mainCanvas.addEventListener('click', handleClick);
+            mainCanvas.addEventListener('mousemove', handleMove);
+            mainCanvas.addEventListener('mouseleave', handleLeave);
             return () => {
                 mainCanvas.removeEventListener('wheel', handleWheel);
                 mainCanvas.removeEventListener('click', handleClick);
+                mainCanvas.removeEventListener('mousemove', handleMove);
+                mainCanvas.removeEventListener('mouseleave', handleLeave);
             };
         }
     }, [isLoaded, markers]); // Re-attach when canvas becomes available
@@ -512,6 +546,33 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
                             <canvas ref={subCanvas0Ref} width={fixedSubViewSize} height={fixedSubViewSize} className="border border-gray-300 rounded-lg shadow-sm" />
                             <canvas ref={subCanvas1Ref} width={fixedSubViewSize} height={fixedSubViewSize} className="border border-gray-300 rounded-lg shadow-sm" />
                         </div>
+                        {hoveredMarker == null ? (
+                                <div></div>
+                            ) : (
+                                <div className="bg-white p-6 rounded-lg shadow-md space-y-4 w-64">
+                                    <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Contact Details</h2>
+                                    <div className="space-y-2">
+                                        <div>
+                                            <p className="text-sm text-gray-600">ID</p>
+                                            <p className="text-lg font-medium text-gray-900">{hoveredMarker.id}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Location</p>
+                                            <p className="text-lg font-medium text-gray-900">{hoveredMarker.associatedLocation}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Mark</p>
+                                            <p className="text-lg font-medium text-gray-900">{getMarkName(hoveredMarker)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Surgeon Marked</p>
+                                            <p className={"text-lg font-medium text-gray-900"}>
+                                                {hoveredMarker.surgeonMark ? 'Yes' : 'No'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                     </div>
                     <div className="controls bg-white p-6 rounded-lg shadow-sm space-y-4">
                         <div className="space-y-2">
