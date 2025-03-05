@@ -7,7 +7,7 @@ const Resection = ({ electrodes, onClick }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     return (
         <div className="flex-1">
-            <NIFTIimage isLoaded={imageLoaded} onLoad={setImageLoaded} electrodes={electrodes} />
+            <NIFTIimage isLoaded={imageLoaded} onLoad={setImageLoaded} electrodes={electrodes} onContactClick={onClick} />
             {!imageLoaded ? (
                 <div className="flex-1 p-8 bg-gray-100 min-h-screen">
                     <ul className="space-y-6">
@@ -34,7 +34,7 @@ const Resection = ({ electrodes, onClick }) => {
     );
 };
 
-const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
+const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
     const fixedMainViewSize = 600;
     const fixedSubViewSize = 300;
     const [niiData, setNiiData] = useState(null);
@@ -215,7 +215,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
     };
 
     // Effects to redraw canvases when dependencies change
-    useEffect(redrawMainCanvas, [sliceIndex, direction, niiData, coordinates]);
+    useEffect(redrawMainCanvas, [sliceIndex, direction, niiData, coordinates, markers]);
     useEffect(redrawSubCanvas0, [subCanvas0SliceIndex, subCanvas0Direction, niiData, coordinates]);
     useEffect(redrawSubCanvas1, [subCanvas1SliceIndex, subCanvas1Direction, niiData, coordinates]);
 
@@ -231,18 +231,14 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes }) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const rect = canvas.getBoundingClientRect();
-        const clickX = event.clientX - rect.left;
-        const clickY = event.clientY - rect.top;
-
-        console.log(clickX, ", ", clickY)
+        const clickX = event.offsetX;
+        const clickY = event.offsetY - 12;
 
         // Check if the click is within any marker's bounds
         markers.forEach(marker => {
             const distance = Math.sqrt((clickX - marker.x) ** 2 + (clickY - marker.y) ** 2);
             if (distance <= 6) {
                 console.log('Marker clicked:', marker);
-                // You can trigger a callback or perform any action here
             }
         });
     };
