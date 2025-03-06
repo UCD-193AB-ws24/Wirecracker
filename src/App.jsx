@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
@@ -35,19 +35,40 @@ const Tab = ({ title, isActive, onClick, onClose }) => {
 
 const HomePage = () => {
     const token = localStorage.getItem('token') || null;
-    const [tabs, setTabs] = useState([{ id: 'home', title: 'Home', content: 'home' }]);
-    const [activeTab, setActiveTab] = useState('home');
+    const [tabs, setTabs] = useState(() => {
+        const savedTabs = localStorage.getItem('tabs');
+        return savedTabs ? JSON.parse(savedTabs) : [{ id: 'home', title: 'Home', content: 'home' }];
+    });
+    const [activeTab, setActiveTab] = useState(() => {
+        return localStorage.getItem('activeTab') || 'home';
+    });
     const [error, setError] = useState("");
     
+    useEffect(() => {
+        localStorage.setItem('tabs', JSON.stringify(tabs));
+        localStorage.setItem('activeTab', activeTab);
+    }, [tabs, activeTab]);
+
     const addTab = (type, data = null) => {
         const newTab = {
             id: Date.now().toString(),
             title: type === 'localization' ? 'New Localization' : data?.name || 'New Tab',
             content: type,
-            data: data
+            data: data,
+            state: {}
         };
         setTabs([...tabs, newTab]);
         setActiveTab(newTab.id);
+    };
+
+    const updateTabState = (tabId, newState) => {
+        setTabs(prevTabs => 
+            prevTabs.map(tab => 
+                tab.id === tabId 
+                    ? { ...tab, state: newState }
+                    : tab
+            )
+        );
     };
 
     const closeTab = (tabId) => {
@@ -104,9 +125,19 @@ const HomePage = () => {
                     </div>
                 );
             case 'localization':
-                return <Localization />;
+                return <Localization 
+                    key={currentTab.id}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
             case 'csv-localization':
-                return <Localization initialData={currentTab.data} />;
+                return <Localization 
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
             case 'csv-test_plan':
                 return (
                     <div className="p-4">
@@ -166,7 +197,6 @@ const HomePage = () => {
 const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     return (
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
-            {/* Add Link to database search */}
             {token && 
                 <>
                     <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3">
@@ -182,11 +212,17 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                 closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
                 openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
                 options="Localization Stimulation"
-                optionRefs="/localization /stimulation"
                 optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
                 onOptionClick={(option) => {
-                    if (option === "Localization") onNewLocalization();
+                    switch(option) {
+                        case "Localization":
+                            onNewLocalization();
+                            break;
+                        case "Stimulation":
+                            // Add stimulation handling here when needed
+                            break;
+                    }
                 }}
             />
             <input
@@ -326,8 +362,6 @@ const App = () => {
                 <Route path="/debug" element={<Debug />} />
                 <Route path="/database/:table" element={<DatabaseTable />} />
                 <Route path="/auth-success" element={<GoogleAuthSuccess />} />
-                <Route path="/localization" element={<Localization />} />
-                <Route path="/stimulation" element={<HomePage />} />
             </Routes>
         </Router>
     );
