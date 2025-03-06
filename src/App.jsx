@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
@@ -6,34 +6,201 @@ import Dropdown from './utils/Dropdown';
 import PlanTypePage from './pages/StimulationPlanning/PlanTypeSelection'
 import ContactSelection from './pages/StimulationPlanning/ContactSelection'
 import FunctionalTestSelection from './pages/StimulationPlanning/FunctionalTestSelection'
+import Debug from './pages/Debug';
+import DatabaseTable from "./pages/DatabaseTable";
+import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
+import { parseCSVFile, Identifiers } from './utils/CSVParser';
+import Localization from './pages/Localization';
 
-const HomePage = () => {
-    const token = localStorage.getItem('token') || null;
-    
+const Tab = ({ title, isActive, onClick, onClose }) => {
     return (
-        <div className="h-screen flex justify-around items-baseline">
-            {token ? (
-                <>
-                    <Left />
-                    <Center token={token} />
-                    <Right />
-                </>
-            ) : (
-                <>
-                    <Center />
-                </>
+        <div 
+            className={`flex items-center px-4 py-2 border-b-2 cursor-pointer ${
+                isActive ? 'border-sky-700 text-sky-700' : 'border-transparent'
+            }`}
+            onClick={onClick}
+        >
+            <span>{title}</span>
+            {title !== 'Home' && (
+                <button 
+                    className="ml-2 text-gray-500 hover:text-gray-700"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                    }}
+                >
+                    ×
+                </button>
             )}
         </div>
     );
 };
 
-const Center = (props) => {
-    const token = localStorage.getItem('token');
+const HomePage = () => {
+    const token = localStorage.getItem('token') || null;
+    const [tabs, setTabs] = useState(() => {
+        const savedTabs = localStorage.getItem('tabs');
+        return savedTabs ? JSON.parse(savedTabs) : [{ id: 'home', title: 'Home', content: 'home' }];
+    });
+    const [activeTab, setActiveTab] = useState(() => {
+        return localStorage.getItem('activeTab') || 'home';
+    });
+    const [error, setError] = useState("");
+    
+    useEffect(() => {
+        localStorage.setItem('tabs', JSON.stringify(tabs));
+        localStorage.setItem('activeTab', activeTab);
+    }, [tabs, activeTab]);
+
+    const addTab = (type, data = null) => {
+        const newTab = {
+            id: Date.now().toString(),
+            title: type === 'localization' ? 'New Localization' : data?.name || 'New Tab',
+            content: type,
+            data: data,
+            state: {}
+        };
+        setTabs([...tabs, newTab]);
+        setActiveTab(newTab.id);
+    };
+
+    const updateTabState = (tabId, newState) => {
+        setTabs(prevTabs => 
+            prevTabs.map(tab => 
+                tab.id === tabId 
+                    ? { ...tab, state: newState }
+                    : tab
+            )
+        );
+    };
+
+    const closeTab = (tabId) => {
+        const newTabs = tabs.filter(tab => tab.id !== tabId);
+        setTabs(newTabs);
+        if (activeTab === tabId) {
+            setActiveTab(newTabs[newTabs.length - 1].id);
+        }
+    };
+
+    const handleFileUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setError("");
+
+        try {
+            const { identifier, data } = await parseCSVFile(file);
+            if (identifier === Identifiers.LOCALIZATION) {
+                addTab('csv-localization', { type: 'localization', data });
+            } else {
+                addTab('csv-test_plan', { name: file.name, data });
+            }
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    const renderTabContent = () => {
+        const currentTab = tabs.find(tab => tab.id === activeTab);
+        
+        switch (currentTab.content) {
+            case 'home':
+                return (
+                    <div className="h-screen flex justify-around items-baseline">
+                        {token ? (
+                            <>
+                                <Left />
+                                <Center 
+                                    token={token} 
+                                    onNewLocalization={() => addTab('localization')}
+                                    onFileUpload={handleFileUpload}
+                                    error={error}
+                                />
+                                <Right />
+                            </>
+                        ) : (
+                            <Center 
+                                onNewLocalization={() => addTab('localization')}
+                                onFileUpload={handleFileUpload}
+                                error={error}
+                            />
+                        )}
+                    </div>
+                );
+            case 'localization':
+                return <Localization 
+                    key={currentTab.id}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-localization':
+                return <Localization 
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-test_plan':
+                return (
+                    <div className="p-4">
+                        <h2 className="text-2xl font-bold mb-4">{currentTab.data.name}</h2>
+                        <table className="w-full border-collapse border">
+                            <thead>
+                                <tr>
+                                    {Object.keys(currentTab.data.data[0] || {}).map((key) => (
+                                        <th key={key} className="border p-2">{key}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {currentTab.data.data.map((row, index) => (
+                                    <tr key={index}>
+                                        {Object.values(row).map((value, i) => (
+                                            <td key={i} className="border p-2">{value}</td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
 
     return (
+        <div className="h-screen flex flex-col">
+            <div className="flex border-b">
+                {tabs.map(tab => (
+                    <Tab
+                        key={tab.id}
+                        title={tab.title}
+                        isActive={activeTab === tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        onClose={() => closeTab(tab.id)}
+                    />
+                ))}
+                <button 
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                    onClick={() => addTab('localization')}
+                >
+                    +
+                </button>
+            </div>
+
+            <div className="flex-1">
+                {renderTabContent()}
+            </div>
+        </div>
+    );
+};
+
+const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
+    return (
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
-            {/* Add Link to database search */}
-            {props.token && 
+            {token && 
                 <>
                     <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3">
                         Search the Database
@@ -41,18 +208,41 @@ const Center = (props) => {
                 </>
             }
             <Logo />
-            {!props.token && <SignInButtons />}
-            <Dropdown closedText="Create New"
+            {!token && <SignInButtons />}
+            <Dropdown 
+                closedText="Create New"
                 openText="Create New ▾"
                 closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
                 openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
                 options="Localization Stimulation"
-                optionRefs="/localization /stimulation"
                 optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" />
-            <button className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5">
+                menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                onOptionClick={(option) => {
+                    switch(option) {
+                        case "Localization":
+                            onNewLocalization();
+                            break;
+                        case "Stimulation":
+                            // Add stimulation handling here when needed
+                            break;
+                    }
+                }}
+            />
+            <input
+                type="file"
+                accept=".csv"
+                onChange={onFileUpload}
+                style={{ display: 'none' }}
+                id="fileInput"
+            />
+            <button 
+                className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5 transition-colors duration-200 
+                hover:bg-sky-700 hover:text-white"
+                onClick={() => document.getElementById('fileInput').click()}
+            >
                 Open File
             </button>
+            {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
     );
 };
@@ -85,7 +275,6 @@ const Right = () => {
 const Logo = () => {
     return (
         <div className="flex flex-col items-center m-5">
-            <img alt="Logo"/>
             <h1 className="text-8xl font-bold mt-5">Wirecracker</h1>
         </div>
     );
@@ -93,15 +282,24 @@ const Logo = () => {
 
 const SignInButtons = () => {
     return (
-        <div className="flex m-10">
-            <Link to="/signup">
-                <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3 mr-5">Sign Up</button>
-            </Link>
-            <Link to="/login">
-                <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3">Log In</button>
-            </Link>
+        <div>
+            <div className="flex m-10">
+                <Link to="/signup">
+                    <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3 mr-5">Sign Up</button>
+                </Link>
+                <Link to="/login">
+                    <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3">Log In</button>
+                </Link>
+            </div>
+            <div className="flex m-10 justify-center">
+                <a href="http://localhost:5000/auth/google">
+                    <button className="bg-blue-500 font-semibold rounded-xl w-40 py-3">
+                        Sign in with Google
+                    </button>
+                </a>
+            </div>
         </div>
-    );
+    );;
 };
 
 const ToReview = () => {
@@ -164,11 +362,13 @@ const App = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
-                {/* Change when localization and stimulation pages are added*/}
-                <Route path="/localization" element={<HomePage />} />
+                <Route path="/localization" element={<Localization />} />
                 <Route path="/stimulation" element={<PlanTypePage />} />
                 <Route path="/stimulation/contacts" element={<ContactSelection />} />
                 <Route path="/stimulation/functional-tests" element={<FunctionalTestSelection />} />
+                <Route path="/debug" element={<Debug />} />
+                <Route path="/database/:table" element={<DatabaseTable />} />
+                <Route path="/auth-success" element={<GoogleAuthSuccess />} />
             </Routes>
         </Router>
     );
