@@ -3,9 +3,11 @@ import React, { useState, useRef } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 
 const ContactSelection = ({ electrodes = demoContactData }) => {
-    const [planningContacts, setPlanningContacts] = useState([]); // TODO Connect planningContacts to backend to save the state
+    const [planningContacts, setPlanningContacts] = useState([]);   // TODO Connect planningContacts to backend to save the state
+    const [areAllVisible, setAreAllVisible] = useState(false);      // Boolean for if all contacts are visible
 
     // Function to handle "drop" on planning pane. Takes contact and index, and insert the contact
     // at the index or at the end if index is not specified. If the contact exist already, this function
@@ -48,16 +50,24 @@ const ContactSelection = ({ electrodes = demoContactData }) => {
     return (
         <DndProvider backend={HTML5Backend}>
             <div className="flex h-screen p-6 space-x-6">
-                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} />
+                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} />
 
                 <PlanningPane contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} />
             </div>
+            <Container className="">
+                <Button
+                    tooltip="Toggle unmarked contacts"
+                    styles={{backgroundColor: darkColors.lightBlue, color: lightColors.white}}
+                    onClick={() => setAreAllVisible(!areAllVisible)}>
+                    <div>O</div>
+                </Button>
+            </Container>
         </DndProvider>
     );
 };
 
 // Generate list of contacts from list of electrodes
-const ContactList = ({ electrodes, onDrop, onClick, droppedContacts }) => {
+const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisible }) => {
     const [, drop] = useDrop(() => ({
         accept: "CONTACT",
         drop: (item) => onDrop(item),
@@ -78,10 +88,16 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts }) => {
                                 let override = false; // TODO add manual override to show non-marked contacts
                                 const shouldAppear = (!(droppedContacts.some((c) => c.id === contact.id)) && contact.isMarked()) || override;
                                 return (
-                                    shouldAppear && (
+                                    areAllVisible ? (
                                         <Contact key={contact.id}
-                                                contact={{ ...contact, pair: getCloseContacts(electrode.contacts, index) }}
-                                                onClick={onClick} />
+                                            contact={{ ...contact, pair: getCloseContacts(electrode.contacts, index) }}
+                                            onClick={onClick} />
+                                    ) : (
+                                        shouldAppear && (
+                                        <Contact key={contact.id}
+                                            contact={{ ...contact, pair: getCloseContacts(electrode.contacts, index) }}
+                                            onClick={onClick} />
+                                        )
                                     )
                                 );
                             })} {/* contact */}
@@ -118,16 +134,25 @@ const Contact = ({ contact, onClick }) => {
         }),
     }));
 
+    let classes = `min-w-[100px] p-4 border rounded-lg shadow cursor-pointer ${
+                isDragging ? "opacity-50" : "opacity-100"} `;
+    switch (contact.mark) {
+        case 1:
+            classes += "bg-red-200";
+            break;
+        case 2:
+            classes += "bg-yellow-200";
+            break;
+        default:
+            classes += "bg-slate-200";
+    }
+
     return (
         <li ref={drag}
-            className={`min-w-[100px] p-4 border rounded-lg shadow cursor-pointer ${
-                isDragging ? "opacity-50" : "opacity-100"
-            }`}
+            className={classes}
             onClick={() => onClick(contact)} >
             <p className="text-xl font-semibold">{contact.index}</p>
             <p className="text-sm font-semibold text-gray-500">{contact.associatedLocation}</p>
-            <p className="text-sm text-gray-600">{contact.mark}</p>
-            <p className="text-sm text-gray-600">{contact.surgeonMark.toString()}</p>
         </li>
     );
 };
@@ -162,10 +187,8 @@ const PlanningPane = ({ contacts, onDrop, onDropBack }) => {
         }),
     }));
 
-
-
     return (
-        <div ref={drop} className={`p-4 w-1/4 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
+        <div ref={drop} className={`p-4 w-1/6 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
             <h2 className="text-2xl font-bold mb-4">Planning Pane</h2>
             {contacts.length === 0 ? (
                 <p className="text-lg text-gray-500">Drag contacts here</p> // Show text if there are no contacts in the pane
@@ -204,6 +227,19 @@ const PlanningContact = ({ contact, onDropBack }) => {
             isDragging: monitor.isDragging(),
         }),
     }));
+
+    let classes = `min-w-[100px] p-4 border rounded-lg shadow cursor-pointer ${
+        isDragging ? "opacity-50" : "opacity-100"} `;
+    switch (contact.mark) {
+    case 1:
+        classes += "bg-red-200";
+        break;
+    case 2:
+        classes += "bg-yellow-200";
+        break;
+    default:
+        classes += "bg-slate-200";
+    }
 
     return (
         <li ref={drag}
