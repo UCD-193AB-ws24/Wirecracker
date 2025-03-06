@@ -7,26 +7,51 @@ const Resection = ({ electrodes, onClick }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     return (
         <div className="flex-1">
-            <NIFTIimage isLoaded={imageLoaded} onLoad={setImageLoaded} electrodes={electrodes} onContactClick={onClick} />
-
-            <div className="flex-1 p-8 bg-gray-100 min-h-screen">
-                <ul className="space-y-6">
-                    {electrodes.map((electrode) => (
-                        <li key={electrode.label} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                            <p className="text-2xl font-bold text-gray-800 mb-4">{electrode.label}</p>
-                            <ul className="flex flex-wrap gap-4">
-                                {electrode.contacts.map((contact) => (
-                                    <Contact
-                                        key={contact.id}
-                                        contact={contact}
-                                        onClick={onClick}
-                                    />
+            <div className="flex flex-col md:flex-row p-2 bg-gray-100">
+                <NIFTIimage isLoaded={imageLoaded} onLoad={setImageLoaded} electrodes={electrodes} onContactClick={onClick} />
+                {imageLoaded && (
+                    <div className="flex-1 md:ml-6">
+                        <div className="h-[870px] overflow-y-auto">
+                            <ul className="space-y-6">
+                                {electrodes.map((electrode) => (
+                                    <li key={electrode.label} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                        <p className="text-xl font-bold text-gray-800 mb-4">{electrode.label}</p> {/* Smaller font size */}
+                                        <ul className="flex flex-wrap gap-4">
+                                            {electrode.contacts.map((contact) => (
+                                                <Contact
+                                                    key={contact.id}
+                                                    contact={contact}
+                                                    onClick={onClick}
+                                                />
+                                            ))}
+                                        </ul>
+                                    </li>
                                 ))}
                             </ul>
-                        </li>
-                    ))}
-                </ul>
+                        </div>
+                    </div>
+                )}
             </div>
+            {!imageLoaded && (
+                <div className="flex-1 p-8 bg-gray-100 min-h-screen">
+                    <ul className="space-y-6">
+                        {electrodes.map((electrode) => (
+                            <li key={electrode.label} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <p className="text-2xl font-bold text-gray-800 mb-4">{electrode.label}</p>
+                                <ul className="flex flex-wrap gap-4">
+                                    {electrode.contacts.map((contact) => (
+                                        <Contact
+                                            key={contact.id}
+                                            contact={contact}
+                                            onClick={onClick}
+                                        />
+                                    ))}
+                                </ul>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
         </div>
     );
 };
@@ -231,12 +256,12 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
             return distance <= 6;
         });
 
-        setHoveredMarker(hovered ? hovered.contact : null);
+        setHoveredMarker(hovered ? hovered.contact : hoveredMarker);
     };
 
     // Handle mouse leave to clear hovered marker
     const handleMouseLeave = () => {
-        setHoveredMarker(null);
+        //setHoveredMarker(hoveredMarker);
     };
 
     // Unified scroll handler using refs
@@ -400,6 +425,8 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
 
             clearImageDataCache();
 
+            setHoveredMarker(null);
+
             onLoad(true);
         } catch (error) {
             console.error('Error loading NIfTI file:', error);
@@ -509,7 +536,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
     };
 
     return (
-        <div className="p-8 bg-gray-100">
+        <div className="p-2 bg-gray-100">
             <div className="flex space-x-4 mb-8">
                 <input
                     type="file"
@@ -546,99 +573,30 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
                             <canvas ref={subCanvas0Ref} width={fixedSubViewSize} height={fixedSubViewSize} className="border border-gray-300 rounded-lg shadow-sm" />
                             <canvas ref={subCanvas1Ref} width={fixedSubViewSize} height={fixedSubViewSize} className="border border-gray-300 rounded-lg shadow-sm" />
                         </div>
-                        {hoveredMarker == null ? (
-                                <div></div>
-                            ) : (
-                                <div className="bg-white p-6 rounded-lg shadow-md space-y-4 w-64">
-                                    <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Contact Details</h2>
-                                    <div className="space-y-2">
-                                        <div>
-                                            <p className="text-sm text-gray-600">ID</p>
-                                            <p className="text-lg font-medium text-gray-900">{hoveredMarker.id}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-600">Location</p>
-                                            <p className="text-lg font-medium text-gray-900">{hoveredMarker.associatedLocation}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-600">Mark</p>
-                                            <p className="text-lg font-medium text-gray-900">{getMarkName(hoveredMarker)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-600">Surgeon Marked</p>
-                                            <p className={"text-lg font-medium text-gray-900"}>
-                                                {hoveredMarker.surgeonMark ? 'Yes' : 'No'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                     </div>
-                    <div className="controls bg-white p-6 rounded-lg shadow-sm space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-lg font-semibold text-gray-800">{`${direction} View Slice:`}</label>
-                            <input
-                                type="range"
-                                min="0"
-                                max={maxSlices - 1}
-                                value={sliceIndex}
-                                onChange={(e) => setSliceIndex(parseInt(e.target.value))}
-                                className="w-full"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-lg font-semibold text-gray-800">{`${subCanvas0Direction} View Slice:`}</label>
-                            <input
-                                type="range"
-                                min="0"
-                                max={maxSubCanvas0Slices - 1}
-                                value={subCanvas0SliceIndex}
-                                onChange={(e) => setSubCanvas0SliceIndex(parseInt(e.target.value))}
-                                className="w-full"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-lg font-semibold text-gray-800">{`${subCanvas1Direction} View Slice:`}</label>
-                            <input
-                                type="range"
-                                min="0"
-                                max={maxSubCanvas1Slices - 1}
-                                value={subCanvas1SliceIndex}
-                                onChange={(e) => setSubCanvas1SliceIndex(parseInt(e.target.value))}
-                                className="w-full"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-lg font-semibold text-gray-800">View Direction:</label>
-                            <select
-                                value={direction}
-                                onChange={(e) => {
-                                    const oldDirection = direction;
-                                    const newDirection = e.target.value;
-                                    setDirection(newDirection);
-                                    const dirDim = getDirectionDimension(newDirection);
-                                    const newMax = niiData.hdr.dime.dim[dirDim];
-                                    setMaxSlices(newMax);
-                                    setSliceIndex(Math.min(Math.floor(newMax / 2), newMax - 1));
-
-                                    if (newDirection == subCanvas0Direction) {
-                                        setSubCanvas0Direction(oldDirection);
-                                        const newSubCanvas0Max = niiData.hdr.dime.dim[getDirectionDimension(oldDirection)];
-                                        setMaxSubCanvas0Slices(newSubCanvas0Max);
-                                        setSubCanvas0SliceIndex(Math.min(Math.floor(newSubCanvas0Max / 2), newSubCanvas0Max - 1));
-                                    } else {
-                                        setSubCanvas1Direction(oldDirection);
-                                        const newSubCanvas1Max = niiData.hdr.dime.dim[getDirectionDimension(oldDirection)];
-                                        setMaxSubCanvas1Slices(newSubCanvas1Max);
-                                        setSubCanvas1SliceIndex(Math.min(Math.floor(newSubCanvas1Max / 2), newSubCanvas1Max - 1));
-                                    }
-                                }}
-                                className="w-full p-2 border border-gray-300 rounded-lg"
-                            >
-                                <option value="Axial">Axial</option>
-                                <option value="Coronal">Coronal</option>
-                                <option value="Sagittal">Sagittal</option>
-                            </select>
+                    <div className="bg-white p-6 rounded-lg shadow-md space-y-4 h-32">
+                        <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">
+                            {hoveredMarker !== null ? hoveredMarker.id : "Hover over on contact to see information..."}
+                        </h2>
+                        <div className="flex space-x-8"> {/* Horizontal layout */}
+                            <div>
+                                <p className="text-sm text-gray-600">Location</p>
+                                <p className="text-lg font-medium text-gray-900">
+                                    {hoveredMarker !== null ? hoveredMarker.associatedLocation : ""}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-600">Mark</p>
+                                <p className="text-lg font-medium text-gray-900">
+                                    {hoveredMarker !== null ? getMarkName(hoveredMarker) : ""}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-600">Surgeon Marked</p>
+                                <p className="text-lg font-medium text-gray-900">
+                                    {hoveredMarker !== null ? (hoveredMarker.surgeonMark ? 'Yes' : 'No') : ""}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
