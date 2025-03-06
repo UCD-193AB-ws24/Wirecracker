@@ -4,16 +4,24 @@ import { Container, Button, darkColors, lightColors } from 'react-floating-actio
 import 'reactjs-popup/dist/index.css';
 import { saveCSVFile, Identifiers } from '../utils/CSVParser.js';
 
-const Localization = ({ initialData = {} }) => {
-    const [expandedElectrode, setExpandedElectrode] = useState('');
-    const [submitFlag, setSubmitFlag] = useState(false);
-    const [electrodes, setElectrodes] = useState(initialData.data || {});
+const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
+    const [expandedElectrode, setExpandedElectrode] = useState(savedState.expandedElectrode || '');
+    const [submitFlag, setSubmitFlag] = useState(savedState.submitFlag || false);
+    const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || {});
 
     useEffect(() => {
-        if (initialData.data) {
+        if (initialData.data && !savedState.electrodes) {
             setElectrodes(initialData.data);
         }
     }, [initialData]);
+
+    useEffect(() => {
+        onStateChange({
+            expandedElectrode,
+            submitFlag,
+            electrodes
+        });
+    }, [expandedElectrode, submitFlag, electrodes]);
 
     const contactTypes = ['GM', 'GM/GM', 'GM/WM', 'WM', 'OOB'];
 
@@ -22,11 +30,14 @@ const Localization = ({ initialData = {} }) => {
         const description = formData.get('description');
         const numContacts = formData.get('contacts');
         
-        setElectrodes((prevElectrodes) => {
+        setElectrodes(prevElectrodes => {
             const tempElectrodes = { ...prevElectrodes };
             tempElectrodes[label] = { description: description };
             for (let i = 1; i <= numContacts; i++) {
-                tempElectrodes[label][i] = { contactDescription: description, associatedLocation: '' };
+                tempElectrodes[label][i] = { 
+                    contactDescription: description, 
+                    associatedLocation: '' 
+                };
             }
             return tempElectrodes;
         });

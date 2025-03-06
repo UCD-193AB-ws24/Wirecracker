@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
@@ -35,19 +35,40 @@ const Tab = ({ title, isActive, onClick, onClose }) => {
 
 const HomePage = () => {
     const token = localStorage.getItem('token') || null;
-    const [tabs, setTabs] = useState([{ id: 'home', title: 'Home', content: 'home' }]);
-    const [activeTab, setActiveTab] = useState('home');
+    const [tabs, setTabs] = useState(() => {
+        const savedTabs = localStorage.getItem('tabs');
+        return savedTabs ? JSON.parse(savedTabs) : [{ id: 'home', title: 'Home', content: 'home' }];
+    });
+    const [activeTab, setActiveTab] = useState(() => {
+        return localStorage.getItem('activeTab') || 'home';
+    });
     const [error, setError] = useState("");
     
+    useEffect(() => {
+        localStorage.setItem('tabs', JSON.stringify(tabs));
+        localStorage.setItem('activeTab', activeTab);
+    }, [tabs, activeTab]);
+
     const addTab = (type, data = null) => {
         const newTab = {
             id: Date.now().toString(),
             title: type === 'localization' ? 'New Localization' : data?.name || 'New Tab',
             content: type,
-            data: data
+            data: data,
+            state: {}
         };
         setTabs([...tabs, newTab]);
         setActiveTab(newTab.id);
+    };
+
+    const updateTabState = (tabId, newState) => {
+        setTabs(prevTabs => 
+            prevTabs.map(tab => 
+                tab.id === tabId 
+                    ? { ...tab, state: newState }
+                    : tab
+            )
+        );
     };
 
     const closeTab = (tabId) => {
@@ -104,9 +125,19 @@ const HomePage = () => {
                     </div>
                 );
             case 'localization':
-                return <Localization />;
+                return <Localization 
+                    key={currentTab.id}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
             case 'csv-localization':
-                return <Localization initialData={currentTab.data} />;
+                return <Localization 
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
             case 'csv-test_plan':
                 return (
                     <div className="p-4">
