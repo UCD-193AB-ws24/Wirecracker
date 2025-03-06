@@ -197,7 +197,6 @@ const HomePage = () => {
 const Center = ({ token, onNewLocalization, onFileUpload }) => {
     return (
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
-            {/* Add Link to database search */}
             {token && 
                 <>
                     <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3">
@@ -212,12 +211,21 @@ const Center = ({ token, onNewLocalization, onFileUpload }) => {
                 openText="Create New ▾"
                 closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
                 openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
-                options="Localization Stimulation ContactDesignation"
-                optionRefs="/localization /stimulation /contact-designation"
+                options="Localization Stimulation Designation"
                 optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
                 onOptionClick={(option) => {
-                    if (option === "Localization") onNewLocalization();
+                    switch(option) {
+                        case "Localization":
+                            onNewLocalization();
+                            break;
+                        case "Stimulation":
+                            // Add stimulation handling here when needed
+                            break;
+                        case "Designation":
+                            // Add designation handling here when needed
+                            break;
+                    }
                 }}
             />
             <input
@@ -355,9 +363,6 @@ const App = () => {
                 <Route path="/debug" element={<Debug />} />
                 <Route path="/database/:table" element={<DatabaseTable />} />
                 <Route path="/auth-success" element={<GoogleAuthSuccess />} />
-                <Route path="/localization" element={<Localization />} />
-                <Route path="/stimulation" element={<HomePage />} />
-                <Route path="/contact-designation" element={<ContactDesignation />} />
             </Routes>
         </Router>
     );
