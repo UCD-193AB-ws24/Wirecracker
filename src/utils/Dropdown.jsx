@@ -37,7 +37,7 @@ const Dropdown = ({
             </button>
 
             {isOpen && (
-                <div className={menuClassName}>
+                <div className={`absolute top-full left-0 z-50 mt-1 ${menuClassName}`}>
                     <div className="py-1" role="none">
                         {optionsList.map((option, index) => (
                             <button
