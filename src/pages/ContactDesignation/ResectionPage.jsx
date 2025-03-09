@@ -256,12 +256,21 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
             return distance <= 6;
         });
 
+        if (hovered) {
+            canvas.style.cursor = 'pointer';
+        } else {
+            canvas.style.cursor = 'default';
+        }
+
         setHoveredMarker(hovered ? hovered.contact : hoveredMarker);
     };
 
     // Handle mouse leave to clear hovered marker
     const handleMouseLeave = () => {
-        //setHoveredMarker(hoveredMarker);
+        const canvas = mainCanvasRef.current;
+        if (canvas) {
+            canvas.style.cursor = 'default'; // Reset cursor to default when mouse leaves the canvas
+        }
     };
 
     // Unified scroll handler using refs
@@ -447,6 +456,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
         } catch (err) {
             console.error('Error parsing CSV file:', err);
         }
+        setHoveredMarker(null);
     };
 
     const getCanvasDimensions = (nii, dir) => {
@@ -578,20 +588,20 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
                         <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">
                             {hoveredMarker !== null ? hoveredMarker.id : "Hover over on contact to see information..."}
                         </h2>
-                        <div className="flex space-x-8"> {/* Horizontal layout */}
-                            <div>
+                        <div className="flex justify-between items-center">
+                            <div className="flex-1 min-w-0 pr-4">
                                 <p className="text-sm text-gray-600">Location</p>
-                                <p className="text-lg font-medium text-gray-900">
+                                <p className="text-lg font-medium text-gray-900 truncate" title={hoveredMarker !== null ? hoveredMarker.associatedLocation : ""}>
                                     {hoveredMarker !== null ? hoveredMarker.associatedLocation : ""}
                                 </p>
                             </div>
-                            <div>
+                            <div className="flex-shrink-0 px-4 min-w-[200px]">
                                 <p className="text-sm text-gray-600">Mark</p>
                                 <p className="text-lg font-medium text-gray-900">
                                     {hoveredMarker !== null ? getMarkName(hoveredMarker) : ""}
                                 </p>
                             </div>
-                            <div>
+                            <div className="flex-shrink-0 pl-4 min-w-[50px]">
                                 <p className="text-sm text-gray-600">Surgeon Marked</p>
                                 <p className="text-lg font-medium text-gray-900">
                                     {hoveredMarker !== null ? (hoveredMarker.surgeonMark ? 'Yes' : 'No') : ""}
