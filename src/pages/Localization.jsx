@@ -31,7 +31,6 @@ const Localization = ({ initialData = {} }) => {
         });
     };
 
-<<<<<<< HEAD
     const handleSaveLocalization = async () => {
         try {
             const response = await fetch('http://localhost:5000/api/save-localization', {
@@ -56,11 +55,6 @@ const Localization = ({ initialData = {} }) => {
         catch (error) {
             console.error('Error:', error);
             alert('Failed to save localization. Please try again.');
-=======
-        tempElectrodes[label] = {'description': description};
-        for (let i = 1; i <= numContacts; i++) {
-            tempElectrodes[label][i] = { electrodeDescription: description, contactDescription: description, associatedLocation: '' };
->>>>>>> d2ad846 (Localization page loads data from CSV. GM naming now inline with client requirements)
         }
     };
 
