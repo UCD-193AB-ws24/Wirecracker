@@ -23,6 +23,7 @@ const ContactDesignation = ({ electrodes = demoContactData }) => {
                       index: index + 1,
                       mark: contact.mark || 0,
                       surgeonMark: contact.surgeonMark || false,
+                      focus: false
                   })),
               }));
     });

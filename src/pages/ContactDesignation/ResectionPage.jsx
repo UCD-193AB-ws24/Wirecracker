@@ -5,23 +5,26 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 
 const Resection = ({ electrodes, onClick }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [focusedContact, setFocusedContact] = useState(null);
+
     return (
         <div className="flex-1">
             <div className="flex flex-col md:flex-row p-2 bg-gray-100">
-                <NIFTIimage isLoaded={imageLoaded} onLoad={setImageLoaded} electrodes={electrodes} onContactClick={onClick} />
+                <NIFTIimage isLoaded={imageLoaded} onLoad={setImageLoaded} electrodes={electrodes} onContactClick={onClick} focus={focusedContact} />
                 {imageLoaded && (
                     <div className="flex-1 md:ml-6">
                         <div className="h-[870px] overflow-y-auto">
                             <ul className="space-y-6">
                                 {electrodes.map((electrode) => (
                                     <li key={electrode.label} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                                        <p className="text-xl font-bold text-gray-800 mb-4">{electrode.label}</p> {/* Smaller font size */}
+                                        <p className="text-xl font-bold text-gray-800 mb-4">{electrode.label}</p>
                                         <ul className="flex flex-wrap gap-4">
                                             {electrode.contacts.map((contact) => (
                                                 <Contact
                                                     key={contact.id}
                                                     contact={contact}
                                                     onClick={onClick}
+                                                    setFocus={setFocusedContact}
                                                 />
                                             ))}
                                         </ul>
@@ -44,6 +47,7 @@ const Resection = ({ electrodes, onClick }) => {
                                             key={contact.id}
                                             contact={contact}
                                             onClick={onClick}
+                                            setFocus={setFocusedContact}
                                         />
                                     ))}
                                 </ul>
@@ -56,7 +60,7 @@ const Resection = ({ electrodes, onClick }) => {
     );
 };
 
-const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
+const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus }) => {
     const fixedMainViewSize = 600;
     const fixedSubViewSize = 300;
     const [niiData, setNiiData] = useState(null);
@@ -207,7 +211,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
                         ctx.fillStyle = "rgb(139 139 139)"; break;
                 }
                 ctx.fill();
-                ctx.strokeStyle = targetContact.surgeonMark ? 'black' : ctx.fillStyle;
+                if (focus !== null && focus.id === targetContact.id) {
+                    ctx.strokeStyle = "rgb(0, 255, 0)"; // Green color for focused contact
+                } else {
+                    ctx.strokeStyle = targetContact.surgeonMark ? 'black' : ctx.fillStyle;
+                }
                 ctx.stroke();
 
                 // Store the marker position
@@ -273,6 +281,35 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
         }
     };
 
+    const focusOnContact = () => {
+        if (!focus) return
+
+        const coord = coordinates.find(c => c.Electrode + c.Contact === focus.id);
+        if (!coord || !niiData) return;
+
+        const { x, y, z } = transformCoordinates(coord);
+
+        // Update slice indices to focus on the contact
+        switch (getDirectionDimension(direction)) {
+            case 1: setSliceIndex(Math.round(x)); break;
+            case 2: setSliceIndex(Math.round(y)); break;
+            case 3: setSliceIndex(Math.round(z)); break;
+        }
+
+        switch (getDirectionDimension(subCanvas0Direction)) {
+            case 1: setSubCanvas0SliceIndex(Math.round(x)); break;
+            case 2: setSubCanvas0SliceIndex(Math.round(y)); break;
+            case 3: setSubCanvas0SliceIndex(Math.round(z)); break;
+        }
+
+        switch (getDirectionDimension(subCanvas1Direction)) {
+            case 1: setSubCanvas1SliceIndex(Math.round(x)); break;
+            case 2: setSubCanvas1SliceIndex(Math.round(y)); break;
+            case 3: setSubCanvas1SliceIndex(Math.round(z)); break;
+        }
+    };
+    useEffect(focusOnContact, [markers, niiData, coordinates]);
+
     // Unified scroll handler using refs
     const handleScroll = (event, setter, currentSliceRef, maxRef) => {
         event.preventDefault();
@@ -297,7 +334,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
                         ...contact,
                         surgeonMark: !(contact.surgeonMark)
                     };
-                })
+                });
                 setHoveredMarker(
                     {
                         ...marker.contact,
@@ -615,16 +652,41 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick }) => {
     );
 };
 
-const Contact = ({ contact, onClick }) => {
-    return (
-        <li
-            className={`w-[100px] p-4 rounded-lg shadow-sm cursor-pointer flex-shrink-0 transition-transform transform hover:scale-105 ${getMarkColor(contact)}`}
-            onClick={() => onClick(contact.id, (contact) => {
+const Contact = ({ contact, onClick, setFocus }) => {
+    const [clickCount, setClickCount] = useState(0);
+
+    useEffect(() => {
+        let singleClickTimer;
+
+        if (clickCount === 1) {
+        singleClickTimer = setTimeout(() => {
+            onClick(contact.id, (contact) => {
                 return {
                     ...contact,
                     surgeonMark: !(contact.surgeonMark)
                 };
-            })}
+            });
+            setClickCount(0);
+        }, 200); // Delay to differentiate between single and double clicks
+        } else if (clickCount === 2) {
+            onClick(contact.id, (contact) => {
+                return {
+                    ...contact,
+                    focus: true
+                };
+            });
+            setClickCount(0);
+            setFocus(contact);
+        }
+
+
+        return () => clearTimeout(singleClickTimer);
+    }, [clickCount]);
+
+    return (
+        <li
+            className={`w-[100px] p-4 rounded-lg shadow-sm cursor-pointer flex-shrink-0 transition-transform transform hover:scale-105 ${getMarkColor(contact)}`}
+            onClick={() => setClickCount(clickCount + 1)}
         >
             <p className="text-xl font-bold text-gray-800">{contact.index}</p>
             <p className="text-sm font-medium text-gray-600 truncate" title={contact.associatedLocation}>
