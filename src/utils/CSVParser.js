@@ -110,7 +110,7 @@ export function saveCSVFile(identifier, data) {
     let csvContent = `${identifier}\n${IDENTIFIER_LINE_2}\n`;
     
     if (identifier === Identifiers.LOCALIZATION) {
-        const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "x", "y", "z"];
+        const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark"];
         csvContent += headers.join(",") + "\n";
         
         Object.entries(data).forEach(([label, contacts]) => {
@@ -124,7 +124,7 @@ export function saveCSVFile(identifier, data) {
                     associatedLocation
                 } = contactData;
 
-                const row = [label, contactNumber, electrodeDescription, contactDescription, associatedLocation, "", "", "", "", ""];
+                const row = [label, contactNumber, electrodeDescription, contactDescription, associatedLocation, 0, 0];
                 csvContent += row.join(",") + "\n";
             });
         });

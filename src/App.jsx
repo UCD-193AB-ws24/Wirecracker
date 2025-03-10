@@ -147,7 +147,7 @@ const HomePage = () => {
         try {
             const { identifier, data } = await parseCSVFile(file);
             if (identifier === Identifiers.LOCALIZATION) {
-                addTab('csv-localization', { type: 'localization', data });
+                addTab('csv-localization', { name: file.name, data });
             } else {
                 addTab('csv-test_plan', { name: file.name, data });
             }
