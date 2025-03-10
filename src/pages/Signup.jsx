@@ -11,6 +11,13 @@ const Signup = () => {
     const navigate = useNavigate();
 
     const handleSignup = async () => {
+        // Email validation regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            alert('Please enter a valid email address');
+            return;
+        }
+
         try {
             await signUp(email, name, password);
             setIsVerifying(true);
