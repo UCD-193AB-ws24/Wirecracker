@@ -51,6 +51,7 @@ export function parseCSVFile( file ) {
 
             Papa.parse(csvWithoutIdentifier, {
                 header: true,
+                comments: "#",
                 skipEmptyLines: true,
                 dynamicTyping: true, // Ensures correct data types for numbers
                 complete: function (results) {

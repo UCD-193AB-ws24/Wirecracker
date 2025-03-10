@@ -146,7 +146,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     }}
                     key={label}>
                     <div className="w-20 h-10 bg-blue-400 text-white font-semibold align-middle font-semibold text-2xl">{label}</div>
-                    <div className="h-10 pl-2 align-middle font-semibold text-2xl">{electrodes[label].description}</div>
+                    <div className="h-10 pl-2 align-middle font-semibold text-2xl">{electrodes[label][1].electrodeDescription}</div>
                 </button>
                 {label === expandedElectrode &&
                     <>
