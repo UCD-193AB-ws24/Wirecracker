@@ -484,8 +484,8 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus }) => 
         if (!file) return;
 
         try {
-            const { identifier, data } = await parseCSVFile(file);
-            if (identifier === Identifiers.COORDINATES) {
+            const { identifier, data } = await parseCSVFile(file, true);
+            if (identifier === "coordinates") {
                 setCoordinates(data); // Store CSV coordinates in state
             } else {
                 // Handle other CSV types if needed

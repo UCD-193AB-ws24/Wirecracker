@@ -18,7 +18,7 @@ export const Identifiers = Object.freeze({
  * @param {File} file - The CSV file to be parsed.
  * @returns {Promise<{ identifier: string, data: Object }>} A promise that resolves with the identifier and parsed CSV data.
  */
-export function parseCSVFile( file ) {
+export function parseCSVFile( file, coordinates = false ) {
     return new Promise((resolve, reject) => {
         if (!file) {
             reject(new Error("No file provided."));
@@ -34,13 +34,18 @@ export function parseCSVFile( file ) {
             console.log(lines[0].trim());
             console.log(lines[1].trim());
 
-            if (lines.length < 2 || (lines[0].trim() !== Identifiers.TEST_PLANNING && 
-                lines[0].trim() !== Identifiers.LOCALIZATION) || lines[1].trim() !== IDENTIFIER_LINE_2) {
+            if (!coordinates && (lines.length < 2 || (lines[0].trim() !== Identifiers.TEST_PLANNING && 
+                lines[0].trim() !== Identifiers.LOCALIZATION) || lines[1].trim() !== IDENTIFIER_LINE_2)) {
                 reject(new Error("Invalid file. The first line must be the correct identifier."));
                 return;
             }
 
-            const identifier = lines[0].trim();
+            let identifier;
+            if (!coordinates) {
+                identifier = lines[0].trim();
+            } else {
+                identifier = "coordinates";
+            }
             // Parse CSV content excluding the identifier line
             const csvWithoutIdentifier = lines.slice(2).join("\n");
 
