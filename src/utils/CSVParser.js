@@ -133,7 +133,7 @@ export function saveCSVFile(identifier, data) {
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "export.csv";
+    link.download = "localization_" + new Date().toISOString().split('T')[0] + ".csv";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
