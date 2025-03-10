@@ -109,9 +109,19 @@ const HomePage = () => {
     }, [tabs, activeTab]);
 
     const addTab = (type, data = null) => {
+        let title = 'New Tab';
+        console.log(type)
+        switch (type) {
+            case 'localization':        title = 'New Localization'; break;
+            case 'csv-localization':    title = 'New Localization'; break;
+            case 'stimulation':         title = 'New Stimulation'; break;
+            case 'designation':         title = 'New Designation'; break;
+            case 'csv-test_plan':       title = 'New Test Plan'; break;
+        }
+
         const newTab = {
             id: Date.now().toString(),
-            title: type === 'localization' ? 'New Localization' : data?.name || 'New Tab',
+            title: title,
             content: type,
             data: data,
             state: {}
