@@ -5,6 +5,7 @@ function contact (loc, mark, surgeonMark, pair) {
     this.mark = mark;
     this.surgeonMark = surgeonMark;
     this.pair = pair;
+    this.isPlanning = false;
 }
 
 contact.prototype = {
