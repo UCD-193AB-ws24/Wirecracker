@@ -9,7 +9,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     const [layout, setLayout] = useState(() => {
         if (Object.keys(savedState).length === 0) {
             // TODO Potentially determine from user account status?
-            return "designation";
+            return PAGE_NAME[0];
         }
         return savedState.layout;
     });
@@ -54,6 +54,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
 
     useEffect(() => {
         onStateChange({
+            ...savedState,
             electrodes: modifiedElectrodes,
             layout: layout
         });
@@ -112,7 +113,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 {layout === PAGE_NAME[0] ? (
                     <Designation electrodes={modifiedElectrodes} onClick={updateContact} />
                 ) : (
-                    <Resection electrodes={modifiedElectrodes} onClick={updateContact} />
+                    <Resection electrodes={modifiedElectrodes} onClick={updateContact} onStateChange={onStateChange} savedState={savedState} />
                 )}
             </div>
 
