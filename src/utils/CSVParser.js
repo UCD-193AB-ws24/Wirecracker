@@ -54,7 +54,7 @@ export function parseCSVFile( file, coordinates = false ) {
                 resolve({ identifier, data: parseLocalization(csvWithoutIdentifier) });
                 return;
             }
-            else if (identifier === "coordinates") {
+            else if (identifier === "designation") {
                 resolve({ identifier, data: parseDesignation(csvWithoutIdentifier) });
                 return;
             }
