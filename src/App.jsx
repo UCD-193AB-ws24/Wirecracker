@@ -108,14 +108,27 @@ const HomePage = () => {
         localStorage.setItem('activeTab', activeTab);
     }, [tabs, activeTab]);
 
+    // Add event listener for designation tab creation
+    useEffect(() => {
+        const handleAddDesignationTab = (event) => {
+            addTab('designation', event.detail.data);
+        };
+
+        window.addEventListener('addDesignationTab', handleAddDesignationTab);
+        return () => {
+            window.removeEventListener('addDesignationTab', handleAddDesignationTab);
+        };
+    }, []);
+
     const addTab = (type, data = null) => {
         let title = 'New Tab';
         switch (type) {
             case 'localization':        title = 'New Localization'; break;
-            case 'csv-localization':    title = 'New Localization'; break;
+            case 'csv-localization':    title = data.name; break;
             case 'stimulation':         title = 'New Stimulation'; break;
             case 'designation':         title = 'New Designation'; break;
-            case 'csv-test_plan':       title = 'New Test Plan'; break;
+            case 'csv-designation':     title = data.name; break;
+            case 'csv-test_plan':       title = data.name; break;
         }
 
         const newTab = {
@@ -216,7 +229,7 @@ const HomePage = () => {
             case 'designation':
                 return <ContactDesignation
                     key={currentTab.id}
-                    initialData={{}}
+                    initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;

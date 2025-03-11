@@ -22,7 +22,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
 
         if (Object.keys(initialData).length !== 0) {
             // TODO Parse initialData.data using parseDesignation from parseCSV
-            return initialData.data.map(electrode => ({
+            return initialData.map(electrode => ({
                 ...electrode,
                 contacts: electrode.contacts.map((contact, index) => ({
                     ...contact,

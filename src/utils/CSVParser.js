@@ -11,6 +11,7 @@ const IDENTIFIER_LINE_2 = "### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELE
 export const Identifiers = Object.freeze({
     TEST_PLANNING:  "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR TEST PLANNING ###",
     LOCALIZATION:   "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR LOCALIZATION ###",
+    DESIGNATION:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR DESIGNATION ###",
 });
 
 /**
@@ -33,7 +34,8 @@ export function parseCSVFile( file, coordinates = false ) {
             const lines = fileContent.split(/\r?\n/);
 
             if (!coordinates && (lines.length < 2 || (lines[0].trim() !== Identifiers.TEST_PLANNING && 
-                lines[0].trim() !== Identifiers.LOCALIZATION) || lines[1].trim() !== IDENTIFIER_LINE_2)) {
+                lines[0].trim() !== Identifiers.LOCALIZATION && lines[0].trim() !== Identifiers.DESIGNATION) ||
+                lines[1].trim() !== IDENTIFIER_LINE_2)) {
                 reject(new Error("Invalid file. The first line must be the correct identifier."));
                 return;
             }
@@ -51,7 +53,7 @@ export function parseCSVFile( file, coordinates = false ) {
                 resolve({ identifier, data: parseLocalization(csvWithoutIdentifier) });
                 return;
             }
-            else if (identifier === "designation") {
+            else if (identifier === Identifiers.DESIGNATION) {
                 resolve({ identifier, data: parseDesignation(csvWithoutIdentifier) });
                 return;
             }
@@ -162,13 +164,16 @@ function parseDesignation(csvData) {
 }
 
 /**
- * Saves a CSV file from data and downloads it.
+ * Saves a CSV file from data and downloads it or returns the data.
  * 
  * @param {string} identifier - The identifier for the first line.
  * @param {Object} data - The data to be saved.
+ * @param {boolean} download - Whether to download the file or return the data.
+ * @returns {Object|void} The parsed data if download is false, otherwise void.
  */
-export function saveCSVFile(identifier, data) {
+export function saveCSVFile(identifier, data, download = true) {
     let csvContent = `${identifier}\n${IDENTIFIER_LINE_2}\n`;
+    let returnData = [];
     
     if (identifier === Identifiers.LOCALIZATION) {
         const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark"];
@@ -187,15 +192,30 @@ export function saveCSVFile(identifier, data) {
 
                 const row = [label, contactNumber, electrodeDescription, contactDescription, associatedLocation, 0, 0];
                 csvContent += row.join(",") + "\n";
+                
+                if (!download) {
+                    returnData.push({
+                        Electrode: label,
+                        Contact: parseInt(contactNumber),
+                        AssociatedLocation: associatedLocation,
+                        ContactDescription: contactDescription,
+                        Mark: 0,
+                        SurgeonMark: 0
+                    });
+                }
             });
         });
     }
     
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "localization_" + new Date().toISOString().split('T')[0] + ".csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (download) {
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "localization_" + new Date().toISOString().split('T')[0] + ".csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        return parseDesignation(Papa.unparse(returnData));
+    }
 }
