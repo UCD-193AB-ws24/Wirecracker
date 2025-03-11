@@ -55,7 +55,7 @@ const HomePage = () => {
     const addTab = (type, data = null) => {
         const newTab = {
             id: Date.now().toString(),
-            title: type === 'localization' ? 'New Localization' : data?.name || 'New Tab',
+            title: type === 'localization' ? 'New Localization' : type === 'stimulation' ? 'New Stimulation' : data?.name || 'New Tab',
             content: type,
             data: data,
             state: {}
@@ -113,6 +113,7 @@ const HomePage = () => {
                                 <Center 
                                     token={token} 
                                     onNewLocalization={() => addTab('localization')}
+                                    onNewStimulation={() => addTab('stimulation')}
                                     onFileUpload={handleFileUpload}
                                     error={error}
                                 />
@@ -121,6 +122,7 @@ const HomePage = () => {
                         ) : (
                             <Center 
                                 onNewLocalization={() => addTab('localization')}
+                                onNewStimulation={() => addTab('stimulation')}
                                 onFileUpload={handleFileUpload}
                                 error={error}
                             />
@@ -197,7 +199,7 @@ const HomePage = () => {
     );
 };
 
-const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
+const Center = ({ token, onNewLocalization, onNewStimulation, onFileUpload, error }) => {
     return (
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
             {token && 
@@ -223,7 +225,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                             onNewLocalization();
                             break;
                         case "Stimulation":
-                            // Add stimulation handling here when needed
+                            onNewStimulation();
                             break;
                     }
                 }}
