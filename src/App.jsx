@@ -170,7 +170,9 @@ const HomePage = () => {
             const { identifier, data } = await parseCSVFile(file);
             if (identifier === Identifiers.LOCALIZATION) {
                 addTab('csv-localization', { name: file.name, data });
-            } else {
+            } else if (identifier === Identifiers.DESIGNATION) {
+                addTab('csv-designation', { name: file.name, data });
+            } else if (identifier === Identifiers.TEST_PLAN) {
                 addTab('csv-test_plan', { name: file.name, data });
             }
         } catch (err) {
