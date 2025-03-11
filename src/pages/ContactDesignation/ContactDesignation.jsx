@@ -21,7 +21,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         if (savedState && savedState.localizationData) {
             return savedState.localizationData;
         }
-        return initialData.originalData || null;
+        return initialData?.originalData || null;
     });
 
     const [modifiedElectrodes, setModifiedElectrodes] = useState(() => {
