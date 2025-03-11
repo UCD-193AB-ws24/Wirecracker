@@ -486,9 +486,20 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus }) => 
         try {
             const { identifier, data } = await parseCSVFile(file, true);
             if (identifier === "coordinates") {
-                setCoordinates(data); // Store CSV coordinates in state
+                // Check for columns
+                if (Array.isArray(data)
+                    && data.length > 0
+                    && data[0].Electrode
+                    && data[0].Contact
+                    && data[0].x
+                    && data[0].y
+                    && data[0].z) {
+                    setCoordinates(data); // Store CSV coordinates in state
+                } else {
+                    throw "Please check the column name of the CSV data. Required: [Electrode,Contact,x,y,z]"
+                }
             } else {
-                // Handle other CSV types if needed
+                throw "Unknown CSV file format"
             }
         } catch (err) {
             console.error('Error parsing CSV file:', err);

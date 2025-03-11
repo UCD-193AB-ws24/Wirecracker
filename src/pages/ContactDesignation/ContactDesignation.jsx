@@ -35,6 +35,8 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             }));
         }
 
+        // return [];
+        // For now for demo purpose
         return demoContactData.map(electrode => ({
             ...electrode,
             contacts: electrode.contacts.map((contact, index) => ({
@@ -48,7 +50,6 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             })),
         }));
 
-        // return [];
     });
 
     useEffect(() => {
