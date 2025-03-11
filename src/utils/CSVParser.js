@@ -32,9 +32,6 @@ export function parseCSVFile( file, coordinates = false ) {
             const fileContent = e.target.result;
             const lines = fileContent.split(/\r?\n/);
 
-            console.log(lines[0].trim());
-            console.log(lines[1].trim());
-
             if (!coordinates && (lines.length < 2 || (lines[0].trim() !== Identifiers.TEST_PLANNING && 
                 lines[0].trim() !== Identifiers.LOCALIZATION) || lines[1].trim() !== IDENTIFIER_LINE_2)) {
                 reject(new Error("Invalid file. The first line must be the correct identifier."));

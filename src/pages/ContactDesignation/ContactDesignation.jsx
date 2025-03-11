@@ -7,11 +7,12 @@ const PAGE_NAME = ["designation", "resection"];
 
 const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const [layout, setLayout] = useState(() => {
-        if (Object.keys(savedState).length === 0) {
-            // TODO Potentially determine from user account status?
-            return PAGE_NAME[0];
+        // First check savedState for layout
+        if (savedState && savedState.layout) {
+            return savedState.layout;
         }
-        return savedState.layout;
+        // Default to designation view
+        return PAGE_NAME[0];
     });
 
     const [modifiedElectrodes, setModifiedElectrodes] = useState(() => {
@@ -49,17 +50,25 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 focus: false
             })),
         }));
-
     });
 
+    // Save state changes
     useEffect(() => {
-        onStateChange({
-            ...savedState,
+        const newState = {
             electrodes: modifiedElectrodes,
             layout: layout
-        });
+        };
+        
+        // Preserve other state values
+        if (savedState) {
+            Object.keys(savedState).forEach(key => {
+                if (key !== 'electrodes' && key !== 'layout') {
+                    newState[key] = savedState[key];
+                }
+            });
+        }
+        onStateChange(newState);
     }, [modifiedElectrodes, layout]);
-
 
     const updateContact = (contactId, change) => {
         setModifiedElectrodes(prevElectrodes => {

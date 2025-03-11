@@ -110,7 +110,6 @@ const HomePage = () => {
 
     const addTab = (type, data = null) => {
         let title = 'New Tab';
-        console.log(type)
         switch (type) {
             case 'localization':        title = 'New Localization'; break;
             case 'csv-localization':    title = 'New Localization'; break;

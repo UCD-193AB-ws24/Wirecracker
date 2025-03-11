@@ -10,6 +10,7 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
     useEffect(() => {
         onStateChange({
             ...savedState,
+            layout: "resection",
             isLoaded: imageLoaded,
             focusedContact: focusedContact
         });
@@ -115,6 +116,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
     useEffect(() => {
         onStateChange({
             ...savedState,
+            layout: "resection",
             canvas_sub1_slice: subCanvas1SliceIndex,
             canvas_sub1_maxSlice: maxSubCanvas1Slices,
             canvas_sub1_direction: subCanvas1Direction,
@@ -124,6 +126,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
     useEffect(() => {
         onStateChange({
             ...savedState,
+            layout: "resection",
             canvas_sub0_slice: subCanvas0SliceIndex,
             canvas_sub0_maxSlice: maxSubCanvas0Slices,
             canvas_sub0_direction: subCanvas0Direction,
@@ -133,6 +136,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
     useEffect(() => {
         onStateChange({
             ...savedState,
+            layout: "resection",
             canvas_markers: markers,
             canvas_main_slice: sliceIndex,
             canvas_main_maxSlice: maxSlices,
@@ -144,6 +148,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
     useEffect(() => {
         onStateChange({
             ...savedState,
+            layout: "resection",
             nii: niiData,
         });
     }, [niiData]);
@@ -151,6 +156,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
     useEffect(() => {
         onStateChange({
             ...savedState,
+            layout: "resection",
             coordinate: coordinates,
         });
     }, [coordinates]);
