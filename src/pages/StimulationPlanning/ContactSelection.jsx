@@ -78,7 +78,7 @@ const ContactSelection = ({ electrodes = demoContactData }) => {
 
 // Generate list of contacts from list of electrodes
 const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisible, isPairing, submitPlanning }) => {
-    let submitContact = false;
+    const [submitContact, setSubmitContact] = useState(false);
 
     const [, drop] = useDrop(() => ({
         accept: "CONTACT",
@@ -94,7 +94,7 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
         } else {
             onClick(contact);
         }
-        submitContact = !submitContact;
+        setSubmitContact(!submitContact);
     }
 
     const changePair = (electrode, contact) => {
@@ -172,17 +172,17 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
                                     const pairShouldAppear = !(droppedContacts.some((c) => c.id === pair.id)) && pair.isMarked();
 
                                     return (
-                                        areAllVisible ? (
-                                            <Contact key={contact.id}
-                                                contact={contact}
-                                                onClick={() => handleOnClick(electrode, contact)}
-                                                isPairing={isPairing} />
-                                        ) : (
-                                            (shouldAppear || pairShouldAppear) && (
-                                            <Contact key={contact.id}
-                                                contact={contact}
-                                                onClick={() => handleOnClick(electrode, contact)}
-                                                isPairing={isPairing} />
+                                        !(contact.isPlanning || pair.isPlanning) && (
+                                            areAllVisible ? (
+                                                <Contact key={contact.id}
+                                                    contact={contact}
+                                                    onClick={() => handleOnClick(electrode, contact)} />
+                                            ) : (
+                                                (shouldAppear || pairShouldAppear) && (
+                                                <Contact key={contact.id}
+                                                    contact={contact}
+                                                    onClick={() => handleOnClick(electrode, contact)} />
+                                                )
                                             )
                                         )
                                     );
