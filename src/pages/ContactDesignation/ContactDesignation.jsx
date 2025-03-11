@@ -1,36 +1,63 @@
 import { demoContactData } from "./demoData";
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 import Resection from "./ResectionPage";
 import Designation from "./DesignationPage";
 
 const PAGE_NAME = ["designation", "resection"];
 
-const ContactDesignation = ({ electrodes = demoContactData }) => {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const layout = searchParams.get("style") || PAGE_NAME[0];
+const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }) => {
+    const [layout, setLayout] = useState(() => {
+        if (Object.keys(savedState).length === 0) {
+            // TODO Potentially determine from user account status?
+            return "designation";
+        }
+        return savedState.layout;
+    });
 
     const [modifiedElectrodes, setModifiedElectrodes] = useState(() => {
-        const savedState = localStorage.getItem("electrodesState");
-        return savedState
-            ? JSON.parse(savedState)
-            : electrodes.map(electrode => ({
-                  ...electrode,
-                  contacts: electrode.contacts.map((contact, index) => ({
-                      ...contact,
-                      id: `${electrode.label}${index + 1}`,
-                      electrodeLabel: electrode.label,
-                      index: index + 1,
-                      mark: contact.mark || 0,
-                      surgeonMark: contact.surgeonMark || false,
-                      focus: false
-                  })),
-              }));
+        if (Object.keys(savedState).length !== 0) {
+            return savedState.electrodes;
+        }
+
+        if (Object.keys(initialData).length !== 0) {
+            // TODO Parse initialData.data using parseDesignation from parseCSV
+            return initialData.data.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map((contact, index) => ({
+                    ...contact,
+                    id: `${electrode.label}${index + 1}`,
+                    electrodeLabel: electrode.label,
+                    index: index + 1,
+                    mark: contact.mark || 0,
+                    surgeonMark: contact.surgeonMark || false,
+                    focus: false
+                })),
+            }));
+        }
+
+        return demoContactData.map(electrode => ({
+            ...electrode,
+            contacts: electrode.contacts.map((contact, index) => ({
+                ...contact,
+                id: `${electrode.label}${index + 1}`,
+                electrodeLabel: electrode.label,
+                index: index + 1,
+                mark: contact.mark || 0,
+                surgeonMark: contact.surgeonMark || false,
+                focus: false
+            })),
+        }));
+
+        // return [];
     });
 
     useEffect(() => {
-        localStorage.setItem("electrodesState", JSON.stringify(modifiedElectrodes));
-    }, [modifiedElectrodes]);
+        onStateChange({
+            electrodes: modifiedElectrodes,
+            layout: layout
+        });
+    }, [modifiedElectrodes, layout]);
+
 
     const updateContact = (contactId, change) => {
         setModifiedElectrodes(prevElectrodes => {
@@ -48,7 +75,7 @@ const ContactDesignation = ({ electrodes = demoContactData }) => {
 
     const toggleLayout = () => {
         const newLayout = layout === PAGE_NAME[0] ? PAGE_NAME[1] : PAGE_NAME[0];
-        setSearchParams({ style: newLayout });
+        setLayout(newLayout);
     };
 
     return (

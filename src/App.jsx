@@ -207,10 +207,22 @@ const HomePage = () => {
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
-            case 'designation':
-                return <ContactDesignation />;
             case 'csv-localization':
-                return <Localization 
+                return <Localization
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'designation':
+                return <ContactDesignation
+                    key={currentTab.id}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-designation':
+                return <ContactDesignation
                     key={currentTab.id}
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
