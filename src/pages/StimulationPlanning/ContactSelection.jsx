@@ -8,6 +8,7 @@ import { Container, Button, darkColors, lightColors } from 'react-floating-actio
 const ContactSelection = ({ electrodes = demoContactData }) => {
     const [planningContacts, setPlanningContacts] = useState([]);   // TODO Connect planningContacts to backend to save the state
     const [areAllVisible, setAreAllVisible] = useState(false);      // Boolean for if all contacts are visible
+    const [isPairing, setIsPairing] = useState(false);
 
     // Function to handle "drop" on planning pane. Takes contact and index, and insert the contact
     // at the index or at the end if index is not specified. If the contact exist already, this function
@@ -40,26 +41,32 @@ const ContactSelection = ({ electrodes = demoContactData }) => {
     // Add id and such so that it can be used after making pair
     electrodes.map((electrode) => {
         electrode.contacts.map((contact, index) => {
-            const contactId = `${electrode.label}${index}`;
+            const contactId = `${electrode.label}${index + 1}`;
             contact.id = contactId;
             contact.electrodeLabel = electrode.label;
-            contact.index = index;
+            contact.index = index + 1;
         })
     });
 
     return (
         <DndProvider backend={HTML5Backend}>
             <div className="flex h-screen p-6 space-x-6">
-                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} />
+                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} isPairing={isPairing} />
 
                 <PlanningPane contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} />
             </div>
             <Container className="">
                 <Button
+                    tooltip="Pair contacts"
+                    styles={{backgroundColor: darkColors.lightBlue, color: lightColors.white}}
+                    onClick={() => {setIsPairing(!isPairing)}}>
+                    <div>P</div>
+                </Button>
+                <Button
                     tooltip="Toggle unmarked contacts"
                     styles={{backgroundColor: darkColors.lightBlue, color: lightColors.white}}
                     onClick={() => setAreAllVisible(!areAllVisible)}>
-                    <div>O</div>
+                    <div>T</div>
                 </Button>
             </Container>
         </DndProvider>
@@ -67,7 +74,9 @@ const ContactSelection = ({ electrodes = demoContactData }) => {
 };
 
 // Generate list of contacts from list of electrodes
-const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisible }) => {
+const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisible, isPairing }) => {
+    const [submitFlag, setSubmitFlag] = useState(false);
+
     const [, drop] = useDrop(() => ({
         accept: "CONTACT",
         drop: (item) => onDrop(item),
@@ -76,32 +85,107 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
         }),
     }));
 
+    const handleOnClick = (electrode, contact) => {
+        if (isPairing) {
+            changePair(electrode, contact);
+            setSubmitFlag(!submitFlag);
+        } else {
+            onClick(contact);
+        }
+    }
+
+    const changePair = (electrode, contact) => {
+        // One or fewer contacts in electrode
+        if (electrode.contacts.length <= 1) {
+            return;
+        }
+
+        // Reset the saved pair of the current contact's pair
+        var pairedContact = electrode.contacts[contact.pair - 1];
+        electrode.contacts[contact.pair - 1].pair = pairedContact.index;
+
+        // Change the current contact's saved pair
+        if (contact.pair === contact.index - 1) {
+            contact.pair += 2;
+            if (electrode.contacts.length <= contact.index) {
+                contact.pair--;
+            }
+        } else {
+            contact.pair--;
+            if (contact.pair < 1 && contact.index === 2 && electrode.contacts.length > 2) {
+                contact.pair += 3;
+            } else if (contact.pair < 1 && (contact.index === 1 || contact.index === 2)) {
+                contact.pair += 2;
+            }
+        }
+
+        // Reset new pair's previous pairing
+        pairedContact = electrode.contacts[contact.pair - 1];
+        electrode.contacts[pairedContact.pair - 1].pair = electrode.contacts[pairedContact.pair - 1].index;
+
+        // Change the new pair's pairing
+        electrode.contacts[contact.pair - 1].pair = contact.index;
+    }
+
     return (
         <div className="flex-1" ref={drop}>
             <ul className="space-y-4">
                 {electrodes.map((electrode) => ( // Vertical list for every electrode
                     <li key={electrode.label} className="p-4 border rounded-lg shadow flex items-center space-x-6">
                         <p className="text-xl font-semibold min-w-[50px]">{electrode.label}</p>
-                        <ul className="flex space-x-4">
-                            {electrode.contacts.map((contact, index) => { // Horizontal list for every contact
-                                // Filter out the non-marked contacts. NOTE Currently it does not filter off pair of contact added
-                                let override = false; // TODO add manual override to show non-marked contacts
-                                const shouldAppear = (!(droppedContacts.some((c) => c.id === contact.id)) && contact.isMarked()) || override;
-                                return (
-                                    areAllVisible ? (
-                                        <Contact key={contact.id}
-                                            contact={{ ...contact, pair: getCloseContacts(electrode.contacts, index) }}
-                                            onClick={onClick} />
-                                    ) : (
-                                        shouldAppear && (
-                                        <Contact key={contact.id}
-                                            contact={{ ...contact, pair: getCloseContacts(electrode.contacts, index) }}
-                                            onClick={onClick} />
+                        {submitFlag ? (
+                            <ul className="flex space-x-4">
+                                {electrode.contacts.map((contact, index) => { // Horizontal list for every contact
+                                    const pair = electrode.contacts[contact.pair - 1];
+
+                                    // Filter out the non-marked contacts.
+                                    const shouldAppear = !(droppedContacts.some((c) => c.id === contact.id)) && contact.isMarked();
+                                    const pairShouldAppear = !(droppedContacts.some((c) => c.id === pair.id)) && pair.isMarked();
+
+                                    return (
+                                        areAllVisible ? (
+                                            <Contact key={contact.id}
+                                                contact={contact}
+                                                onClick={() => handleOnClick(electrode, contact)}
+                                                isPairing={isPairing} />
+                                        ) : (
+                                            (shouldAppear || pairShouldAppear) && (
+                                            <Contact key={contact.id}
+                                                contact={contact}
+                                                onClick={() => handleOnClick(electrode, contact)}
+                                                isPairing={isPairing} />
+                                            )
                                         )
-                                    )
-                                );
-                            })} {/* contact */}
-                        </ul>
+                                    );
+                                })} {/* contact */}
+                            </ul>
+                        ) : (
+                            <ul className="flex space-x-4">
+                                {electrode.contacts.map((contact, index) => { // Horizontal list for every contact
+                                    const pair = electrode.contacts[contact.pair - 1];
+
+                                    // Filter out the non-marked contacts.
+                                    const shouldAppear = !(droppedContacts.some((c) => c.id === contact.id)) && contact.isMarked();
+                                    const pairShouldAppear = !(droppedContacts.some((c) => c.id === pair.id)) && pair.isMarked();
+
+                                    return (
+                                        areAllVisible ? (
+                                            <Contact key={contact.id}
+                                                contact={contact}
+                                                onClick={() => handleOnClick(electrode, contact)}
+                                                isPairing={isPairing} />
+                                        ) : (
+                                            (shouldAppear || pairShouldAppear) && (
+                                            <Contact key={contact.id}
+                                                contact={contact}
+                                                onClick={() => handleOnClick(electrode, contact)}
+                                                isPairing={isPairing} />
+                                            )
+                                        )
+                                    );
+                                })} {/* contact */}
+                            </ul>
+                        )}
                     </li>
                 ))} {/* electrode */}
             </ul>
@@ -109,22 +193,8 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
     );
 };
 
-// Function to grab two closest contacts.
-// Second one will be null if the contact is at the edge
-function getCloseContacts(contacts, index) {
-    let closest = index > 0 ? contacts[index - 1] : contacts[1];
-    let nextClosest = index < contacts.length - 1 ? contacts[index + 1] : contacts[contacts.length - 2];
-
-    if (closest == nextClosest) nextClosest = null;
-
-    return {
-        closest: closest,
-        alternative: nextClosest
-    }
-}
-
 // Draggable contact in contact list
-const Contact = ({ contact, onClick }) => {
+const Contact = ({ contact, onClick, isPairing }) => {
     // Handle "drag"
     const [{ isDragging }, drag] = useDrag(() => ({
         type: "CONTACT",
@@ -150,9 +220,11 @@ const Contact = ({ contact, onClick }) => {
     return (
         <li ref={drag}
             className={classes}
-            onClick={() => onClick(contact)} >
+            onClick={onClick}
+            key={contact.index}>
             <p className="text-xl font-semibold">{contact.index}</p>
             <p className="text-sm font-semibold text-gray-500">{contact.associatedLocation}</p>
+            <p className="text-sm font-semibold text-gray-500">Pair:  {contact.pair}</p>
         </li>
     );
 };
@@ -245,10 +317,11 @@ const PlanningContact = ({ contact, onDropBack }) => {
         <li ref={drag}
             className={`p-2 border rounded bg-white shadow cursor-pointer ${
                 isDragging ? "opacity-50" : "opacity-100"
-            }`} >
+            }`}
+            key={contact.id}>
             <p className="text-lg font-semibold">{contact.id}</p>
             <p className="text-sm font-semibold text-gray-500">Location: {contact.associatedLocation}</p>
-            <p className="text-sm font-semibold text-gray-500">Pair:  {contact.pair.closest.id}</p> {/* TODO add ability to change closest contact */}
+            <p className="text-sm font-semibold text-gray-500">Pair:  {contact.pair}</p> {/* TODO add ability to change closest contact */}
             <button onClick={() => onDropBack(contact)}
                     className="text-red-500 text-sm mt-2 underline" >
                 Remove
