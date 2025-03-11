@@ -1,18 +1,6 @@
+import contact from "./contact";
+
 export {demoContactData}
-
-function contact(loc, mark, surgeonMark) {
-    this.associatedLocation = loc;
-    this.mark = mark;
-    this.surgeonMark = surgeonMark;
-}
-
-contact.prototype = {
-    constructor: contact,
-
-    isMarked: function() {
-        return this.mark || this.surgeonMark;
-    }
-}
 
 let demoContactData = [
     {
