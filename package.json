@@ -2,9 +2,13 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1",
     "@tailwindcss/postcss": "^4.0.7",
+    "bcryptjs": "^3.0.2",
+    "express-session": "^1.18.1",
     "fast-csv": "^5.0.2",
     "fs": "^0.0.1-security",
     "papaparse": "^5.5.2",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "pg": "^8.13.3",
     "react": "^19.0.0",
     "react-dnd": "^16.0.1",

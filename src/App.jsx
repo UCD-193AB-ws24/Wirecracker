@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import Dropdown from './utils/Dropdown';
@@ -11,6 +11,8 @@ import DatabaseTable from "./pages/DatabaseTable";
 import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
 import { parseCSVFile, Identifiers } from './utils/CSVParser';
 import Localization from './pages/Localization';
+import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
+import { supabase } from './utils/supabaseClient';
 
 const Tab = ({ title, isActive, onClick, onClose }) => {
     return (
@@ -32,6 +34,63 @@ const Tab = ({ title, isActive, onClick, onClose }) => {
                     ×
                 </button>
             )}
+        </div>
+    );
+};
+
+const UserProfile = ({ onSignOut }) => {
+    const navigate = useNavigate();
+    const [userName, setUserName] = useState('');
+    
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            try {
+                const { data: session } = await supabase
+                    .from('sessions')
+                    .select('user_id')
+                    .eq('token', token)
+                    .single();
+
+                if (session) {
+                    const { data: user } = await supabase
+                        .from('users')
+                        .select('name')
+                        .eq('id', session.user_id)
+                        .single();
+                    
+                    if (user) {
+                        setUserName(user.name);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+            }
+        };
+
+        fetchUserProfile();
+    }, []);
+
+    const handleSignOut = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('tabs');
+        localStorage.removeItem('activeTab');
+        onSignOut();
+        navigate('/');
+        window.location.reload();
+    };
+
+    return (
+        <div className="flex items-center gap-4 px-4 py-2 border-b bg-gray-50">
+            <span className="text-sky-700 font-semibold">{userName}</span>
+            <button 
+                onClick={handleSignOut}
+                className="px-4 py-2 text-sm text-red-600 hover:text-red-800 font-medium"
+            >
+                Sign Out
+            </button>
         </div>
     );
 };
@@ -91,13 +150,18 @@ const HomePage = () => {
         try {
             const { identifier, data } = await parseCSVFile(file);
             if (identifier === Identifiers.LOCALIZATION) {
-                addTab('csv-localization', { type: 'localization', data });
+                addTab('csv-localization', { name: file.name, data });
             } else {
                 addTab('csv-test_plan', { name: file.name, data });
             }
         } catch (err) {
             setError(err.message);
         }
+    };
+
+    const handleSignOut = () => {
+        setTabs([{ id: 'home', title: 'Home', content: 'home' }]);
+        setActiveTab('home');
     };
 
     const renderTabContent = () => {
@@ -191,6 +255,7 @@ const HomePage = () => {
                     +
                 </button>
             </div>
+            {token && <UserProfile onSignOut={handleSignOut} />}
 
             <div className="flex-1">
                 {renderTabContent()}
