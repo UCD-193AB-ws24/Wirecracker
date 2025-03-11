@@ -1,4 +1,5 @@
 import Papa from 'papaparse';
+import contact from '../pages/ContactDesignation/contact';
 
 const IDENTIFIER_LINE_2 = "### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###";
 
@@ -53,6 +54,10 @@ export function parseCSVFile( file, coordinates = false ) {
                 resolve({ identifier, data: parseLocalization(csvWithoutIdentifier) });
                 return;
             }
+            else if (identifier === "coordinates") {
+                resolve({ identifier, data: parseDesignation(csvWithoutIdentifier) });
+                return;
+            }
 
             Papa.parse(csvWithoutIdentifier, {
                 header: true,
@@ -103,6 +108,60 @@ function parseLocalization(csvData) {
     });
     
     return parsedData;
+}
+
+/**
+ * Parses localization CSV data into a nested dictionary format.
+ *
+ * @param {Object[]} data - Parsed CSV data from PapaParse
+ * @returns {Object} A data structure with the format [{ label: 'A'', contacts: [contact, contact, ...] }, ... ]
+ */
+function parseDesignation(csvData) {
+    const parsedData = {};
+    const rows = Papa.parse(csvData, { header: true, skipEmptyLines: true }).data;
+    
+    // First pass: Group by electrode label and collect contacts
+    rows.forEach(row => {
+        const label = row.Electrode.trim();
+        const contactNumber = parseInt(row.Contact);
+        let associatedLocation = row.AssociatedLocation;
+        const contactDescription = row.ContactDescription;
+        const mark = parseInt(row.Mark) || 0; // Default to 0 if not specified
+        const surgeonMark = parseInt(row.SurgeonMark) === 1; // Convert to boolean from int (0 or 1)
+        
+        // Process associated location based on GM presence
+        if (associatedLocation === 'GM') {
+            associatedLocation = contactDescription;
+        } else if (associatedLocation === 'GM/WM') {
+            associatedLocation = `${contactDescription}/WM`;
+        } else if (associatedLocation === 'GM/GM') {
+            const [desc1, desc2] = contactDescription.split('+');
+            associatedLocation = `${desc1}/${desc2}`;
+        }
+        // For other cases (like WM), keep the original associatedLocation
+        
+        if (!parsedData[label]) {
+            parsedData[label] = {
+                label: label,
+                contacts: []
+            };
+        }
+        
+        const contactObj = new contact(associatedLocation, mark, surgeonMark);
+        
+        // Add to contacts array at the correct index (contactNumber - 1)
+        // Ensure the array is large enough
+        while (parsedData[label].contacts.length < contactNumber) {
+            parsedData[label].contacts.push(null);
+        }
+        parsedData[label].contacts[contactNumber - 1] = contactObj;
+    });
+    
+    // Convert to array format matching demo data
+    return Object.values(parsedData).map(electrode => ({
+        label: electrode.label,
+        contacts: electrode.contacts.filter(contact => contact !== null) // Remove any null entries
+    }));
 }
 
 /**
