@@ -2,6 +2,7 @@ import { demoContactData } from "./demoData";
 import { useState, useEffect } from "react";
 import Resection from "./ResectionPage";
 import Designation from "./DesignationPage";
+import { saveDesignationCSVFile } from "../../utils/CSVParser";
 
 const PAGE_NAME = ["designation", "resection"];
 
@@ -15,14 +16,21 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         return PAGE_NAME[0];
     });
 
+    // Store the original localization data if it exists
+    const [localizationData, setLocalizationData] = useState(() => {
+        if (savedState && savedState.localizationData) {
+            return savedState.localizationData;
+        }
+        return initialData.originalData || null;
+    });
+
     const [modifiedElectrodes, setModifiedElectrodes] = useState(() => {
         if (Object.keys(savedState).length !== 0) {
             return savedState.electrodes;
         }
 
         if (Object.keys(initialData).length !== 0) {
-            // TODO Parse initialData.data using parseDesignation from parseCSV
-            return initialData.map(electrode => ({
+            return initialData.data.map(electrode => ({
                 ...electrode,
                 contacts: electrode.contacts.map((contact, index) => ({
                     ...contact,
@@ -56,19 +64,20 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     useEffect(() => {
         const newState = {
             electrodes: modifiedElectrodes,
-            layout: layout
+            layout: layout,
+            localizationData: localizationData
         };
         
         // Preserve other state values
         if (savedState) {
             Object.keys(savedState).forEach(key => {
-                if (key !== 'electrodes' && key !== 'layout') {
+                if (key !== 'electrodes' && key !== 'layout' && key !== 'localizationData') {
                     newState[key] = savedState[key];
                 }
             });
         }
         onStateChange(newState);
-    }, [modifiedElectrodes, layout]);
+    }, [modifiedElectrodes, layout, localizationData]);
 
     const updateContact = (contactId, change) => {
         setModifiedElectrodes(prevElectrodes => {
@@ -87,6 +96,20 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     const toggleLayout = () => {
         const newLayout = layout === PAGE_NAME[0] ? PAGE_NAME[1] : PAGE_NAME[0];
         setLayout(newLayout);
+    };
+
+    const exportContacts = (electrodes) => {
+        if (localizationData) {
+            // If we have localization data, use it to create a CSV with the same format
+            saveDesignationCSVFile(electrodes, localizationData, true);
+        } else {
+            // Fall back to the simple logging if no localization data
+            for (let electrode of electrodes) {
+                for (let contact of electrode.contacts) {
+                    console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
+                }
+            }
+        }
     };
 
     return (
@@ -136,13 +159,5 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         </div>
     );
 };
-
-function exportContacts(electrodes) {
-    for (let electrode of electrodes) {
-        for (let contact of electrode.contacts) {
-            console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
-        }
-    }
-}
 
 export default ContactDesignation;

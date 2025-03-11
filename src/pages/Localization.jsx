@@ -76,7 +76,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const designationData = saveCSVFile(Identifiers.LOCALIZATION, electrodes, false);
         // Create a new tab with the designation data
         const event = new CustomEvent('addDesignationTab', {
-            detail: { data: designationData }
+            detail: { originalData: electrodes, data: designationData }
         });
         window.dispatchEvent(event);
     };

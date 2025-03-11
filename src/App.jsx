@@ -111,7 +111,7 @@ const HomePage = () => {
     // Add event listener for designation tab creation
     useEffect(() => {
         const handleAddDesignationTab = (event) => {
-            addTab('designation', event.detail.data);
+            addTab('designation', event.detail);
         };
 
         window.addEventListener('addDesignationTab', handleAddDesignationTab);
@@ -138,7 +138,8 @@ const HomePage = () => {
             data: data,
             state: {}
         };
-        setTabs([...tabs, newTab]);
+        
+        setTabs(prevTabs => [...prevTabs, newTab]);
         setActiveTab(newTab.id);
     };
 
@@ -238,7 +239,7 @@ const HomePage = () => {
             case 'csv-designation':
                 return <ContactDesignation
                     key={currentTab.id}
-                    initialData={currentTab.data}
+                    initialData={currentTab.data.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;

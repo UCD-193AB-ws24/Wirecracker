@@ -54,7 +54,17 @@ export function parseCSVFile( file, coordinates = false ) {
                 return;
             }
             else if (identifier === Identifiers.DESIGNATION) {
-                resolve({ identifier, data: parseDesignation(csvWithoutIdentifier) });
+                // First parse as localization to get the original structure
+                const localizationData = parseLocalization(csvWithoutIdentifier);
+                // Then parse as designation for the current state
+                const designationData = parseDesignation(csvWithoutIdentifier);
+                resolve({ 
+                    identifier, 
+                    data: {
+                        originalData: localizationData,
+                        data: designationData
+                    }
+                });
                 return;
             }
 
@@ -110,7 +120,7 @@ function parseLocalization(csvData) {
 }
 
 /**
- * Parses localization CSV data into a nested dictionary format.
+ * Parses designation CSV data into a data structure format.
  *
  * @param {Object[]} data - Parsed CSV data from PapaParse
  * @returns {Object} A data structure with the format [{ label: 'A'', contacts: [contact, contact, ...] }, ... ]
@@ -121,10 +131,10 @@ function parseDesignation(csvData) {
     
     // First pass: Group by electrode label and collect contacts
     rows.forEach(row => {
-        const label = row.Electrode.trim();
-        const contactNumber = parseInt(row.Contact);
-        let associatedLocation = row.AssociatedLocation;
-        const contactDescription = row.ContactDescription;
+        const label = row.Label.trim();
+        const contactNumber = parseInt(row.ContactNumber);
+        let associatedLocation = row.AssociatedLocation.trim();
+        const contactDescription = row.ContactDescription.trim();
         const mark = parseInt(row.Mark) || 0; // Default to 0 if not specified
         const surgeonMark = parseInt(row.SurgeonMark) === 1; // Convert to boolean from int (0 or 1)
         
@@ -195,8 +205,8 @@ export function saveCSVFile(identifier, data, download = true) {
                 
                 if (!download) {
                     returnData.push({
-                        Electrode: label,
-                        Contact: parseInt(contactNumber),
+                        Label: label,
+                        ContactNumber: parseInt(contactNumber),
                         AssociatedLocation: associatedLocation,
                         ContactDescription: contactDescription,
                         Mark: 0,
@@ -218,4 +228,68 @@ export function saveCSVFile(identifier, data, download = true) {
     } else {
         return parseDesignation(Papa.unparse(returnData));
     }
+}
+
+/**
+ * Saves a CSV file from data and downloads it or returns the data.
+ * 
+ * @param {Object[]} designationData - The data to be saved.
+ * @param {Object[]} localizationData - The localization data to be used.
+ * @param {boolean} download - Whether to download the file or return the data.
+ * @returns {string} The CSV content.
+ */
+export function saveDesignationCSVFile(designationData, localizationData, download = true) {
+    let csvContent = `${Identifiers.DESIGNATION}\n${IDENTIFIER_LINE_2}\n`;
+    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark"];
+    csvContent += headers.join(",") + "\n";
+
+    // Create a map of electrode contacts for quick lookup
+    const contactMap = {};
+    designationData.forEach(electrode => {
+        contactMap[electrode.label] = electrode.contacts;
+    });
+
+    // Use localization data structure but include marks from designation
+    Object.entries(localizationData).forEach(([label, contacts]) => {
+        const electrodeDescription = contacts.description;
+        const designationContacts = contactMap[label] || [];
+
+        Object.entries(contacts).forEach(([contactNumber, contactData]) => {
+            // Skip the 'description' key
+            if (contactNumber === 'description') return;
+
+            const {
+                contactDescription,
+                associatedLocation
+            } = contactData;
+
+            // Find corresponding designation contact
+            const designationContact = designationContacts.find(c => c.index === parseInt(contactNumber));
+            const mark = designationContact ? designationContact.mark : 0;
+            const surgeonMark = designationContact ? (designationContact.surgeonMark ? 1 : 0) : 0;
+
+            const row = [
+                label,
+                contactNumber,
+                electrodeDescription,
+                contactDescription,
+                associatedLocation,
+                mark,
+                surgeonMark
+            ];
+            csvContent += row.join(",") + "\n";
+        });
+    });
+
+    if (download) {
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "designation_" + new Date().toISOString().split('T')[0] + ".csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    return csvContent;
 }
