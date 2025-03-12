@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import Dropdown from './utils/Dropdown';
+import PlanTypePage from './pages/StimulationPlanning/PlanTypeSelection'
+import ContactSelection from './pages/StimulationPlanning/ContactSelection'
+import FunctionalTestSelection from './pages/StimulationPlanning/FunctionalTestSelection'
 import Debug from './pages/Debug';
 import DatabaseTable from "./pages/DatabaseTable";
 import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
@@ -439,6 +442,16 @@ const HomePage = () => {
         );
     };
 
+    const updateTabContent = (tabId, newContent) => {
+        setTabs(prevTabs => 
+            prevTabs.map(tab => 
+                tab.id === tabId 
+                    ? { ...tab, content: newContent }
+                    : tab
+            )
+        );
+    };
+
     const renameTab = (tabId, newTitle) => {
         setTabs(prevTabs => 
             prevTabs.map(tab => {
@@ -562,6 +575,7 @@ const HomePage = () => {
                                     token={token} 
                                     onNewLocalization={() => addTab('localization')}
                                     onNewDesignation={() => addTab('designation')}
+                                    onNewStimulation={() => addTab('stimulation')}
                                     onFileUpload={handleFileUpload}
                                     error={error}
                                 />
@@ -571,6 +585,7 @@ const HomePage = () => {
                             <Center 
                                 onNewLocalization={() => addTab('localization')}
                                 onNewDesignation={() => addTab('designation')}
+                                onNewStimulation={() => addTab('stimulation')}
                                 onFileUpload={handleFileUpload}
                                 error={error}
                             />
@@ -579,6 +594,37 @@ const HomePage = () => {
                 );
             case 'localization':
                 return <Localization 
+                    key={currentTab.id}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'stimulation':
+                return <PlanTypePage
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                />;
+            case 'seizure-recreation':
+            case 'cceps':
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={false}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'functional-mapping':
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={true}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'functional-test':
+                return <FunctionalTestSelection
                     key={currentTab.id}
                     initialData={{}}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
@@ -663,7 +709,7 @@ const HomePage = () => {
     );
 };
 
-const Center = ({ token, onNewLocalization, onNewDesignation, onFileUpload, error }) => {
+const Center = ({ token, onNewLocalization, onNewDesignation, onNewStimulation, onFileUpload, error }) => {
     const [showDatabaseModal, setShowDatabaseModal] = useState(false);
     const [databaseFiles, setDatabaseFiles] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -674,7 +720,7 @@ const Center = ({ token, onNewLocalization, onNewDesignation, onFileUpload, erro
         setDatabaseFiles(files);
         setIsLoading(false);
     };
-
+    
     return (
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
             {token && 
@@ -700,7 +746,7 @@ const Center = ({ token, onNewLocalization, onNewDesignation, onFileUpload, erro
                             onNewLocalization();
                             break;
                         case "Stimulation":
-                            // Add stimulation handling here when needed
+                            onNewStimulation();
                             break;
                         case "Designation":
                             onNewDesignation();
@@ -981,6 +1027,10 @@ const App = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
+{/*                <Route path="/localization" element={<Localization />} />
+                <Route path="/stimulation" element={<PlanTypePage />} />
+                <Route path="/stimulation/contacts" element={<ContactSelection />} />
+                <Route path="/stimulation/functional-tests" element={<FunctionalTestSelection />} />*/}
                 <Route path="/debug" element={<Debug />} />
                 <Route path="/database/:table" element={<DatabaseTable />} />
                 <Route path="/auth-success" element={<GoogleAuthSuccess />} />
