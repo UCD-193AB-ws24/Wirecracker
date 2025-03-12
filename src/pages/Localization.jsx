@@ -102,7 +102,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         return (
             <Popup
                 trigger={<button
-                    className="flex flex-col items-center justify-center p-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                    className="flex flex-col items-center justify-center p-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-200 min-w-[100px]"
                     key={number}>
                     <div className="text-sm font-medium text-gray-700 w-20 h-5">{number}</div>
                     <div className="text-xs text-gray-500 w-20 h-15">{displayText}</div>
@@ -164,7 +164,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 </button>
                 {label === expandedElectrode &&
                     <div className="p-4 bg-gray-50">
-                        <div className="flex gap-2">
+                        <div className="flex gap-1 flex-wrap overflow-x-auto"> {/* Delete flex-wrap to make it horizontal scroll */}
                             {Object.keys(electrodes[label]).map((key) => {
                                 const keyNum = parseInt(key);
 
