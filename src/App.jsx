@@ -138,6 +138,217 @@ const UserProfile = ({ onSignOut }) => {
     );
 };
 
+// Shared utility functions for file operations
+const FileUtils = {
+    // Transform database records into the electrode format used by Localization component
+    transformLocalizationData: (dbRecords) => {
+        if (!dbRecords || dbRecords.length === 0) {
+            console.warn('No data to transform');
+            return {};
+        }
+        
+        const electrodes = {};
+        
+        console.log('Starting data transformation with record count:', dbRecords.length);
+        
+        // Group by electrode
+        dbRecords.forEach((record, index) => {
+            if (!record.electrode) {
+                console.warn(`Record ${index} missing electrode data:`, record);
+                return;
+            }
+            
+            const electrode = record.electrode;
+            const label = electrode.label;
+            const description = electrode.description || 'Unknown Electrode';
+            const contact = record.contact;
+            const regionName = record.region?.name || '';
+            const tissueType = record.tissue_type || '';
+            
+            console.log(`Processing record ${index}: Electrode=${label}, Contact=${contact}, Type=${tissueType}, Region=${regionName}`);
+            
+            // Initialize electrode if not exists
+            if (!electrodes[label]) {
+                electrodes[label] = {
+                    description: description
+                };
+                console.log(`Created new electrode: ${label}`);
+            }
+            
+            // Handle contacts based on tissue type
+            if (!electrodes[label][contact]) {
+                electrodes[label][contact] = {
+                    associatedLocation: tissueType,
+                    contactDescription: regionName
+                };
+                console.log(`Added contact ${contact} to electrode ${label}`);
+            } else if (tissueType === 'GM' && electrodes[label][contact].associatedLocation === 'GM') {
+                // This is a GM/GM case (two entries for the same contact)
+                const existingDesc = electrodes[label][contact].contactDescription;
+                electrodes[label][contact].associatedLocation = 'GM/GM';
+                electrodes[label][contact].contactDescription = `${existingDesc}+${regionName}`;
+                console.log(`Updated contact ${contact} in electrode ${label} to GM/GM: ${existingDesc}+${regionName}`);
+            }
+        });
+        
+        console.log('Transformation complete. Electrode count:', Object.keys(electrodes).length);
+        return electrodes;
+    },
+    
+    // Handle opening a file from the database
+    handleFileOpen: async (file, openSavedFile) => {
+        try {
+            console.log(`Attempting to load file ID: ${file.file_id} (${file.filename})`);
+            
+            // First check if we can find any localization records with this file_id
+            const { data: checkData, error: checkError } = await supabase
+                .from('localization')
+                .select('id, file_id')
+                .eq('file_id', file.file_id)
+                .limit(1);
+                
+            if (checkError) {
+                console.error('Error checking localization data:', checkError);
+                alert(`Database error: ${checkError.message}`);
+                return;
+            }
+            
+            console.log('Check result:', checkData);
+            
+            if (!checkData || checkData.length === 0) {
+                console.log('No localization records found, checking for designation data...');
+                
+                // Check if this is a designation file
+                const { data: designationData, error: designationError } = await supabase
+                    .from('designation')
+                    .select('*')
+                    .eq('file_id', file.file_id)
+                    .single();
+                    
+                if (designationError) {
+                    console.error('Error checking designation data:', designationError);
+                    
+                    // If no data found in either table, create new empty localization
+                    console.log('Creating new tab with empty data for:', file.filename);
+                    openSavedFile('localization', { 
+                        name: file.filename || 'Unnamed Localization',
+                        fileId: file.file_id,
+                        fileName: file.filename,
+                        creationDate: file.creation_date,
+                        modifiedDate: file.modified_date,
+                        data: { data: {} }
+                    });
+                    
+                    return;
+                }
+                
+                if (designationData) {
+                    console.log('Found designation data:', designationData);
+                    // Open in designation view with the saved data
+                    openSavedFile('designation', {
+                        name: file.filename || 'Unnamed Designation',
+                        fileId: file.file_id,
+                        fileName: file.filename,
+                        creationDate: file.creation_date,
+                        modifiedDate: file.modified_date,
+                        data: designationData.designation_data,
+                        originalData: designationData.localization_data
+                    });
+                    return;
+                }
+            }
+            
+            // If we found localization data, proceed with loading it
+            const { data: localizationData, error: locError } = await supabase
+                .from('localization')
+                .select(`
+                    id, contact, tissue_type, file_id,
+                    electrode:electrode_id(id, label, description, contact_number),
+                    region:region_id(id, name)
+                `)
+                .eq('file_id', file.file_id);
+                
+            if (locError) {
+                console.error('Error fetching localization data:', locError);
+                alert(`Failed to load file data: ${locError.message}`);
+                return;
+            }
+            
+            if (!localizationData || localizationData.length === 0) {
+                console.warn('No localization data found for file ID:', file.file_id);
+                
+                // Create a new tab with empty data
+                openSavedFile('localization', { 
+                    name: file.filename || 'Unnamed Localization',
+                    fileId: file.file_id,
+                    fileName: file.filename,
+                    creationDate: file.creation_date,
+                    modifiedDate: file.modified_date,
+                    data: { data: {} }
+                });
+                
+                return;
+            }
+            
+            console.log(`Retrieved ${localizationData.length} localization records:`, localizationData);
+            
+            // Transform the database records into the electrode format used by the Localization component
+            const electrodes = FileUtils.transformLocalizationData(localizationData);
+            
+            // Call the openSavedFile function with the complete data
+            openSavedFile('localization', { 
+                name: file.filename || 'Unnamed Localization',
+                fileId: file.file_id,
+                fileName: file.filename,
+                creationDate: file.creation_date,
+                modifiedDate: file.modified_date,
+                data: { data: electrodes }
+            });
+        } catch (error) {
+            console.error('Error loading file:', error);
+            alert(`Failed to load file data: ${error.message}`);
+        }
+    },
+    
+    // Fetch user files from the database
+    fetchUserFiles: async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                return [];
+            }
+            
+            // Get user ID from session
+            const { data: session } = await supabase
+                .from('sessions')
+                .select('user_id')
+                .eq('token', token)
+                .single();
+            
+            if (!session) {
+                return [];
+            }
+            
+            // Fetch files for the current user
+            const { data: files, error } = await supabase
+                .from('files')
+                .select('*')
+                .eq('owner_user_id', session.user_id)
+                .order('modified_date', { ascending: false });
+            
+            if (error) {
+                console.error('Error fetching user files:', error);
+                return [];
+            }
+            
+            return files || [];
+        } catch (error) {
+            console.error('Error fetching user files:', error);
+            return [];
+        }
+    }
+};
+
 const HomePage = () => {
     const token = localStorage.getItem('token') || null;
     const [tabs, setTabs] = useState(() => {
@@ -332,6 +543,11 @@ const HomePage = () => {
         }
     };
 
+    // Make handleFileClick available globally for the database modal
+    window.handleFileClick = (file) => {
+        FileUtils.handleFileOpen(file, openSavedFile);
+    };
+
     const renderTabContent = () => {
         const currentTab = tabs.find(tab => tab.id === activeTab);
         
@@ -448,6 +664,17 @@ const HomePage = () => {
 };
 
 const Center = ({ token, onNewLocalization, onNewDesignation, onFileUpload, error }) => {
+    const [showDatabaseModal, setShowDatabaseModal] = useState(false);
+    const [databaseFiles, setDatabaseFiles] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const loadDatabaseFiles = async () => {
+        setIsLoading(true);
+        const files = await FileUtils.fetchUserFiles();
+        setDatabaseFiles(files);
+        setIsLoading(false);
+    };
+
     return (
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
             {token && 
@@ -502,13 +729,72 @@ const Center = ({ token, onNewLocalization, onNewDesignation, onFileUpload, erro
                             document.getElementById('fileInput').click();
                             break;
                         case "Open-Database":
-                            // Functionality to be added later
-                            console.log("Open Database option clicked - functionality coming soon");
+                            loadDatabaseFiles();
+                            setShowDatabaseModal(true);
                             break;
                     }
                 }}
             />
             {error && <p className="text-red-500 mt-2">{error}</p>}
+
+            {/* Database Files Modal */}
+            {showDatabaseModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl w-4/5 max-w-3xl max-h-[80vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-2xl font-bold">Open File from Database</h2>
+                            <button 
+                                onClick={() => setShowDatabaseModal(false)}
+                                className="text-gray-500 hover:text-gray-700 text-xl"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        
+                        {isLoading ? (
+                            <div className="text-center py-8">
+                                <p className="text-gray-600">Loading your files...</p>
+                            </div>
+                        ) : databaseFiles.length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-gray-600">No files found. Create a new file to get started.</p>
+                            </div>
+                        ) : (
+                            <div className="divide-y">
+                                {databaseFiles.map(file => (
+                                    <div 
+                                        key={file.file_id}
+                                        className="py-3 px-4 hover:bg-sky-50 cursor-pointer flex justify-between items-center"
+                                        onClick={() => {
+                                            window.handleFileClick(file);
+                                            setShowDatabaseModal(false);
+                                        }}
+                                    >
+                                        <div className="flex-1">
+                                            <div className="font-medium">{file.filename || 'Unnamed File'}</div>
+                                            <div className="text-sm text-gray-500">
+                                                Created: {new Date(file.creation_date).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-gray-500">
+                                            Modified: {new Date(file.modified_date).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={() => setShowDatabaseModal(false)}
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -530,234 +816,29 @@ const Right = ({ onOpenFile }) => {
     useEffect(() => {
         const fetchRecentFiles = async () => {
             setIsLoading(true);
-            
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    setRecentLocalizations([]);
-                    setIsLoading(false);
-                    return;
-                }
-                
-                // Get user ID from session
-                const { data: session } = await supabase
-                    .from('sessions')
-                    .select('user_id')
-                    .eq('token', token)
-                    .single();
-                
-                if (!session) {
-                    setRecentLocalizations([]);
-                    setIsLoading(false);
-                    return;
-                }
-                
-                // Fetch files for the current user - limited to 5 most recent
-                const { data: files, error } = await supabase
-                    .from('files')
-                    .select('*')
-                    .eq('owner_user_id', session.user_id)
-                    .order('modified_date', { ascending: false })
-                    .limit(5);
-                
-                if (error) {
-                    console.error('Error fetching recent files:', error);
-                    setRecentLocalizations([]);
-                } else {
-                    setRecentLocalizations(files || []);
-                }
-            } catch (error) {
-                console.error('Error fetching recent files:', error);
-                setRecentLocalizations([]);
-            } finally {
-                setIsLoading(false);
-            }
+            const files = await FileUtils.fetchUserFiles();
+            setRecentLocalizations(files.slice(0, 5)); // Limit to 5 most recent
+            setIsLoading(false);
         };
         
         fetchRecentFiles();
     }, []);
     
-    const handleFileClick = async (file) => {
-        try {
-            // Show loading state in the UI
-            const fileElement = document.getElementById(`file-${file.file_id}`);
-            if (fileElement) {
-                fileElement.classList.add('text-sky-600');
-                fileElement.querySelector('.filename').innerText = "Loading...";
-            }
-            
-            console.log(`Attempting to load file ID: ${file.file_id} (${file.filename})`);
-            
-            // First check if we can find any localization records with this file_id
-            const { data: checkData, error: checkError } = await supabase
-                .from('localization')
-                .select('id, file_id')
-                .eq('file_id', file.file_id)
-                .limit(1);
-                
-            if (checkError) {
-                console.error('Error checking localization data:', checkError);
-                alert(`Database error: ${checkError.message}`);
-                return;
-            }
-            
-            console.log('Check result:', checkData);
-            
-            if (!checkData || checkData.length === 0) {
-                console.log('No localization records found, checking for designation data...');
-                
-                // Check if this is a designation file
-                const { data: designationData, error: designationError } = await supabase
-                    .from('designation')
-                    .select('*')
-                    .eq('file_id', file.file_id)
-                    .single();
-                    
-                if (designationError) {
-                    console.error('Error checking designation data:', designationError);
-                    
-                    // If no data found in either table, create new empty localization
-                    console.log('Creating new tab with empty data for:', file.filename);
-                    onOpenFile('localization', { 
-                        name: file.filename || 'Unnamed Localization',
-                        fileId: file.file_id,
-                        fileName: file.filename,
-                        creationDate: file.creation_date,
-                        modifiedDate: file.modified_date,
-                        data: { data: {} }
-                    });
-                    
-                    return;
+    const handleFileClick = (file) => {
+        // Show loading state in the UI
+        const fileElement = document.getElementById(`file-${file.file_id}`);
+        if (fileElement) {
+            fileElement.classList.add('text-sky-600');
+            fileElement.querySelector('.filename').innerText = "Loading...";
+        }
+        
+        FileUtils.handleFileOpen(file, onOpenFile)
+            .finally(() => {
+                // Reset the loading state if needed
+                if (fileElement && fileElement.querySelector('.filename')) {
+                    fileElement.querySelector('.filename').innerText = file.filename || 'Unnamed Localization';
                 }
-                
-                if (designationData) {
-                    console.log('Found designation data:', designationData);
-                    // Open in designation view with the saved data
-                    onOpenFile('designation', {
-                        name: file.filename || 'Unnamed Designation',
-                        fileId: file.file_id,
-                        fileName: file.filename,
-                        creationDate: file.creation_date,
-                        modifiedDate: file.modified_date,
-                        data: designationData.designation_data,
-                        originalData: designationData.localization_data
-                    });
-                    return;
-                }
-            }
-            
-            // If we found localization data, proceed with loading it
-            const { data: localizationData, error: locError } = await supabase
-                .from('localization')
-                .select(`
-                    id, contact, tissue_type, file_id,
-                    electrode:electrode_id(id, label, description, contact_number),
-                    region:region_id(id, name)
-                `)
-                .eq('file_id', file.file_id);
-                
-            if (locError) {
-                console.error('Error fetching localization data:', locError);
-                alert(`Failed to load file data: ${locError.message}`);
-                return;
-            }
-            
-            if (!localizationData || localizationData.length === 0) {
-                console.warn('No localization data found for file ID:', file.file_id);
-                
-                // Create a new tab with empty data
-                onOpenFile('localization', { 
-                    name: file.filename || 'Unnamed Localization',
-                    fileId: file.file_id,
-                    fileName: file.filename,
-                    creationDate: file.creation_date,
-                    modifiedDate: file.modified_date,
-                    data: { data: {} }
-                });
-                
-                return;
-            }
-            
-            console.log(`Retrieved ${localizationData.length} localization records:`, localizationData);
-            
-            // Transform the database records into the electrode format used by the Localization component
-            const electrodes = transformLocalizationData(localizationData);
-            
-            // Call the onOpenFile function with the complete data
-            onOpenFile('localization', { 
-                name: file.filename || 'Unnamed Localization',
-                fileId: file.file_id,
-                fileName: file.filename,
-                creationDate: file.creation_date,
-                modifiedDate: file.modified_date,
-                data: { data: electrodes }
             });
-        } catch (error) {
-            console.error('Error loading file:', error);
-            alert(`Failed to load file data: ${error.message}`);
-        } finally {
-            // Reset the loading state if needed
-            const fileElement = document.getElementById(`file-${file.file_id}`);
-            if (fileElement && fileElement.querySelector('.filename')) {
-                fileElement.querySelector('.filename').innerText = file.filename || 'Unnamed Localization';
-            }
-        }
-    };
-    
-    // Transform database records into the electrode format used by Localization component
-    const transformLocalizationData = (dbRecords) => {
-        if (!dbRecords || dbRecords.length === 0) {
-            console.warn('No data to transform');
-            return {};
-        }
-        
-        const electrodes = {};
-        
-        console.log('Starting data transformation with record count:', dbRecords.length);
-        
-        // Group by electrode
-        dbRecords.forEach((record, index) => {
-            if (!record.electrode) {
-                console.warn(`Record ${index} missing electrode data:`, record);
-                return;
-            }
-            
-            const electrode = record.electrode;
-            const label = electrode.label;
-            const description = electrode.description || 'Unknown Electrode';
-            const contact = record.contact;
-            const regionName = record.region?.name || '';
-            const tissueType = record.tissue_type || '';
-            
-            console.log(`Processing record ${index}: Electrode=${label}, Contact=${contact}, Type=${tissueType}, Region=${regionName}`);
-            
-            // Initialize electrode if not exists
-            if (!electrodes[label]) {
-                electrodes[label] = {
-                    description: description
-                };
-                console.log(`Created new electrode: ${label}`);
-            }
-            
-            // Handle contacts based on tissue type
-            if (!electrodes[label][contact]) {
-                electrodes[label][contact] = {
-                    associatedLocation: tissueType,
-                    contactDescription: regionName
-                };
-                console.log(`Added contact ${contact} to electrode ${label}`);
-            } else if (tissueType === 'GM' && electrodes[label][contact].associatedLocation === 'GM') {
-                // This is a GM/GM case (two entries for the same contact)
-                const existingDesc = electrodes[label][contact].contactDescription;
-                electrodes[label][contact].associatedLocation = 'GM/GM';
-                electrodes[label][contact].contactDescription = `${existingDesc}+${regionName}`;
-                console.log(`Updated contact ${contact} in electrode ${label} to GM/GM: ${existingDesc}+${regionName}`);
-            }
-        });
-        
-        console.log('Transformation complete. Electrode count:', Object.keys(electrodes).length);
-        console.log('Transformed electrodes data:', electrodes);
-        return electrodes;
     };
     
     return (
