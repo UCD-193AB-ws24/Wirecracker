@@ -51,8 +51,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const contactTypes = ['GM', 'GM/GM', 'GM/WM', 'WM', 'OOB'];
 
     const addElectrode = (formData) => {
-        const label = formData.get('label');
-        const description = formData.get('description');
+        // Sanitize inputs by removing commas and semicolons
+        const label = formData.get('label').replace(/[,;]/g, '');
+        const description = formData.get('description').replace(/[,;]/g, '');
         const numContacts = formData.get('contacts');
 
         setElectrodes(prevElectrodes => {
