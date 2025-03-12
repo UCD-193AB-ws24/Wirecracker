@@ -5,7 +5,7 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 
-const ContactSelection = ({ electrodes = demoContactData }) => {
+const ContactSelection = ({ electrodes = demoContactData, switchContent, isFunctionalMapping = false }) => {
     const [planningContacts, setPlanningContacts] = useState([]);   // TODO Connect planningContacts to backend to save the state
     const [areAllVisible, setAreAllVisible] = useState(false);      // Boolean for if all contacts are visible
     const [isPairing, setIsPairing] = useState(false);
@@ -56,7 +56,7 @@ const ContactSelection = ({ electrodes = demoContactData }) => {
             <div className="flex h-screen p-6 space-x-6">
                 <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} isPairing={isPairing} submitPlanning={submitPlanning} />
 
-                <PlanningPane contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} />
+                <PlanningPane contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} switchContent={switchContent} isFunctionalMapping={isFunctionalMapping} />
             </div>
             <Container className="">
                 <Button
@@ -233,7 +233,7 @@ const Contact = ({ contact, onClick }) => {
 };
 
 // Planning pane on the right
-const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag }) => {
+const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag, switchContent, isFunctionalMapping = false }) => {
     const [hoverIndex, setHoverIndex] = useState(null);
 
     let index = hoverIndex; // For synchronization between hover and drop
@@ -284,12 +284,25 @@ const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag 
                     )}
                 </ul>
             )}
-            {/* export button. Disabled if no contact is in the list */}
-            <button className={`absolute right-10 bottom-10 py-2 px-4 bg-blue-500 text-white font-bold rounded ${
-                    contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                    }`} onClick={() => exportContacts(contacts)}>
-                export
-            </button>
+            <div className="flex space-x-2 absolute right-10 bottom-10 ">
+                {isFunctionalMapping ? (
+                    <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
+                            contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
+                            }`} onClick={() => switchContent('functional-test')}>
+                        select tests
+                    </button>
+                ) : (
+                    <div />
+
+                )}
+
+                {/* export button. Disabled if no contact is in the list */}
+                <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
+                        contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
+                        }`} onClick={() => exportContacts(contacts)}>
+                    export
+                </button>
+            </div>
         </div>
     );
 };
