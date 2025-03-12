@@ -29,14 +29,14 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const label = formData.get('label');
         const description = formData.get('description');
         const numContacts = formData.get('contacts');
-        
+
         setElectrodes(prevElectrodes => {
             const tempElectrodes = { ...prevElectrodes };
             tempElectrodes[label] = { description: description };
             for (let i = 1; i <= numContacts; i++) {
-                tempElectrodes[label][i] = { 
-                    contactDescription: description, 
-                    associatedLocation: '' 
+                tempElectrodes[label][i] = {
+                    contactDescription: description,
+                    associatedLocation: ''
                 };
             }
             return tempElectrodes;
@@ -52,11 +52,11 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 },
                 body: JSON.stringify(electrodes), // Send localization data to the backend
             });
-        
+
             if (!response.ok) {
               throw new Error('Failed to save localization');
             }
-        
+
             const result = response.json();
             console.log('Save successful:', result);
 
@@ -70,7 +70,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
     const createDesignationTab = () => {
         if (Object.keys(electrodes).length === 0) return;
-        
+
         // Get designation data from the current localization
         handleSaveLocalization(false);
         const designationData = saveCSVFile(Identifiers.LOCALIZATION, electrodes, false);
@@ -102,17 +102,19 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         return (
             <Popup
                 trigger={<button
-                    className="flex flex-col items-center border-r"
+                    className="flex flex-col items-center justify-center p-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                     key={number}>
-                    <div className="w-20 h-5">{number}</div>
-                    <div className="w-20 h-15">{displayText}</div>
+                    <div className="text-sm font-medium text-gray-700 w-20 h-5">{number}</div>
+                    <div className="text-xs text-gray-500 w-20 h-15">{displayText}</div>
                 </button>}
+                contentStyle={{ width: "500px" }}
                 modal
                 nested>
                 {close => (
-                    <div className="modal flex flex-col">
-                        <h4>Add Contact</h4>
+                    <div className="modal bg-white p-6 rounded-lg shadow-lg">
+                        <h4 className="text-lg font-semibold mb-4">Add Contact</h4>
                         <select
+                            className="w-full p-2 border border-gray-300 rounded-md mb-4"
                             onChange={(event) => {
                                 let temp = electrodes;
 
@@ -127,6 +129,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             })}
                         </select>
                         <button
+                            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200"
                             onClick={() => {
                                 setSubmitFlag(!submitFlag);
                                 close();
@@ -145,9 +148,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const [label, setLabel] = useState(name);
 
         return (
-            <div className="w-full outline-solid rounded mb-5">
+            <div className="w-full bg-white rounded-lg shadow-md mb-5 overflow-hidden">
                 <button
-                    className="w-full flex justify-start align-center border-b"
+                    className="w-full flex justify-between items-center p-4 bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors duration-200"
                     onClick={() => {
                         if (label === expandedElectrode) {
                             setExpandedElectrode('');
@@ -156,12 +159,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         }
                     }}
                     key={label}>
-                    <div className="w-20 h-10 bg-blue-400 text-white font-semibold align-middle font-semibold text-2xl">{label}</div>
-                    <div className="h-10 pl-2 align-middle font-semibold text-2xl">{electrodes[label].description}</div>
+                    <div className="text-xl">{label}</div>
+                    <div className="text-lg">{electrodes[label].description}</div>
                 </button>
                 {label === expandedElectrode &&
-                    <>
-                        <div className="flex">
+                    <div className="p-4 bg-gray-50">
+                        <div className="flex gap-2">
                             {Object.keys(electrodes[label]).map((key) => {
                                 const keyNum = parseInt(key);
 
@@ -170,7 +173,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 }
                             })}
                         </div>
-                    </>
+                    </div>
                 }
             </div>
         );
@@ -187,12 +190,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
     };
 
     return (
-        <div className="flex flex-col h-screen p-4">
-            <div className="p-4">
-                <div className="flex justify-between">
-                    <h1 className="text-2xl font-bold mb-4">New Localization</h1>
+        <div className="flex flex-col h-screen p-4 bg-gray-100">
+            <div className="p-4 bg-white rounded-lg shadow-md">
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold">New Localization</h1>
                     <button
-                        className="w-40 bg-sky-700 text-white font-semibold rounded"
+                        className="w-40 bg-sky-700 text-white font-semibold rounded-md py-2 px-4 hover:bg-sky-800 transition-colors duration-200"
                         onClick={() => handleSaveLocalization(true)}
                     >
                         Save Localization
@@ -208,11 +211,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             onClick={() => setIsElectrodePopupOpen(true)}>
                             <div>+</div>
                         </Button>}
+                    contentStyle={{ width: "500px" }}
                     modal
                     nested>
                     {close => (
-                        <div className="modal">
-                            <h4>
+                        <div className="modal bg-white p-6 rounded-lg shadow-lg">
+                            <h4 className="text-lg font-semibold mb-4">
                                 Add Electrode
                             </h4>
                             <form
@@ -224,19 +228,19 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                     setSubmitFlag(!submitFlag);
                                     close();
                                 }}>
-                                <div>
-                                    <div>Electrode Label</div>
-                                    <input name="label" />
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Electrode Label</label>
+                                    <input name="label" className="w-full p-2 border border-gray-300 rounded-md" />
                                 </div>
-                                <div>
-                                    <div>Description</div>
-                                    <input name="description" />
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <input name="description" className="w-full p-2 border border-gray-300 rounded-md" />
                                 </div>
-                                <div>
-                                    <div>Number of Contacts</div>
-                                    <input type="number" name="contacts" min="0" />
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Number of Contacts</label>
+                                    <input type="number" name="contacts" min="0" className="w-full p-2 border border-gray-300 rounded-md" />
                                 </div>
-                                <button type="submit">Add</button>
+                                <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200">Add</button>
                             </form>
                         </div>
                     )}
@@ -245,7 +249,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
             <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
                 <button
-                    className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
+                    className="py-2 px-4 bg-green-500 text-white font-bold rounded-md hover:bg-green-600 transition-colors duration-200 shadow-lg"
                     onClick={createDesignationTab}
                 >
                     Open in Designation
