@@ -453,10 +453,16 @@ async function saveLocalizationToDatabase(data, fileId) {
           return; // Skip invalid entries
         }
         
-        if (!contactData.associatedLocation) {
-          console.log(`DEBUG: Skipping contactData with no associatedLocation:`, contactData);
-          skippedNoLocationCount++;
-          return; // Skip invalid entries
+        if (!contactData.associatedLocation || contactData.associatedLocation === '') {
+          console.log(`DEBUG: Setting default 'WM' location for contact without associatedLocation: ${label}/${contactNumber}`);
+          console.log(`DEBUG: Original contactData:`, contactData);
+          // Instead of skipping, assign default 'WM' as associatedLocation
+          contactData.associatedLocation = 'WM';
+          
+          // If there's no contactDescription either, set a default value
+          if (!contactData.contactDescription || contactData.contactDescription === '') {
+            contactData.contactDescription = 'Unknown';
+          }
         }
         
         processedContactCount++;
@@ -539,37 +545,9 @@ async function saveLocalizationToDatabase(data, fileId) {
     if (localizationData.length === 0) {
       console.warn('No localization data to insert');
       
-      // Simple test insertion to check if the localization table is functional
-      console.log('DEBUG: Attempting simple test insertion to localization table');
-      
-      const testRecord = {
-        id: nextId,
-        electrode_id: Object.values(electrodeIdMap)[0] || 1,
-        contact: '1',
-        tissue_type: 'GM',
-        region_id: Object.values(regionIdMap)[0] || 1,
-        file_id: numericFileId
-      };
-      
-      console.log('DEBUG: Test record:', JSON.stringify(testRecord, null, 2));
-      
-      const { data: testInsert, error: testError } = await supabase
-        .from('localization')
-        .insert([testRecord])
-        .select();
-        
-      if (testError) {
-        console.error('DEBUG: Test insertion failed:', testError);
-      } else {
-        console.log('DEBUG: Test insertion succeeded:', testInsert);
-        
-        // Clean up test record
-        await supabase
-          .from('localization')
-          .delete()
-          .eq('id', testRecord.id);
-      }
-      
+      // Remove the test insertion that's likely causing errors
+      // Just log a warning instead
+      console.log('DEBUG: No localization data to save for this file');
       return;
     }
 
@@ -578,25 +556,10 @@ async function saveLocalizationToDatabase(data, fileId) {
     
     // Try inserting in smaller batches to identify problem records
     try {
-      // First try with complete validation on one record to check for structure issues
-      const sampleRecord = localizationData.slice(0, 1);
-      console.log('Testing insertion with sample record:', JSON.stringify(sampleRecord, null, 2));
+      // Remove the single test record insertion - this could be causing the error
       
-      const { data: sampleResult, error: sampleError } = await supabase
-        .from('localization')
-        .insert(sampleRecord)
-        .select();
-        
-      if (sampleError) {
-        console.error('Error with sample record insertion:', sampleError);
-        console.error('Sample error details:', JSON.stringify(sampleError));
-        throw new Error(`Sample record error: ${sampleError.message}`);
-      } else {
-        console.log('Sample record inserted successfully');
-      }
-      
-      // If sample worked, proceed with full batch
-      console.log('Proceeding with full batch insertion');
+      // Proceed with full batch insertion directly
+      console.log('Proceeding with batch insertion');
       
       const { data: insertedRecords, error: localizationError } = await supabase
         .from('localization')
@@ -665,54 +628,6 @@ async function saveLocalizationToDatabase(data, fileId) {
         console.error('CRITICAL: Records appear to have been saved but count is 0');
       }
     }
-
-    // DIRECT SUPABASE ERROR CHECK
-    // This is a simple, isolated test that will show exactly what happens when we insert to the localization table
-    console.log("---------- RUNNING DIRECT SUPABASE ERROR CHECK ----------");
-    // Create a minimal test record
-    const testRecord = {
-      id: nextId + 1000, // Use a high ID to avoid conflicts
-      electrode_id: Object.values(electrodeIdMap)[0] || 1,
-      contact: '1',
-      tissue_type: 'GM',
-      region_id: Object.values(regionIdMap)[0] || 1,
-      file_id: numericFileId
-    };
-    
-    console.log("Test record:", JSON.stringify(testRecord, null, 2));
-    
-    // Simple, direct insertion test
-    const { data: testData, error: testError } = await supabase
-      .from('localization')
-      .insert([testRecord]);
-    
-    // Clear logging of the result
-    if (testError) {
-      console.error("❌ DIRECT TEST ERROR - Supabase returned an error:");
-      console.error(JSON.stringify(testError, null, 2));
-      
-      // Log table schema to help diagnose
-      console.log("Checking localization table schema...");
-      const { data: schemaData, error: schemaError } = await supabase
-        .rpc('get_table_definition', { table_name: 'localization' });
-        
-      if (schemaError) {
-        console.error("Could not get schema:", schemaError);
-      } else {
-        console.log("Localization table schema:", schemaData);
-      }
-    } else {
-      console.log("✓ DIRECT TEST PASSED - Supabase successfully inserted test record");
-      
-      // Clean up test record
-      await supabase
-        .from('localization')
-        .delete()
-        .eq('id', testRecord.id);
-        
-      console.log("Test record cleaned up");
-    }
-    console.log("---------- END DIRECT SUPABASE ERROR CHECK ----------");
 
     return {
       electrodeCount: insertedElectrodes.length,
