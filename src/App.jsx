@@ -263,8 +263,7 @@ const HomePage = () => {
     };
 
     const openSavedFile = (type, fileData) => {
-        // For now, this just opens a new tab with the file name
-        // In a real implementation, you'd load the actual data
+
         addTab(type, { name: fileData.fileName });
     };
 
@@ -456,7 +455,7 @@ const Right = ({ onOpenFile }) => {
                     return;
                 }
                 
-                // Fetch files for the current user
+                // Fetch files for the current user - limited to 5 most recent
                 const { data: files, error } = await supabase
                     .from('files')
                     .select('*')
@@ -481,6 +480,14 @@ const Right = ({ onOpenFile }) => {
         fetchRecentFiles();
     }, []);
     
+    const handleFileClick = (file) => {
+        // Call the onOpenFile function with the file data
+        onOpenFile('localization', { 
+            name: file.filename || 'Unnamed Localization',
+            fileId: file.file_id
+        });
+    };
+    
     return (
         <div className="basis-80 justify-center">
             <h3 className="text-4xl font-bold">Recent Localizations</h3>
@@ -490,9 +497,15 @@ const Right = ({ onOpenFile }) => {
                 ) : recentLocalizations.length > 0 ? (
                     <div>
                         {recentLocalizations.map((file) => (
-                            <div key={file.file_id} className="py-1 hover:text-sky-600 cursor-pointer">
-                                {file.filename || 'Unnamed Localization'}
-                                <span className="text-xs text-gray-500 ml-2">
+                            <div 
+                                key={file.file_id} 
+                                className="py-1 hover:bg-sky-50 hover:text-sky-600 cursor-pointer rounded px-2 transition-colors duration-150 flex justify-between items-center"
+                                onClick={() => handleFileClick(file)}
+                            >
+                                <div className="truncate max-w-[200px]">
+                                    {file.filename || 'Unnamed Localization'}
+                                </div>
+                                <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
                                     {new Date(file.modified_date).toLocaleDateString()}
                                 </span>
                             </div>
