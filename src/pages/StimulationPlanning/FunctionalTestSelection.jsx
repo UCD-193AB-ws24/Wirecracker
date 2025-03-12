@@ -10,7 +10,7 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
   const [showPopup, setShowPopup] = useState(savedState.showPopup || false);
   const [selectedContact, setSelectedContact] = useState(savedState.selectedContact || null);
   const [selectedTest, setSelectedTest] = useState(savedState.selectedTest || null);
-  const [expandedTests, setExpandedTests] = useState(savedState.expandedTests || new Set()); // Tracks expanded tests uniquely
+  const [expandedTests, setExpandedTests] = useState(savedState.expandedTests || []); // Tracks expanded tests uniquely
 
   const [state, setState] = useState(savedState)
 
@@ -103,7 +103,7 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
       } else {
         newSet.add(key); // Expand if not expanded yet
       }
-      return newSet;
+      return Array.from(newSet);
     });
   };
 
@@ -166,7 +166,7 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
                       Population: {test.population} | Disruption: {test.disruptionRate}%
                     </div>
 
-                    {expandedTests.has(testKey) && (
+                    {expandedTests.includes(testKey) && (
                       <div className="mt-2 p-2 bg-gray-100 rounded text-sm relative">
                         <p className="text-gray-600">{test.description}</p>
                         <a
@@ -232,7 +232,7 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
                     <div className="text-xs text-gray-700">
                       Population: {test.population} | Disruption: {test.disruptionRate}%
                     </div>
-                    {expandedTests.has(testKey) && (
+                    {expandedTests.includes(testKey) && (
                       <div className="mt-2 p-2 bg-gray-100 rounded text-sm relative">
                         <p className="text-gray-600">{test.description}</p>
                         <a
