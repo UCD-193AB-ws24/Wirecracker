@@ -23,7 +23,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         if (!fileId) {
             setFileId(generateUniqueId());
         }
-    }, [initialData]);
+
+        // Update file name from saved state
+        if (savedState.fileName) {
+            setFileName(savedState.fileName);
+        }
+    }, [initialData, savedState]);
 
     useEffect(() => {
         onStateChange({
@@ -307,13 +312,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             <div className="p-4">
                 <div className="flex justify-between">
                     <div className="flex items-center">
-                        <h1 className="text-2xl font-bold mr-4">Localization:</h1>
-                        <input 
-                            type="text" 
-                            value={fileName} 
-                            onChange={handleFileNameChange}
-                            className="border rounded px-2 py-1 text-xl"
-                        />
+                        <h1 className="text-2xl font-bold">Localization</h1>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-sm text-gray-500">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
@@ -11,15 +11,60 @@ import Localization from './pages/Localization';
 import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
 import { supabase } from './utils/supabaseClient';
 
-const Tab = ({ title, isActive, onClick, onClose }) => {
+const Tab = ({ title, isActive, onClick, onClose, onRename }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedTitle, setEditedTitle] = useState(title);
+    const inputRef = useRef(null);
+
+    useEffect(() => {
+        if (isEditing && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [isEditing]);
+
+    const handleDoubleClick = () => {
+        if (title !== 'Home') {
+            setIsEditing(true);
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleBlur();
+        }
+    };
+
+    const handleBlur = () => {
+        setIsEditing(false);
+        if (editedTitle.trim() !== '' && editedTitle !== title) {
+            onRename(editedTitle.trim());
+        } else {
+            setEditedTitle(title);
+        }
+    };
+
     return (
         <div 
             className={`flex items-center px-4 py-2 border-b-2 cursor-pointer ${
                 isActive ? 'border-sky-700 text-sky-700' : 'border-transparent'
             }`}
             onClick={onClick}
+            onDoubleClick={handleDoubleClick}
         >
-            <span>{title}</span>
+            {isEditing ? (
+                <input
+                    ref={inputRef}
+                    className="w-32 border rounded px-1 outline-none text-black"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    onBlur={handleBlur}
+                    onKeyDown={handleKeyDown}
+                    onClick={(e) => e.stopPropagation()}
+                />
+            ) : (
+                <span>{title}</span>
+            )}
             {title !== 'Home' && (
                 <button 
                     className="ml-2 text-gray-500 hover:text-gray-700"
@@ -102,11 +147,30 @@ const HomePage = () => {
         return localStorage.getItem('activeTab') || 'home';
     });
     const [error, setError] = useState("");
+    const [localizationCounter, setLocalizationCounter] = useState(1);
     
     useEffect(() => {
         localStorage.setItem('tabs', JSON.stringify(tabs));
         localStorage.setItem('activeTab', activeTab);
     }, [tabs, activeTab]);
+
+    useEffect(() => {
+        // Find the highest localization number to initialize the counter
+        if (tabs.length > 1) {
+            const pattern = /Localization(\d+)/;
+            const numbers = tabs
+                .map(tab => {
+                    const match = tab.title.match(pattern);
+                    return match ? parseInt(match[1]) : 0;
+                })
+                .filter(num => !isNaN(num));
+            
+            if (numbers.length > 0) {
+                const max = Math.max(...numbers);
+                setLocalizationCounter(max + 1);
+            }
+        }
+    }, []);
 
     const addTab = (type, data = null) => {
         const generateUniqueId = () => {
@@ -114,14 +178,22 @@ const HomePage = () => {
             return Math.floor(Date.now() % 1000000000); // Last 9 digits as integer
         };
 
+        let tabTitle;
+        if (type === 'localization') {
+            tabTitle = `Localization${localizationCounter}`;
+            setLocalizationCounter(prevCounter => prevCounter + 1);
+        } else {
+            tabTitle = data?.name || 'New Tab';
+        }
+
         const newTab = {
             id: Date.now().toString(),
-            title: type === 'localization' ? 'New Localization' : data?.name || 'New Tab',
+            title: tabTitle,
             content: type,
             data: data,
             state: {
                 fileId: generateUniqueId(),
-                fileName: type === 'localization' ? 'New Localization' : data?.name || 'New Tab',
+                fileName: tabTitle,
                 creationDate: new Date().toISOString(),
                 modifiedDate: new Date().toISOString()
             }
@@ -132,17 +204,27 @@ const HomePage = () => {
 
     const updateTabState = (tabId, newState) => {
         setTabs(prevTabs => 
+            prevTabs.map(tab => 
+                tab.id === tabId 
+                    ? { ...tab, state: {...tab.state, ...newState} }
+                    : tab
+            )
+        );
+    };
+
+    const renameTab = (tabId, newTitle) => {
+        setTabs(prevTabs => 
             prevTabs.map(tab => {
                 if (tab.id === tabId) {
-                    // Update the tab title if the file name has changed
-                    if (newState.fileName && tab.title !== newState.fileName) {
-                        return { 
-                            ...tab, 
-                            title: newState.fileName,
-                            state: {...tab.state, ...newState} 
-                        };
-                    }
-                    return { ...tab, state: {...tab.state, ...newState} };
+                    const updatedTab = { 
+                        ...tab, 
+                        title: newTitle,
+                        state: {
+                            ...tab.state,
+                            fileName: newTitle
+                        }
+                    };
+                    return updatedTab;
                 }
                 return tab;
             })
@@ -260,6 +342,7 @@ const HomePage = () => {
                         isActive={activeTab === tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         onClose={() => closeTab(tab.id)}
+                        onRename={(newTitle) => renameTab(tab.id, newTitle)}
                     />
                 ))}
                 <button 
