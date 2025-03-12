@@ -108,15 +108,38 @@ const HomePage = () => {
         localStorage.setItem('activeTab', activeTab);
     }, [tabs, activeTab]);
 
+    // Add event listener for designation tab creation
+    useEffect(() => {
+        const handleAddDesignationTab = (event) => {
+            addTab('designation', event.detail);
+        };
+
+        window.addEventListener('addDesignationTab', handleAddDesignationTab);
+        return () => {
+            window.removeEventListener('addDesignationTab', handleAddDesignationTab);
+        };
+    }, []);
+
     const addTab = (type, data = null) => {
+        let title = 'New Tab';
+        switch (type) {
+            case 'localization':        title = 'New Localization'; break;
+            case 'csv-localization':    title = data.name; break;
+            case 'stimulation':         title = 'New Stimulation'; break;
+            case 'designation':         title = 'New Designation'; break;
+            case 'csv-designation':     title = data.name; break;
+            case 'csv-test_plan':       title = data.name; break;
+        }
+
         const newTab = {
             id: Date.now().toString(),
-            title: type === 'localization' ? 'New Localization' : data?.name || 'New Tab',
+            title: title,
             content: type,
             data: data,
             state: {}
         };
-        setTabs([...tabs, newTab]);
+        
+        setTabs(prevTabs => [...prevTabs, newTab]);
         setActiveTab(newTab.id);
     };
 
@@ -148,7 +171,9 @@ const HomePage = () => {
             const { identifier, data } = await parseCSVFile(file);
             if (identifier === Identifiers.LOCALIZATION) {
                 addTab('csv-localization', { name: file.name, data });
-            } else {
+            } else if (identifier === Identifiers.DESIGNATION) {
+                addTab('csv-designation', { name: file.name, data });
+            } else if (identifier === Identifiers.TEST_PLAN) {
                 addTab('csv-test_plan', { name: file.name, data });
             }
         } catch (err) {
@@ -174,6 +199,7 @@ const HomePage = () => {
                                 <Center 
                                     token={token} 
                                     onNewLocalization={() => addTab('localization')}
+                                    onNewDesignation={() => addTab('designation')}
                                     onFileUpload={handleFileUpload}
                                     error={error}
                                 />
@@ -182,6 +208,7 @@ const HomePage = () => {
                         ) : (
                             <Center 
                                 onNewLocalization={() => addTab('localization')}
+                                onNewDesignation={() => addTab('designation')}
                                 onFileUpload={handleFileUpload}
                                 error={error}
                             />
@@ -196,9 +223,23 @@ const HomePage = () => {
                     savedState={currentTab.state}
                 />;
             case 'csv-localization':
-                return <Localization 
+                return <Localization
                     key={currentTab.id}
                     initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'designation':
+                return <ContactDesignation
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-designation':
+                return <ContactDesignation
+                    key={currentTab.id}
+                    initialData={currentTab.data.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
@@ -259,7 +300,7 @@ const HomePage = () => {
     );
 };
 
-const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
+const Center = ({ token, onNewLocalization, onNewDesignation, onFileUpload, error }) => {
     return (
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
             {token && 
@@ -276,7 +317,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                 openText="Create New ▾"
                 closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
                 openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
-                options="Localization Stimulation"
+                options="Localization Stimulation Designation"
                 optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
                 onOptionClick={(option) => {
@@ -286,6 +327,9 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                             break;
                         case "Stimulation":
                             // Add stimulation handling here when needed
+                            break;
+                        case "Designation":
+                            onNewDesignation();
                             break;
                     }
                 }}
