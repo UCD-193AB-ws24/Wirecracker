@@ -56,16 +56,15 @@ router.get("/tables/:table", async (req, res) => {
 // Endpoint to save localization data
 router.post('/save-localization', async (req, res) => {
   try {
-    console.log('Received localization save request:', req.body);
+    console.log('Received localization save request', req.body);
     
     const { electrodes, fileId } = req.body;
     
-    // Input validation
     if (!electrodes) {
       return res.status(400).json({ success: false, error: 'Missing electrodes data' });
     }
     
-    if (!fileId) {
+    if (fileId === undefined || fileId === null) {
       return res.status(400).json({ success: false, error: 'Missing file ID' });
     }
     
@@ -73,40 +72,49 @@ router.post('/save-localization', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Electrodes data is empty' });
     }
     
-    // Check if the files table exists
-    try {
-      const { data: filesTableData, error: filesTableError } = await supabase
-        .from('files')
-        .select('*')
-        .limit(1);
+    console.log(`Processing save request for file ID: ${fileId} with ${Object.keys(electrodes).length} electrodes`);
+    
+    // Delete existing localization records for this file_id BEFORE saving new ones
+    console.log(`Checking for existing localizations with file_id: ${fileId}`);
+    const { data: existingData, error: checkError } = await supabase
+      .from('localization')
+      .select('id')
+      .eq('file_id', fileId);
+      
+    if (checkError) {
+      console.error('Error checking existing localizations:', checkError);
+    } else if (existingData && existingData.length > 0) {
+      console.log(`Found ${existingData.length} existing localizations with file_id ${fileId}, deleting...`);
+      const { error: deleteError } = await supabase
+        .from('localization')
+        .delete()
+        .eq('file_id', fileId);
         
-      if (filesTableError) {
-        console.error('Error checking files table:', filesTableError);
+      if (deleteError) {
+        console.error('Error deleting existing localizations:', deleteError);
         return res.status(500).json({ 
           success: false, 
-          error: `Database error: ${filesTableError.message}`,
-          details: 'Failed to verify files table exists'
+          error: `Failed to update existing localization data: ${deleteError.message}`
         });
       }
-    } catch (tableCheckError) {
-      console.error('Exception checking files table:', tableCheckError);
-      return res.status(500).json({ 
-        success: false, 
-        error: tableCheckError.message,
-        details: 'Failed to verify files table exists'
-      });
+      console.log('Successfully deleted existing localizations');
+    } else {
+      console.log('No existing localizations found for this file_id');
     }
     
-    // Process the save operation
+    // Process the save operation with file ID
     await saveLocalizationToDatabase(electrodes, fileId);
     
-    res.status(200).json({ success: true });
+    res.status(200).json({ 
+      success: true,
+      message: 'Localization data saved successfully',
+      fileId: fileId
+    });
   } catch (error) {
-    console.error('Error saving localization:', error);
+    console.error('Error in save-localization endpoint:', error);
     res.status(500).json({ 
       success: false, 
-      error: error.message,
-      stack: error.stack
+      error: error.message
     });
   }
 });
@@ -167,11 +175,21 @@ async function insertRegionsAndGetIds(regions) {
 /**
  * Saves localization data to the database in the format of the three tables.
  * @param {Object} data - The nested dictionary data from parseLocalization.
- * @param {string} fileId - The unique file identifier
+ * @param {number|string} fileId - The unique file identifier
  */
 async function saveLocalizationToDatabase(data, fileId) {
   try {
-    console.log('Processing electrode data for saving...');
+    console.log(`Starting save process for file ID: ${fileId}`);
+    
+    // Ensure fileId is an integer
+    const numericFileId = typeof fileId === 'string' ? parseInt(fileId) : fileId;
+    
+    if (isNaN(numericFileId)) {
+      throw new Error(`Invalid file ID: ${fileId} (must be a valid number)`);
+    }
+    
+    console.log(`Saving ${Object.keys(data).length} electrodes for file ID: ${numericFileId}`);
+    console.log('Sample data structure:', JSON.stringify(Object.entries(data)[0], null, 2));
     
     // Insert into electrode table
     const electrodeData = Object.keys(data).map(label => ({
@@ -180,7 +198,7 @@ async function saveLocalizationToDatabase(data, fileId) {
       contact_number: Object.keys(data[label]).length - 1 // Subtract 1 to exclude the 'description' key
     }));
 
-    console.log('Inserting electrode data:', electrodeData);
+    console.log(`Inserting ${electrodeData.length} electrodes...`);
     
     const { data: insertedElectrodes, error: electrodeError } = await supabase
       .from('electrode')
@@ -189,8 +207,10 @@ async function saveLocalizationToDatabase(data, fileId) {
 
     if (electrodeError) {
       console.error('Error inserting electrodes:', electrodeError);
-      throw new Error(`Failed to insert electrodes: ${electrodeError.message}`);
+      throw electrodeError;
     }
+
+    console.log(`Successfully inserted ${insertedElectrodes.length} electrodes`);
 
     // Create a mapping of electrode labels to their database IDs
     const electrodeIdMap = {};
@@ -217,8 +237,8 @@ async function saveLocalizationToDatabase(data, fileId) {
       });
     });
 
-    console.log('Unique regions:', Array.from(uniqueRegions));
-    
+    console.log(`Found ${uniqueRegions.size} unique regions`);
+
     // Insert new regions and get a mapping of region names to IDs
     const regionIdMap = await insertRegionsAndGetIds(Array.from(uniqueRegions));
     
@@ -232,12 +252,12 @@ async function saveLocalizationToDatabase(data, fileId) {
       .limit(1);
 
     if (maxIdError) {
-      console.error('Error getting max localization ID:', maxIdError);
-      throw new Error(`Failed to get max localization ID: ${maxIdError.message}`);
+      console.error('Error getting max ID:', maxIdError);
+      throw maxIdError;
     }
 
     let nextId = maxIdData.length > 0 ? maxIdData[0].id + 1 : 1;
-    console.log('Next localization ID:', nextId);
+    console.log(`Starting localization IDs from ${nextId}`);
 
     // Insert into localization table with file_id
     const localizationData = [];
@@ -259,7 +279,7 @@ async function saveLocalizationToDatabase(data, fileId) {
               contact: contactNumber,
               tissue_type: 'GM',
               region_id: regionIdMap[desc1], // Use region ID from the map
-              file_id: fileId // Add file ID to localization record
+              file_id: numericFileId // Add file ID to localization record
             },
             {
               id: nextId++,
@@ -267,7 +287,7 @@ async function saveLocalizationToDatabase(data, fileId) {
               contact: contactNumber,
               tissue_type: 'GM',
               region_id: regionIdMap[desc2], // Use region ID from the map
-              file_id: fileId // Add file ID to localization record
+              file_id: numericFileId // Add file ID to localization record
             }
           );
         } else {
@@ -277,29 +297,49 @@ async function saveLocalizationToDatabase(data, fileId) {
             contact: contactNumber,
             tissue_type: associatedLocation,
             region_id: regionIdMap[contactDescription], // Use region ID from the map
-            file_id: fileId // Add file ID to localization record
+            file_id: numericFileId // Add file ID to localization record
           });
         }
       });
     });
 
-    console.log(`Inserting ${localizationData.length} localization records...`);
-    
     if (localizationData.length === 0) {
       console.warn('No localization data to insert');
       return;
     }
 
-    const { error: localizationError } = await supabase
+    console.log(`Inserting ${localizationData.length} localization records with file_id: ${numericFileId}`);
+    console.log('Sample localization record:', JSON.stringify(localizationData[0], null, 2));
+    
+    const { data: insertedRecords, error: localizationError } = await supabase
       .from('localization')
-      .insert(localizationData, { defaultToNull: true });
+      .insert(localizationData)
+      .select();
 
     if (localizationError) {
-      console.error('Error inserting localization data:', localizationError);
-      throw new Error(`Failed to insert localization data: ${localizationError.message}`);
+      console.error('Error inserting localization records:', localizationError);
+      throw localizationError;
     }
 
-    console.log("Data successfully saved to the database.");
+    console.log(`Successfully inserted ${localizationData.length} localization records`);
+    
+    // Verify records were saved by counting
+    const { count, error: countError } = await supabase
+      .from('localization')
+      .select('*', { count: 'exact', head: true })
+      .eq('file_id', numericFileId);
+      
+    if (countError) {
+      console.warn('Error verifying saved records:', countError);
+    } else {
+      console.log(`Verification: Found ${count} records with file_id ${numericFileId}`);
+    }
+
+    return {
+      electrodeCount: insertedElectrodes.length,
+      localizationCount: localizationData.length,
+      fileId: numericFileId
+    };
   } catch (error) {
     console.error("Error saving data to the database:", error);
     throw error; // Re-throw to propagate to the API endpoint handler

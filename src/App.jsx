@@ -263,8 +263,32 @@ const HomePage = () => {
     };
 
     const openSavedFile = (type, fileData) => {
-
-        addTab(type, { name: fileData.fileName });
+        if (type === 'localization') {
+            console.log('Opening saved file:', fileData);
+            
+            // Create a new tab with the loaded file data
+            const newTab = {
+                id: Date.now().toString(),
+                title: fileData.name,
+                content: 'csv-localization',  // Use csv-localization to reuse existing code path
+                data: fileData.data,
+                state: {
+                    fileId: fileData.fileId,
+                    fileName: fileData.name,
+                    creationDate: fileData.creationDate || new Date().toISOString(),
+                    modifiedDate: fileData.modifiedDate || new Date().toISOString(),
+                    electrodes: fileData.data.data  // Preserve loaded electrode data
+                }
+            };
+            
+            console.log('Created new tab with state:', newTab.state);
+            
+            setTabs([...tabs, newTab]);
+            setActiveTab(newTab.id);
+        } else {
+            // Fallback to basic tab creation
+            addTab(type, { name: fileData.name });
+        }
     };
 
     const renderTabContent = () => {
@@ -480,12 +504,169 @@ const Right = ({ onOpenFile }) => {
         fetchRecentFiles();
     }, []);
     
-    const handleFileClick = (file) => {
-        // Call the onOpenFile function with the file data
-        onOpenFile('localization', { 
-            name: file.filename || 'Unnamed Localization',
-            fileId: file.file_id
+    const handleFileClick = async (file) => {
+        try {
+            // Show loading state in the UI
+            const fileElement = document.getElementById(`file-${file.file_id}`);
+            if (fileElement) {
+                fileElement.classList.add('text-sky-600');
+                fileElement.querySelector('.filename').innerText = "Loading...";
+            }
+            
+            console.log(`Attempting to load file ID: ${file.file_id} (${file.filename})`);
+            
+            // First check if we can find any localization records with this file_id
+            const { data: checkData, error: checkError } = await supabase
+                .from('localization')
+                .select('id, file_id')
+                .eq('file_id', file.file_id)
+                .limit(1);
+                
+            if (checkError) {
+                console.error('Error checking localization data:', checkError);
+                alert(`Database error: ${checkError.message}`);
+                return;
+            }
+            
+            console.log('Check result:', checkData);
+            
+            if (!checkData || checkData.length === 0) {
+                console.warn(`No localization records found with file_id=${file.file_id}`);
+                
+                // Let's check what file_ids exist in the localization table
+                const { data: sampleData } = await supabase
+                    .from('localization')
+                    .select('file_id')
+                    .limit(10);
+                    
+                console.log('Sample file_ids in localization table:', sampleData);
+                
+                // Create a new tab anyway with empty data
+                console.log('Creating new tab with empty data for:', file.filename);
+                onOpenFile('localization', { 
+                    name: file.filename || 'Unnamed Localization',
+                    fileId: file.file_id,
+                    fileName: file.filename,
+                    creationDate: file.creation_date,
+                    modifiedDate: file.modified_date,
+                    data: { data: {} }
+                });
+                
+                return;
+            }
+            
+            // Fetch complete localization data associated with this file_id
+            const { data: localizationData, error: locError } = await supabase
+                .from('localization')
+                .select(`
+                    id, contact, tissue_type, file_id,
+                    electrode:electrode_id(id, acronym, description, contact_number),
+                    region:region_id(id, name)
+                `)
+                .eq('file_id', file.file_id);
+                
+            if (locError) {
+                console.error('Error fetching localization data:', locError);
+                alert(`Failed to load file data: ${locError.message}`);
+                return;
+            }
+            
+            if (!localizationData || localizationData.length === 0) {
+                console.warn('No localization data found for file ID:', file.file_id);
+                
+                // Create a new tab anyway with empty data
+                onOpenFile('localization', { 
+                    name: file.filename || 'Unnamed Localization',
+                    fileId: file.file_id,
+                    fileName: file.filename,
+                    creationDate: file.creation_date,
+                    modifiedDate: file.modified_date,
+                    data: { data: {} }
+                });
+                
+                return;
+            }
+            
+            console.log(`Retrieved ${localizationData.length} localization records:`, localizationData);
+            
+            // Transform the database records into the electrode format used by the Localization component
+            const electrodes = transformLocalizationData(localizationData);
+            
+            // Call the onOpenFile function with the complete data
+            onOpenFile('localization', { 
+                name: file.filename || 'Unnamed Localization',
+                fileId: file.file_id,
+                fileName: file.filename,
+                creationDate: file.creation_date,
+                modifiedDate: file.modified_date,
+                data: { data: electrodes }
+            });
+        } catch (error) {
+            console.error('Error loading file:', error);
+            alert(`Failed to load file data: ${error.message}`);
+        } finally {
+            // Reset the loading state if needed
+            const fileElement = document.getElementById(`file-${file.file_id}`);
+            if (fileElement && fileElement.querySelector('.filename')) {
+                fileElement.querySelector('.filename').innerText = file.filename || 'Unnamed Localization';
+            }
+        }
+    };
+    
+    // Transform database records into the electrode format used by Localization component
+    const transformLocalizationData = (dbRecords) => {
+        if (!dbRecords || dbRecords.length === 0) {
+            console.warn('No data to transform');
+            return {};
+        }
+        
+        const electrodes = {};
+        
+        console.log('Starting data transformation with record count:', dbRecords.length);
+        
+        // Group by electrode
+        dbRecords.forEach((record, index) => {
+            if (!record.electrode) {
+                console.warn(`Record ${index} missing electrode data:`, record);
+                return;
+            }
+            
+            const electrode = record.electrode;
+            const acronym = electrode.acronym || 'UNKNOWN';
+            const description = electrode.description || 'Unknown Electrode';
+            const contact = record.contact;
+            const regionName = record.region?.name || '';
+            const tissueType = record.tissue_type || '';
+            
+            console.log(`Processing record ${index}: Electrode=${acronym}, Contact=${contact}, Type=${tissueType}, Region=${regionName}`);
+            
+            // Initialize electrode if not exists
+            if (!electrodes[acronym]) {
+                electrodes[acronym] = {
+                    description: description
+                };
+                console.log(`Created new electrode: ${acronym}`);
+            }
+            
+            // Handle contacts based on tissue type
+            if (!electrodes[acronym][contact]) {
+                electrodes[acronym][contact] = {
+                    associatedLocation: tissueType,
+                    contactDescription: regionName
+                };
+                console.log(`Added contact ${contact} to electrode ${acronym}`);
+            } else if (tissueType === 'GM' && electrodes[acronym][contact].associatedLocation === 'GM') {
+                // This is a GM/GM case (two entries for the same contact)
+                const existingDesc = electrodes[acronym][contact].contactDescription;
+                electrodes[acronym][contact].associatedLocation = 'GM/GM';
+                electrodes[acronym][contact].contactDescription = `${existingDesc}+${regionName}`;
+                console.log(`Updated contact ${contact} in electrode ${acronym} to GM/GM: ${existingDesc}+${regionName}`);
+            }
         });
+        
+        console.log('Transformation complete. Electrode count:', Object.keys(electrodes).length);
+        console.log('Transformed electrodes data:', electrodes);
+        return electrodes;
     };
     
     return (
@@ -498,11 +679,12 @@ const Right = ({ onOpenFile }) => {
                     <div>
                         {recentLocalizations.map((file) => (
                             <div 
+                                id={`file-${file.file_id}`}
                                 key={file.file_id} 
                                 className="py-1 hover:bg-sky-50 hover:text-sky-600 cursor-pointer rounded px-2 transition-colors duration-150 flex justify-between items-center"
                                 onClick={() => handleFileClick(file)}
                             >
-                                <div className="truncate max-w-[200px]">
+                                <div className="truncate max-w-[200px] filename">
                                     {file.filename || 'Unnamed Localization'}
                                 </div>
                                 <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">

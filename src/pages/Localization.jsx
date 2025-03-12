@@ -151,15 +151,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             }
             
             console.log('File ID (integer):', fileId);
-            
-            try {
-                // Save file metadata
-                await saveFileMetadata(userId);
-            } catch (metadataError) {
-                console.error('Error saving file metadata:', metadataError);
-                alert(`File metadata error: ${metadataError.message}`);
-                return;
-            }
+            console.log('Electrodes data to save:', electrodes);
             
             // Make sure we have valid data before sending to backend
             if (Object.keys(electrodes).length === 0) {
@@ -167,16 +159,31 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 return;
             }
             
+            try {
+                // Save file metadata first
+                await saveFileMetadata(userId);
+                console.log('File metadata saved successfully');
+            } catch (metadataError) {
+                console.error('Error saving file metadata:', metadataError);
+                alert(`File metadata error: ${metadataError.message}`);
+                return;
+            }
+            
+            // Prepare data for sending to backend
+            const dataToSend = {
+                electrodes: electrodes,
+                fileId: fileId
+            };
+            
+            console.log('Sending data to backend:', dataToSend);
+            
             // Save localization data with file ID
             const response = await fetch('http://localhost:5000/api/save-localization', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    electrodes: electrodes,
-                    fileId: fileId
-                }),
+                body: JSON.stringify(dataToSend),
             });
         
             // Get detailed error from response if possible
@@ -191,6 +198,17 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
             // Save to CSV
             saveCSVFile(Identifiers.LOCALIZATION, electrodes, fileName);
+            
+            // Update tab with latest data
+            onStateChange({
+                expandedElectrode,
+                submitFlag,
+                electrodes,
+                fileId,
+                fileName,
+                creationDate,
+                modifiedDate
+            });
             
             // Show success message
             alert('Localization saved successfully!');
