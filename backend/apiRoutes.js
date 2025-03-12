@@ -378,7 +378,7 @@ async function saveLocalizationToDatabase(data, fileId) {
     // Create a mapping of electrode labels to their database IDs
     const electrodeIdMap = {};
     insertedElectrodes.forEach(electrode => {
-      electrodeIdMap[electrode.acronym] = electrode.id;
+      electrodeIdMap[electrode.label] = electrode.id;
     });
 
     console.log('Electrode ID mapping:', electrodeIdMap);
@@ -469,11 +469,9 @@ async function saveLocalizationToDatabase(data, fileId) {
         console.log(`DEBUG: Valid contact found - ${label}/${contactNumber}: ${contactData.associatedLocation}`);
         
         const { contactDescription, associatedLocation } = contactData;
-        const acronym = generateAcronym(data[label].description);
-        console.log(`DEBUG: Generated acronym: "${acronym}" for "${label}"`);
         
-        if (!electrodeIdMap[acronym]) {
-          console.error(`DEBUG: ERROR - No electrode ID found for acronym "${acronym}"`);
+        if (!electrodeIdMap[label]) {
+          console.error(`DEBUG: ERROR - No electrode ID found for label "${label}"`);
           console.log('DEBUG: Available electrode IDs:', electrodeIdMap);
           return; // Skip if no electrode ID found
         }
@@ -499,7 +497,7 @@ async function saveLocalizationToDatabase(data, fileId) {
           localizationData.push(
             {
               id: nextId++,
-              electrode_id: electrodeIdMap[acronym],
+              electrode_id: electrodeIdMap[label],
               contact: contactNumber,
               tissue_type: 'GM',
               region_id: regionIdMap[desc1], // Use region ID from the map
@@ -507,7 +505,7 @@ async function saveLocalizationToDatabase(data, fileId) {
             },
             {
               id: nextId++,
-              electrode_id: electrodeIdMap[acronym],
+              electrode_id: electrodeIdMap[label],
               contact: contactNumber,
               tissue_type: 'GM',
               region_id: regionIdMap[desc2], // Use region ID from the map
@@ -525,7 +523,7 @@ async function saveLocalizationToDatabase(data, fileId) {
           
           localizationData.push({
             id: nextId++,
-            electrode_id: electrodeIdMap[acronym],
+            electrode_id: electrodeIdMap[label],
             contact: contactNumber,
             tissue_type: associatedLocation,
             region_id: regionIdMap[contactDescription], // Use region ID from the map
