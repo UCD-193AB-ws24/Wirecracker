@@ -597,7 +597,7 @@ const Right = ({ onOpenFile }) => {
                 .from('localization')
                 .select(`
                     id, contact, tissue_type, file_id,
-                    electrode:electrode_id(id, acronym, description, contact_number),
+                    electrode:electrode_id(id, label, description, contact_number),
                     region:region_id(id, name)
                 `)
                 .eq('file_id', file.file_id);
@@ -669,35 +669,35 @@ const Right = ({ onOpenFile }) => {
             }
             
             const electrode = record.electrode;
-            const acronym = electrode.acronym || 'UNKNOWN';
+            const label = electrode.label;
             const description = electrode.description || 'Unknown Electrode';
             const contact = record.contact;
             const regionName = record.region?.name || '';
             const tissueType = record.tissue_type || '';
             
-            console.log(`Processing record ${index}: Electrode=${acronym}, Contact=${contact}, Type=${tissueType}, Region=${regionName}`);
+            console.log(`Processing record ${index}: Electrode=${label}, Contact=${contact}, Type=${tissueType}, Region=${regionName}`);
             
             // Initialize electrode if not exists
-            if (!electrodes[acronym]) {
-                electrodes[acronym] = {
+            if (!electrodes[label]) {
+                electrodes[label] = {
                     description: description
                 };
-                console.log(`Created new electrode: ${acronym}`);
+                console.log(`Created new electrode: ${label}`);
             }
             
             // Handle contacts based on tissue type
-            if (!electrodes[acronym][contact]) {
-                electrodes[acronym][contact] = {
+            if (!electrodes[label][contact]) {
+                electrodes[label][contact] = {
                     associatedLocation: tissueType,
                     contactDescription: regionName
                 };
-                console.log(`Added contact ${contact} to electrode ${acronym}`);
-            } else if (tissueType === 'GM' && electrodes[acronym][contact].associatedLocation === 'GM') {
+                console.log(`Added contact ${contact} to electrode ${label}`);
+            } else if (tissueType === 'GM' && electrodes[label][contact].associatedLocation === 'GM') {
                 // This is a GM/GM case (two entries for the same contact)
-                const existingDesc = electrodes[acronym][contact].contactDescription;
-                electrodes[acronym][contact].associatedLocation = 'GM/GM';
-                electrodes[acronym][contact].contactDescription = `${existingDesc}+${regionName}`;
-                console.log(`Updated contact ${contact} in electrode ${acronym} to GM/GM: ${existingDesc}+${regionName}`);
+                const existingDesc = electrodes[label][contact].contactDescription;
+                electrodes[label][contact].associatedLocation = 'GM/GM';
+                electrodes[label][contact].contactDescription = `${existingDesc}+${regionName}`;
+                console.log(`Updated contact ${contact} in electrode ${label} to GM/GM: ${existingDesc}+${regionName}`);
             }
         });
         
