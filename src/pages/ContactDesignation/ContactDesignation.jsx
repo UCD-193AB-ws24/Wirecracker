@@ -96,17 +96,73 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         setLayout(newLayout);
     };
 
-    const exportContacts = (electrodes) => {
-        if (localizationData) {
-            // If we have localization data, use it to create a CSV with the same format
-            saveDesignationCSVFile(electrodes, localizationData, true);
-        } else {
-            // Fall back to the simple logging if no localization data
-            for (let electrode of electrodes) {
-                for (let contact of electrode.contacts) {
-                    console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
+    const exportContacts = async (electrodes) => {
+        try {
+            // First save to database if we have a file ID
+            if (state.fileId) {
+                console.log('Saving designation to database...');
+                
+                // Get user ID from session
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('User not authenticated. Please log in to save designations.');
+                    return;
+                }
+                
+                try {
+                    // First save/update file metadata
+                    const response = await fetch('http://localhost:5000/api/save-designation', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        },
+                        body: JSON.stringify({
+                            designationData: electrodes,
+                            localizationData: localizationData,
+                            fileId: state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString()
+                        }),
+                    });
+
+                    const result = await response.json();
+                    if (!result.success) {
+                        console.error('Failed to save designation:', result.error);
+                        alert(`Failed to save designation: ${result.error}`);
+                        return;
+                    }
+                    
+                    // Update the state with new modified date
+                    setState(prevState => ({
+                        ...prevState,
+                        modifiedDate: new Date().toISOString()
+                    }));
+                    
+                    console.log('Designation saved successfully');
+                } catch (error) {
+                    console.error('Error saving designation:', error);
+                    alert(`Error saving designation: ${error.message}`);
+                    return;
                 }
             }
+
+            // Then export to CSV as before
+            if (localizationData) {
+                // If we have localization data, use it to create a CSV with the same format
+                saveDesignationCSVFile(electrodes, localizationData, true);
+            } else {
+                // Fall back to the simple logging if no localization data
+                for (let electrode of electrodes) {
+                    for (let contact of electrode.contacts) {
+                        console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error exporting contacts:', error);
+            alert(`Error exporting contacts: ${error.message}`);
         }
     };
 
