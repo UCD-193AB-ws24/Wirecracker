@@ -245,9 +245,21 @@ const HomePage = () => {
                 />;
             case 'seizure-recreation':
             case 'cceps':
-                return <ContactSelection />
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={false}
+                />;
             case 'functional-mapping':
-                return <FunctionalTestSelection />
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={true}
+                />;
+            case 'functional-test':
+                return <FunctionalTestSelection
+                    key={currentTab.id}
+                />;
             case 'csv-localization':
                 return <Localization
                     key={currentTab.id}
@@ -508,10 +520,10 @@ const App = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/localization" element={<Localization />} />
+{/*                <Route path="/localization" element={<Localization />} />
                 <Route path="/stimulation" element={<PlanTypePage />} />
                 <Route path="/stimulation/contacts" element={<ContactSelection />} />
-                <Route path="/stimulation/functional-tests" element={<FunctionalTestSelection />} />
+                <Route path="/stimulation/functional-tests" element={<FunctionalTestSelection />} />*/}
                 <Route path="/debug" element={<Debug />} />
                 <Route path="/database/:table" element={<DatabaseTable />} />
                 <Route path="/auth-success" element={<GoogleAuthSuccess />} />
