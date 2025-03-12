@@ -488,13 +488,26 @@ const Center = ({ token, onNewLocalization, onNewDesignation, onFileUpload, erro
                 style={{ display: 'none' }}
                 id="fileInput"
             />
-            <button 
-                className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5 transition-colors duration-200 
-                hover:bg-sky-700 hover:text-white"
-                onClick={() => document.getElementById('fileInput').click()}
-            >
-                Open File
-            </button>
+            <Dropdown 
+                closedText="Open File"
+                openText="Open File ▾"
+                closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5 transition-colors duration-200 hover:bg-sky-700 hover:text-white"
+                openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 my-5"
+                options="Open-Local Open-Database"
+                optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                onOptionClick={(option) => {
+                    switch(option) {
+                        case "Open-Local":
+                            document.getElementById('fileInput').click();
+                            break;
+                        case "Open-Database":
+                            // Functionality to be added later
+                            console.log("Open Database option clicked - functionality coming soon");
+                            break;
+                    }
+                }}
+            />
             {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
     );
