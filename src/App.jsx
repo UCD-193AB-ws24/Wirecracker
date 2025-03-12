@@ -10,6 +10,7 @@ import { parseCSVFile, Identifiers } from './utils/CSVParser';
 import Localization from './pages/Localization';
 import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
 import { supabase } from './utils/supabaseClient';
+import { FcGoogle } from 'react-icons/fc';
 
 const Tab = ({ title, isActive, onClick, onClose, onRename }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -154,6 +155,18 @@ const HomePage = () => {
         localStorage.setItem('activeTab', activeTab);
     }, [tabs, activeTab]);
 
+    // Add event listener for designation tab creation
+    useEffect(() => {
+        const handleAddDesignationTab = (event) => {
+            addTab('designation', event.detail);
+        };
+
+        window.addEventListener('addDesignationTab', handleAddDesignationTab);
+        return () => {
+            window.removeEventListener('addDesignationTab', handleAddDesignationTab);
+        };
+    }, []);
+
     useEffect(() => {
         // Find the highest localization number to initialize the counter
         if (tabs.length > 1) {
@@ -173,6 +186,16 @@ const HomePage = () => {
     }, []);
 
     const addTab = (type, data = null) => {
+        let title = 'New Tab';
+        switch (type) {
+            case 'localization':        title = 'New Localization'; break;
+            case 'csv-localization':    title = data.name; break;
+            case 'stimulation':         title = 'New Stimulation'; break;
+            case 'designation':         title = 'New Designation'; break;
+            case 'csv-designation':     title = data.name; break;
+            case 'csv-test_plan':       title = data.name; break;
+        }
+
         const generateUniqueId = () => {
             // Generate an integer ID based on current timestamp
             return Math.floor(Date.now() % 1000000000); // Last 9 digits as integer
@@ -188,7 +211,7 @@ const HomePage = () => {
 
         const newTab = {
             id: Date.now().toString(),
-            title: tabTitle,
+            title: title,
             content: type,
             data: data,
             state: {
@@ -198,7 +221,8 @@ const HomePage = () => {
                 modifiedDate: new Date().toISOString()
             }
         };
-        setTabs([...tabs, newTab]);
+        
+        setTabs(prevTabs => [...prevTabs, newTab]);
         setActiveTab(newTab.id);
     };
 
@@ -248,8 +272,10 @@ const HomePage = () => {
         try {
             const { identifier, data } = await parseCSVFile(file);
             if (identifier === Identifiers.LOCALIZATION) {
-                addTab('csv-localization', { type: 'localization', data });
-            } else {
+                addTab('csv-localization', { name: file.name, data });
+            } else if (identifier === Identifiers.DESIGNATION) {
+                addTab('csv-designation', { name: file.name, data });
+            } else if (identifier === Identifiers.TEST_PLAN) {
                 addTab('csv-test_plan', { name: file.name, data });
             }
         } catch (err) {
@@ -304,6 +330,7 @@ const HomePage = () => {
                                 <Center 
                                     token={token} 
                                     onNewLocalization={() => addTab('localization')}
+                                    onNewDesignation={() => addTab('designation')}
                                     onFileUpload={handleFileUpload}
                                     error={error}
                                 />
@@ -312,6 +339,7 @@ const HomePage = () => {
                         ) : (
                             <Center 
                                 onNewLocalization={() => addTab('localization')}
+                                onNewDesignation={() => addTab('designation')}
                                 onFileUpload={handleFileUpload}
                                 error={error}
                             />
@@ -326,9 +354,23 @@ const HomePage = () => {
                     savedState={currentTab.state}
                 />;
             case 'csv-localization':
-                return <Localization 
+                return <Localization
                     key={currentTab.id}
                     initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'designation':
+                return <ContactDesignation
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-designation':
+                return <ContactDesignation
+                    key={currentTab.id}
+                    initialData={currentTab.data.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
@@ -390,7 +432,7 @@ const HomePage = () => {
     );
 };
 
-const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
+const Center = ({ token, onNewLocalization, onNewDesignation, onFileUpload, error }) => {
     return (
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
             {token && 
@@ -407,7 +449,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                 openText="Create New ▾"
                 closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
                 openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
-                options="Localization Stimulation"
+                options="Localization Stimulation Designation"
                 optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
                 onOptionClick={(option) => {
@@ -417,6 +459,9 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                             break;
                         case "Stimulation":
                             // Add stimulation handling here when needed
+                            break;
+                        case "Designation":
+                            onNewDesignation();
                             break;
                     }
                 }}
@@ -713,6 +758,22 @@ const Logo = () => {
     );
 };
 
+export const GoogleSignInButton = () => {
+    const handleGoogleSignIn = () => {
+        window.location.href = "http://localhost:5000/auth/google";
+    };
+
+    return (
+        <button
+            onClick={handleGoogleSignIn}
+            className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+            <FcGoogle className="h-5 w-5 mr-2" />
+            Sign in with Google
+        </button>
+    );
+};
+
 const SignInButtons = () => {
     return (
         <div>
@@ -725,14 +786,12 @@ const SignInButtons = () => {
                 </Link>
             </div>
             <div className="flex m-10 justify-center">
-                <a href="http://localhost:5000/auth/google">
-                    <button className="bg-blue-500 font-semibold rounded-xl w-40 py-3">
-                        Sign in with Google
-                    </button>
-                </a>
+                <div className="w-[335px]">
+                    <GoogleSignInButton />
+                </div>
             </div>
         </div>
-    );;
+    );
 };
 
 const ToReview = () => {

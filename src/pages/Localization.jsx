@@ -137,7 +137,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     };
 
-    const handleSaveLocalization = async () => {
+    const handleSaveLocalization = async (download = false) => {
         try {
             // Update modified date
             const newModifiedDate = new Date().toISOString();
@@ -197,7 +197,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             console.log('Save successful:', result);
 
             // Save to CSV
-            saveCSVFile(Identifiers.LOCALIZATION, electrodes, fileName);
+            saveCSVFile(Identifiers.LOCALIZATION, electrodes, download);
             
             // Update tab with latest data
             onStateChange({
@@ -217,6 +217,19 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             console.error('Error saving localization:', error);
             alert(`Failed to save localization. ${error.message}`);
         }
+    };
+
+    const createDesignationTab = () => {
+        if (Object.keys(electrodes).length === 0) return;
+        
+        // Get designation data from the current localization
+        handleSaveLocalization(false);
+        const designationData = saveCSVFile(Identifiers.LOCALIZATION, electrodes, false);
+        // Create a new tab with the designation data
+        const event = new CustomEvent('addDesignationTab', {
+            detail: { originalData: electrodes, data: designationData }
+        });
+        window.dispatchEvent(event);
     };
 
     const Contact = ({
@@ -326,7 +339,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
     };
 
     return (
-        <div>
+        <div className="flex flex-col h-screen p-4">
             <div className="p-4">
                 <div className="flex justify-between">
                     <div className="flex items-center">
@@ -339,7 +352,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         </div>
                         <button
                             className="w-40 bg-sky-700 text-white font-semibold rounded p-2"
-                            onClick={handleSaveLocalization}
+                            onClick={() => handleSaveLocalization(true)}
                         >
                             Save Localization
                         </button>
@@ -389,6 +402,15 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     )}
                 </Popup>
             </Container>
+
+            <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
+                <button
+                    className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
+                    onClick={createDesignationTab}
+                >
+                    Open in Designation
+                </button>
+            </div>
         </div>
     );
 };

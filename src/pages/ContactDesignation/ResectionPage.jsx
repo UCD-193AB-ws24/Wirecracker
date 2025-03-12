@@ -1,16 +1,32 @@
-import { parseCSVFile, Identifiers } from '../../utils/CSVParser';
+import { parseCSVFile } from '../../utils/CSVParser';
 import load_untouch_nii from '../../utils/Nifti_viewer/load_untouch_nifti.js'
 import nifti_anatomical_conversion from '../../utils/Nifti_viewer/nifti_anatomical_conversion.js'
 import React, { useState, useRef, useEffect, useCallback } from "react";
 
-const Resection = ({ electrodes, onClick }) => {
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [focusedContact, setFocusedContact] = useState(null);
+const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
+    const [imageLoaded, setImageLoaded] = useState(savedState.isLoaded || false);
+    const [focusedContact, setFocusedContact] = useState(savedState.focusedContact || null);
+
+    useEffect(() => {
+        onStateChange({
+            ...savedState,
+            layout: "resection",
+            //isLoaded: imageLoaded,
+            focusedContact: focusedContact
+        });
+    }, [imageLoaded, focusedContact]);
 
     return (
         <div className="flex-1">
             <div className="flex flex-col md:flex-row p-2 bg-gray-100">
-                <NIFTIimage isLoaded={imageLoaded} onLoad={setImageLoaded} electrodes={electrodes} onContactClick={onClick} focus={focusedContact} />
+                <NIFTIimage
+                isLoaded={imageLoaded}
+                onLoad={setImageLoaded}
+                electrodes={electrodes}
+                onContactClick={onClick}
+                focus={focusedContact}
+                onStateChange={onStateChange}
+                savedState={savedState} />
                 {imageLoaded && (
                     <div className="flex-1 md:ml-6">
                         <div className="h-[870px] overflow-y-auto">
@@ -60,22 +76,24 @@ const Resection = ({ electrodes, onClick }) => {
     );
 };
 
-const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus }) => {
+const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onStateChange, savedState = {} }) => {
     const fixedMainViewSize = 600;
     const fixedSubViewSize = 300;
+
     const [niiData, setNiiData] = useState(null);
-    const [coordinates, setCoordinates] = useState([]);
+//     const [niiData, setNiiData] = useState(savedState.nii || null);
+    const [coordinates, setCoordinates] = useState(savedState.coordinate || []);
     const [markers, setMarkers] = useState([]);
-    const [sliceIndex, setSliceIndex] = useState(0);
-    const [direction, setDirection] = useState('Axial');
-    const [subCanvas0Direction, setSubCanvas0Direction] = useState('Coronal');
-    const [subCanvas1Direction, setSubCanvas1Direction] = useState('Sagittal');
-    const [maxSlices, setMaxSlices] = useState(0);
-    const [subCanvas0SliceIndex, setSubCanvas0SliceIndex] = useState(0);
-    const [subCanvas1SliceIndex, setSubCanvas1SliceIndex] = useState(0);
-    const [maxSubCanvas0Slices, setMaxSubCanvas0Slices] = useState(0);
-    const [maxSubCanvas1Slices, setMaxSubCanvas1Slices] = useState(0);
-    const [hoveredMarker, setHoveredMarker] = useState(null);
+    const [sliceIndex, setSliceIndex] = useState(savedState.canvas_main_slice || 0);
+    const [maxSlices, setMaxSlices] = useState(savedState.canvas_main_maxSlice || 0);
+    const [direction, setDirection] = useState(savedState.canvas_main_direction || 'Axial');
+    const [subCanvas0Direction, setSubCanvas0Direction] = useState(savedState.canvas_sub0_direction || 'Coronal');
+    const [subCanvas0SliceIndex, setSubCanvas0SliceIndex] = useState(savedState.canvas_sub0_slice || 0);
+    const [maxSubCanvas0Slices, setMaxSubCanvas0Slices] = useState(savedState.canvas_sub0_maxSlice || 0);
+    const [subCanvas1Direction, setSubCanvas1Direction] = useState(savedState.canvas_sub1_direction || 'Sagittal');
+    const [subCanvas1SliceIndex, setSubCanvas1SliceIndex] = useState(savedState.canvas_sub0_slice || 0);
+    const [maxSubCanvas1Slices, setMaxSubCanvas1Slices] = useState(savedState.canvas_sub0_maxSlice || 0);
+    const [hoveredMarker, setHoveredMarker] = useState(savedState.canvas_hoveredMarker || null);
     const mainCanvasRef = useRef(null);
     const subCanvas0Ref = useRef(null);
     const subCanvas1Ref = useRef(null);
@@ -96,6 +114,50 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus }) => 
     useEffect(() => { subCanvas1SliceIndexRef.current = subCanvas1SliceIndex; }, [subCanvas1SliceIndex]);
     useEffect(() => { maxSubCanvas0SlicesRef.current = maxSubCanvas0Slices; }, [maxSubCanvas0Slices]);
     useEffect(() => { maxSubCanvas1SlicesRef.current = maxSubCanvas1Slices; }, [maxSubCanvas1Slices]);
+
+    useEffect(() => {
+        onStateChange({
+            ...savedState,
+            canvas_sub1_slice: subCanvas1SliceIndex,
+            canvas_sub1_maxSlice: maxSubCanvas1Slices,
+            canvas_sub1_direction: subCanvas1Direction,
+        });
+    }, [subCanvas1SliceIndex, maxSubCanvas1Slices, subCanvas1Direction, isLoaded]);
+
+    useEffect(() => {
+        onStateChange({
+            ...savedState,
+            canvas_sub0_slice: subCanvas0SliceIndex,
+            canvas_sub0_maxSlice: maxSubCanvas0Slices,
+            canvas_sub0_direction: subCanvas0Direction,
+        });
+    }, [subCanvas0SliceIndex, maxSubCanvas0Slices, subCanvas0Direction, isLoaded]);
+
+    useEffect(() => {
+        onStateChange({
+            ...savedState,
+            canvas_main_slice: sliceIndex,
+            canvas_main_maxSlice: maxSlices,
+            canvas_main_direction: direction,
+            canvas_hoveredMarker: hoveredMarker,
+        });
+    }, [sliceIndex, maxSlices, direction, hoveredMarker, isLoaded]);
+
+//     useEffect(() => {
+//         if (niiData !== null) {
+//             onStateChange({
+//                 ...savedState,
+//                 nii: niiData
+//             });
+//         }
+//     }, [niiData]);
+
+    useEffect(() => {
+        onStateChange({
+            ...savedState,
+            coordinate: coordinates,
+        });
+    }, [coordinates]);
 
     const clearImageDataCache = () => {
         imageDataCache.current = {};
@@ -308,7 +370,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus }) => 
             case 3: setSubCanvas1SliceIndex(Math.round(z)); break;
         }
     };
-    useEffect(focusOnContact, [markers, niiData, coordinates]);
+    useEffect(focusOnContact, [focus, niiData, coordinates]);
 
     // Unified scroll handler using refs
     const handleScroll = (event, setter, currentSliceRef, maxRef) => {
@@ -452,6 +514,10 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus }) => 
             const arrayBuffer = await file.arrayBuffer();
             let nii = load_untouch_nii(file.name, arrayBuffer);
             nii = nifti_anatomical_conversion(nii);
+            nii = {
+                img: nii.img,
+                hdr: nii.hdr
+            }
 
             const isRGB = (nii.hdr.dime.datatype === 128 && nii.hdr.dime.bitpix === 24) ||
                     (nii.hdr.dime.datatype === 511 && nii.hdr.dime.bitpix === 96);
@@ -484,11 +550,22 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus }) => 
         if (!file) return;
 
         try {
-            const { identifier, data } = await parseCSVFile(file);
-            if (identifier === Identifiers.COORDINATES) {
-                setCoordinates(data); // Store CSV coordinates in state
+            const { identifier, data } = await parseCSVFile(file, true);
+            if (identifier === "coordinates") {
+                // Check for columns
+                if (Array.isArray(data)
+                    && data.length > 0
+                    && data[0].Electrode
+                    && data[0].Contact
+                    && data[0].x
+                    && data[0].y
+                    && data[0].z) {
+                    setCoordinates(data); // Store CSV coordinates in state
+                } else {
+                    throw "Please check the column name of the CSV data. Required: [Electrode,Contact,x,y,z]"
+                }
             } else {
-                // Handle other CSV types if needed
+                throw "Unknown CSV file format"
             }
         } catch (err) {
             console.error('Error parsing CSV file:', err);
