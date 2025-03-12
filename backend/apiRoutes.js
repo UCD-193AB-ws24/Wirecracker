@@ -279,37 +279,56 @@ function generateAcronym(description) {
 async function insertRegionsAndGetIds(regions) {
   const regionIdMap = {};
 
-  // Fetch existing regions
-  const { data: existingRegions, error: fetchError } = await supabase
-    .from('region_name')
-    .select('id, name');
-
-  if (fetchError) throw fetchError;
-
-  // Add existing regions to the map
-  existingRegions.forEach(region => {
-    regionIdMap[region.name] = region.id;
-  });
-
-  // Filter out regions that already exist
-  const newRegions = regions.filter(region => region && !regionIdMap[region]);
-
-  if (newRegions.length > 0) {
-    // Insert new regions
-    const { data: insertedRegions, error: insertError } = await supabase
+  try {
+    // Fetch existing regions
+    const { data: existingRegions, error: fetchError } = await supabase
       .from('region_name')
-      .insert(newRegions.map(name => ({ name })))
-      .select();
+      .select('id, name');
 
-    if (insertError) throw insertError;
+    if (fetchError) {
+      console.error('Error fetching existing regions:', fetchError);
+      console.error('Error details:', JSON.stringify(fetchError));
+      throw fetchError;
+    }
 
-    // Add new regions to the map
-    insertedRegions.forEach(region => {
+    // Add existing regions to the map
+    existingRegions.forEach(region => {
       regionIdMap[region.name] = region.id;
     });
-  }
 
-  return regionIdMap;
+    // Filter out regions that already exist
+    const newRegions = regions.filter(region => region && !regionIdMap[region]);
+
+    if (newRegions.length > 0) {
+      console.log(`Inserting ${newRegions.length} new regions:`, newRegions);
+      
+      // Insert new regions
+      const { data: insertedRegions, error: insertError } = await supabase
+        .from('region_name')
+        .insert(newRegions.map(name => ({ name })))
+        .select();
+
+      if (insertError) {
+        console.error('Error inserting new regions:', insertError);
+        console.error('Error details:', JSON.stringify(insertError));
+        console.error('New regions data:', newRegions);
+        throw insertError;
+      }
+
+      console.log(`Successfully inserted ${insertedRegions.length} new regions`);
+      
+      // Add new regions to the map
+      insertedRegions.forEach(region => {
+        regionIdMap[region.name] = region.id;
+      });
+    }
+
+    return regionIdMap;
+  } catch (error) {
+    console.error('Error in insertRegionsAndGetIds:', error);
+    console.error('Error stack:', error.stack);
+    throw error;
+  }
 }
 
 /**
@@ -341,6 +360,7 @@ async function saveLocalizationToDatabase(data, fileId) {
 
     console.log(`Inserting ${electrodeData.length} electrodes...`);
     
+    // Added detailed error checking for electrode insert
     const { data: insertedElectrodes, error: electrodeError } = await supabase
       .from('electrode')
       .insert(electrodeData)
@@ -348,6 +368,8 @@ async function saveLocalizationToDatabase(data, fileId) {
 
     if (electrodeError) {
       console.error('Error inserting electrodes:', electrodeError);
+      console.error('Error details:', JSON.stringify(electrodeError));
+      console.error('Sample electrode data:', JSON.stringify(electrodeData[0]));
       throw electrodeError;
     }
 
@@ -394,6 +416,7 @@ async function saveLocalizationToDatabase(data, fileId) {
 
     if (maxIdError) {
       console.error('Error getting max ID:', maxIdError);
+      console.error('Error details:', JSON.stringify(maxIdError));
       throw maxIdError;
     }
 
@@ -402,17 +425,71 @@ async function saveLocalizationToDatabase(data, fileId) {
 
     // Insert into localization table with file_id
     const localizationData = [];
+    console.log('DEBUG: Starting to build localization records from data structure:');
+    console.log('DEBUG: Electrode count:', Object.keys(data).length);
+    console.log('DEBUG: Sample electrode data:', JSON.stringify(Object.entries(data)[0], null, 2));
+    
+    let skippedDescriptionCount = 0;
+    let skippedNonObjectCount = 0;
+    let skippedNoLocationCount = 0;
+    let processedContactCount = 0;
+    
     Object.entries(data).forEach(([label, contacts]) => {
+      console.log(`DEBUG: Processing electrode "${label}" with ${Object.keys(contacts).length} keys`);
+      console.log(`DEBUG: Contact keys:`, Object.keys(contacts));
+      
       Object.entries(contacts).forEach(([contactNumber, contactData]) => {
-        if (contactNumber === 'description') return; // Skip the description key
-        if (typeof contactData !== 'object' || !contactData.associatedLocation) return; // Skip invalid entries
-
+        console.log(`DEBUG: Processing contact "${contactNumber}" for electrode "${label}"`);
+        
+        if (contactNumber === 'description') {
+          console.log(`DEBUG: Skipping "description" key`);
+          skippedDescriptionCount++;
+          return; // Skip the description key
+        }
+        
+        if (typeof contactData !== 'object') {
+          console.log(`DEBUG: Skipping non-object contactData:`, contactData);
+          skippedNonObjectCount++;
+          return; // Skip invalid entries
+        }
+        
+        if (!contactData.associatedLocation) {
+          console.log(`DEBUG: Skipping contactData with no associatedLocation:`, contactData);
+          skippedNoLocationCount++;
+          return; // Skip invalid entries
+        }
+        
+        processedContactCount++;
+        console.log(`DEBUG: Valid contact found - ${label}/${contactNumber}: ${contactData.associatedLocation}`);
+        
         const { contactDescription, associatedLocation } = contactData;
         const acronym = generateAcronym(data[label].description);
-
+        console.log(`DEBUG: Generated acronym: "${acronym}" for "${label}"`);
+        
+        if (!electrodeIdMap[acronym]) {
+          console.error(`DEBUG: ERROR - No electrode ID found for acronym "${acronym}"`);
+          console.log('DEBUG: Available electrode IDs:', electrodeIdMap);
+          return; // Skip if no electrode ID found
+        }
+        
         // Handle GM/GM case: Split into two entries
         if (associatedLocation === 'GM/GM') {
           const [desc1, desc2] = contactDescription.split('+');
+          
+          if (!regionIdMap[desc1]) {
+            console.error(`DEBUG: ERROR - No region ID found for "${desc1}"`);
+            console.log('DEBUG: Available region IDs:', regionIdMap);
+            return;
+          }
+          
+          if (!regionIdMap[desc2]) {
+            console.error(`DEBUG: ERROR - No region ID found for "${desc2}"`);
+            console.log('DEBUG: Available region IDs:', regionIdMap);
+            return;
+          }
+          
+          console.log(`DEBUG: Adding two GM/GM records for ${label}/${contactNumber} (${desc1}, ${desc2})`);
+          
           localizationData.push(
             {
               id: nextId++,
@@ -432,6 +509,14 @@ async function saveLocalizationToDatabase(data, fileId) {
             }
           );
         } else {
+          if (!regionIdMap[contactDescription]) {
+            console.error(`DEBUG: ERROR - No region ID found for "${contactDescription}"`);
+            console.log('DEBUG: Available region IDs:', regionIdMap);
+            return;
+          }
+          
+          console.log(`DEBUG: Adding record for ${label}/${contactNumber} (${associatedLocation}/${contactDescription})`);
+          
           localizationData.push({
             id: nextId++,
             electrode_id: electrodeIdMap[acronym],
@@ -443,26 +528,128 @@ async function saveLocalizationToDatabase(data, fileId) {
         }
       });
     });
+    
+    console.log('DEBUG: Localization data build summary:');
+    console.log(`DEBUG: - Skipped description keys: ${skippedDescriptionCount}`);
+    console.log(`DEBUG: - Skipped non-object data: ${skippedNonObjectCount}`);
+    console.log(`DEBUG: - Skipped no location data: ${skippedNoLocationCount}`);
+    console.log(`DEBUG: - Processed valid contacts: ${processedContactCount}`);
+    console.log(`DEBUG: - Final record count: ${localizationData.length}`);
 
     if (localizationData.length === 0) {
       console.warn('No localization data to insert');
+      
+      // Simple test insertion to check if the localization table is functional
+      console.log('DEBUG: Attempting simple test insertion to localization table');
+      
+      const testRecord = {
+        id: nextId,
+        electrode_id: Object.values(electrodeIdMap)[0] || 1,
+        contact: '1',
+        tissue_type: 'GM',
+        region_id: Object.values(regionIdMap)[0] || 1,
+        file_id: numericFileId
+      };
+      
+      console.log('DEBUG: Test record:', JSON.stringify(testRecord, null, 2));
+      
+      const { data: testInsert, error: testError } = await supabase
+        .from('localization')
+        .insert([testRecord])
+        .select();
+        
+      if (testError) {
+        console.error('DEBUG: Test insertion failed:', testError);
+      } else {
+        console.log('DEBUG: Test insertion succeeded:', testInsert);
+        
+        // Clean up test record
+        await supabase
+          .from('localization')
+          .delete()
+          .eq('id', testRecord.id);
+      }
+      
       return;
     }
 
     console.log(`Inserting ${localizationData.length} localization records with file_id: ${numericFileId}`);
     console.log('Sample localization record:', JSON.stringify(localizationData[0], null, 2));
     
-    const { data: insertedRecords, error: localizationError } = await supabase
-      .from('localization')
-      .insert(localizationData)
-      .select();
+    // Try inserting in smaller batches to identify problem records
+    try {
+      // First try with complete validation on one record to check for structure issues
+      const sampleRecord = localizationData.slice(0, 1);
+      console.log('Testing insertion with sample record:', JSON.stringify(sampleRecord, null, 2));
+      
+      const { data: sampleResult, error: sampleError } = await supabase
+        .from('localization')
+        .insert(sampleRecord)
+        .select();
+        
+      if (sampleError) {
+        console.error('Error with sample record insertion:', sampleError);
+        console.error('Sample error details:', JSON.stringify(sampleError));
+        throw new Error(`Sample record error: ${sampleError.message}`);
+      } else {
+        console.log('Sample record inserted successfully');
+      }
+      
+      // If sample worked, proceed with full batch
+      console.log('Proceeding with full batch insertion');
+      
+      const { data: insertedRecords, error: localizationError } = await supabase
+        .from('localization')
+        .insert(localizationData)
+        .select();
 
-    if (localizationError) {
-      console.error('Error inserting localization records:', localizationError);
-      throw localizationError;
+      if (localizationError) {
+        console.error('Error inserting localization records:', localizationError);
+        console.error('Error details:', JSON.stringify(localizationError));
+        console.error('Data sample:', JSON.stringify(localizationData.slice(0, 3)));
+        
+        // Check the table structure to help diagnose
+        const { data: tableInfo, error: infoError } = await supabase
+          .from('localization')
+          .select('*')
+          .limit(1);
+          
+        if (infoError) {
+          console.error('Error getting table structure:', infoError);
+        } else {
+          console.log('Existing table structure sample:', tableInfo);
+        }
+        
+        throw localizationError;
+      }
+
+      console.log(`Successfully inserted ${localizationData.length} localization records`);
+      
+    } catch (batchError) {
+      console.error('Batch insertion failed:', batchError);
+      
+      // Try inserting records one by one to identify problematic records
+      console.log('Attempting record-by-record insertion to identify problem...');
+      
+      for (let i = 0; i < localizationData.length; i++) {
+        try {
+          const { error: singleError } = await supabase
+            .from('localization')
+            .insert([localizationData[i]])
+            .select();
+            
+          if (singleError) {
+            console.error(`Error at record ${i}:`, singleError);
+            console.error('Problematic record:', JSON.stringify(localizationData[i], null, 2));
+          }
+        } catch (singleRecordError) {
+          console.error(`Exception at record ${i}:`, singleRecordError);
+        }
+      }
+      
+      // Re-throw the original error
+      throw batchError;
     }
-
-    console.log(`Successfully inserted ${localizationData.length} localization records`);
     
     // Verify records were saved by counting
     const { count, error: countError } = await supabase
@@ -474,7 +661,58 @@ async function saveLocalizationToDatabase(data, fileId) {
       console.warn('Error verifying saved records:', countError);
     } else {
       console.log(`Verification: Found ${count} records with file_id ${numericFileId}`);
+      if (count === 0) {
+        console.error('CRITICAL: Records appear to have been saved but count is 0');
+      }
     }
+
+    // DIRECT SUPABASE ERROR CHECK
+    // This is a simple, isolated test that will show exactly what happens when we insert to the localization table
+    console.log("---------- RUNNING DIRECT SUPABASE ERROR CHECK ----------");
+    // Create a minimal test record
+    const testRecord = {
+      id: nextId + 1000, // Use a high ID to avoid conflicts
+      electrode_id: Object.values(electrodeIdMap)[0] || 1,
+      contact: '1',
+      tissue_type: 'GM',
+      region_id: Object.values(regionIdMap)[0] || 1,
+      file_id: numericFileId
+    };
+    
+    console.log("Test record:", JSON.stringify(testRecord, null, 2));
+    
+    // Simple, direct insertion test
+    const { data: testData, error: testError } = await supabase
+      .from('localization')
+      .insert([testRecord]);
+    
+    // Clear logging of the result
+    if (testError) {
+      console.error("❌ DIRECT TEST ERROR - Supabase returned an error:");
+      console.error(JSON.stringify(testError, null, 2));
+      
+      // Log table schema to help diagnose
+      console.log("Checking localization table schema...");
+      const { data: schemaData, error: schemaError } = await supabase
+        .rpc('get_table_definition', { table_name: 'localization' });
+        
+      if (schemaError) {
+        console.error("Could not get schema:", schemaError);
+      } else {
+        console.log("Localization table schema:", schemaData);
+      }
+    } else {
+      console.log("✓ DIRECT TEST PASSED - Supabase successfully inserted test record");
+      
+      // Clean up test record
+      await supabase
+        .from('localization')
+        .delete()
+        .eq('id', testRecord.id);
+        
+      console.log("Test record cleaned up");
+    }
+    console.log("---------- END DIRECT SUPABASE ERROR CHECK ----------");
 
     return {
       electrodeCount: insertedElectrodes.length,
@@ -483,6 +721,23 @@ async function saveLocalizationToDatabase(data, fileId) {
     };
   } catch (error) {
     console.error("Error saving data to the database:", error);
+    console.error("Error stack:", error.stack);
+    
+    // Check database connection
+    try {
+      const { data, error: pingError } = await supabase
+        .from('localization')
+        .select('count(*)', { count: 'exact', head: true });
+        
+      if (pingError) {
+        console.error('Database connection issue:', pingError);
+      } else {
+        console.log('Database connection is working');
+      }
+    } catch (pingError) {
+      console.error('Failed to ping database:', pingError);
+    }
+    
     throw error; // Re-throw to propagate to the API endpoint handler
   }
 }
