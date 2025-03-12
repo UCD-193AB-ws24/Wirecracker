@@ -133,6 +133,16 @@ const HomePage = () => {
         );
     };
 
+    const updateTabContent = (tabId, newContent) => {
+        setTabs(prevTabs => 
+            prevTabs.map(tab => 
+                tab.id === tabId 
+                    ? { ...tab, content: newContent }
+                    : tab
+            )
+        );
+    };
+
     const closeTab = (tabId) => {
         const newTabs = tabs.filter(tab => tab.id !== tabId);
         setTabs(newTabs);
@@ -200,6 +210,16 @@ const HomePage = () => {
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
+            case 'stimulation':
+                return <PlanTypePage
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                />;
+            case 'seizure-recreation':
+            case 'cceps':
+                return <ContactSelection />
+            case 'functional-mapping':
+                return <FunctionalTestSelection />
             case 'csv-localization':
                 return <Localization 
                     key={currentTab.id}
