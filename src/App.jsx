@@ -109,12 +109,22 @@ const HomePage = () => {
     }, [tabs, activeTab]);
 
     const addTab = (type, data = null) => {
+        const generateUniqueId = () => {
+            // Generate an integer ID based on current timestamp
+            return Math.floor(Date.now() % 1000000000); // Last 9 digits as integer
+        };
+
         const newTab = {
             id: Date.now().toString(),
             title: type === 'localization' ? 'New Localization' : data?.name || 'New Tab',
             content: type,
             data: data,
-            state: {}
+            state: {
+                fileId: generateUniqueId(),
+                fileName: type === 'localization' ? 'New Localization' : data?.name || 'New Tab',
+                creationDate: new Date().toISOString(),
+                modifiedDate: new Date().toISOString()
+            }
         };
         setTabs([...tabs, newTab]);
         setActiveTab(newTab.id);
@@ -122,11 +132,20 @@ const HomePage = () => {
 
     const updateTabState = (tabId, newState) => {
         setTabs(prevTabs => 
-            prevTabs.map(tab => 
-                tab.id === tabId 
-                    ? { ...tab, state: newState }
-                    : tab
-            )
+            prevTabs.map(tab => {
+                if (tab.id === tabId) {
+                    // Update the tab title if the file name has changed
+                    if (newState.fileName && tab.title !== newState.fileName) {
+                        return { 
+                            ...tab, 
+                            title: newState.fileName,
+                            state: {...tab.state, ...newState} 
+                        };
+                    }
+                    return { ...tab, state: {...tab.state, ...newState} };
+                }
+                return tab;
+            })
         );
     };
 
