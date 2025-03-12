@@ -1,15 +1,37 @@
 import { demoContactData } from "./demoData";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 
-const ContactSelection = ({ electrodes = demoContactData, switchContent, isFunctionalMapping = false }) => {
-    const [planningContacts, setPlanningContacts] = useState([]);   // TODO Connect planningContacts to backend to save the state
-    const [areAllVisible, setAreAllVisible] = useState(false);      // Boolean for if all contacts are visible
-    const [isPairing, setIsPairing] = useState(false);
-    const [submitPlanning, setSubmitPlanning] = useState(false);
+const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, switchContent, isFunctionalMapping = false }) => {
+    const [electrodes, setElectrodes] = useState(savedState.electrodes || demoContactData)
+    const [planningContacts, setPlanningContacts] = useState(savedState.planningContacts || []);
+    const [areAllVisible, setAreAllVisible] = useState(savedState.areAllVisible || false);      // Boolean for if all contacts are visible
+    const [isPairing, setIsPairing] = useState(savedState.isPairing || false);
+    const [submitPlanning, setSubmitPlanning] = useState(savedState.submitPlanning || false);
+
+    const [state, setState] = useState(savedState);
+
+    // Save state changes
+    useEffect(() => {
+        onStateChange(state);
+    }, [state]);
+
+
+    useEffect(() => {
+        setState((prevState) => {
+            return {
+                ...prevState,
+                electrodes: electrodes,
+                planningContacts: planningContacts,
+                areAllVisible: areAllVisible,
+                isPairing: isPairing,
+                submitPlanning: submitPlanning,
+            }
+        })
+    }, [electrodes, planningContacts, areAllVisible, isPairing, submitPlanning]);
 
     // Function to handle "drop" on planning pane. Takes contact and index, and insert the contact
     // at the index or at the end if index is not specified. If the contact exist already, this function
@@ -32,13 +54,38 @@ const ContactSelection = ({ electrodes = demoContactData, switchContent, isFunct
 
             return newContacts;
         });
-        contact.isPlanning = true;
+
+        setElectrodes((prevElectrodes) => {
+            return prevElectrodes.map((electrode) => {
+                return {
+                    ...electrode,
+                    contacts: electrode.contacts.map((c) => {
+                        if (c.id === contact.id) {
+                            return { ...c, isPlanning: true };
+                        }
+                        return c;
+                    }),
+                };
+            });
+        });
     };
 
     // Function to handle "drop" on contact list part. Simply removes contact from the list
     const handleDropBackToList = (contact) => {
         setPlanningContacts((prev) => prev.filter((c) => c.id !== contact.id));
-        contact.isPlanning = false;
+        setElectrodes((prevElectrodes) => {
+            return prevElectrodes.map((electrode) => {
+                return {
+                    ...electrode,
+                    contacts: electrode.contacts.map((c) => {
+                        if (c.id === contact.id) {
+                            return { ...c, isPlanning: false };
+                        }
+                        return c;
+                    }),
+                };
+            });
+        });
     };
 
     // Add id and such so that it can be used after making pair
@@ -54,7 +101,7 @@ const ContactSelection = ({ electrodes = demoContactData, switchContent, isFunct
     return (
         <DndProvider backend={HTML5Backend}>
             <div className="flex h-screen p-6 space-x-6">
-                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} isPairing={isPairing} submitPlanning={submitPlanning} />
+                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} isPairing={isPairing} submitPlanning={submitPlanning} onStateChange={setState} savedState={state}/>
 
                 <PlanningPane contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} switchContent={switchContent} isFunctionalMapping={isFunctionalMapping} />
             </div>
@@ -77,8 +124,16 @@ const ContactSelection = ({ electrodes = demoContactData, switchContent, isFunct
 };
 
 // Generate list of contacts from list of electrodes
-const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisible, isPairing, submitPlanning }) => {
-    const [submitContact, setSubmitContact] = useState(false);
+const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisible, isPairing, submitPlanning, onStateChange, savedState }) => {
+    const [submitContact, setSubmitContact] = useState(savedState.submitContact || false);
+    useEffect(() => {
+        onStateChange((prevState) => {
+            return {
+                ...prevState,
+                submitContact: submitContact
+            }
+        })
+    }, [submitContact]);
 
     const [, drop] = useDrop(() => ({
         accept: "CONTACT",
@@ -103,6 +158,11 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
             return;
         }
 
+        const updatedElectrode = {
+            ...electrode,
+            contacts: electrode.contacts.map((c) => ({ ...c })),
+        };
+
         // Reset the saved pair of the current contact's pair
         var pairedContact = electrode.contacts[contact.pair - 1];
         electrode.contacts[contact.pair - 1].pair = pairedContact.index;
@@ -123,11 +183,47 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
         }
 
         // Reset new pair's previous pairing
-        pairedContact = electrode.contacts[contact.pair - 1];
-        electrode.contacts[pairedContact.pair - 1].pair = electrode.contacts[pairedContact.pair - 1].index;
+        const newPairedContact = updatedElectrode.contacts[contact.pair - 1];
+        updatedElectrode.contacts[newPairedContact.pair - 1].pair = updatedElectrode.contacts[newPairedContact.pair - 1].index;
 
         // Change the new pair's pairing
-        electrode.contacts[contact.pair - 1].pair = contact.index;
+        updatedElectrode.contacts[contact.pair - 1].pair = contact.index;
+
+        // Update the electrodes state
+        setElectrodes((prevElectrodes) => {
+            return prevElectrodes.map((e) => {
+                if (e.label === updatedElectrode.label) {
+                    return updatedElectrode;
+                }
+                return e;
+            });
+        });
+    }
+
+    const showAvailableContacts = (electrode) => {
+        return electrode.contacts.map((contact, index) => { // Horizontal list for every contact
+            const pair = electrode.contacts[contact.pair - 1];
+
+            // Filter out the non-marked contacts.
+            const shouldAppear = !(droppedContacts.some((c) => c.id === contact.id)) && (contact.mark || contact.surgeonMark);
+            const pairShouldAppear = !(droppedContacts.some((c) => c.id === pair.id)) && (pair.mark || pair.surgeonMark);
+
+            return (
+                !(contact.isPlanning || pair.isPlanning) && (
+                    areAllVisible ? (
+                        <Contact key={contact.id}
+                            contact={contact}
+                            onClick={() => handleOnClick(electrode, contact)} />
+                    ) : (
+                        (shouldAppear || pairShouldAppear) && (
+                            <Contact key={contact.id}
+                                contact={contact}
+                                onClick={() => handleOnClick(electrode, contact)} />
+                        )
+                    )
+                )
+            );
+        })
     }
 
     return (
@@ -138,55 +234,11 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
                         <p className="text-xl font-semibold min-w-[50px]">{electrode.label}</p>
                         {(submitContact != submitPlanning) ? (
                             <ul className="flex space-x-4">
-                                {electrode.contacts.map((contact, index) => { // Horizontal list for every contact
-                                    const pair = electrode.contacts[contact.pair - 1];
-
-                                    // Filter out the non-marked contacts.
-                                    const shouldAppear = !(droppedContacts.some((c) => c.id === contact.id)) && contact.isMarked();
-                                    const pairShouldAppear = !(droppedContacts.some((c) => c.id === pair.id)) && pair.isMarked();
-
-                                    return (
-                                        !(contact.isPlanning || pair.isPlanning) && (
-                                            areAllVisible ? (
-                                                <Contact key={contact.id}
-                                                    contact={contact}
-                                                    onClick={() => handleOnClick(electrode, contact)} />
-                                            ) : (
-                                                (shouldAppear || pairShouldAppear) && (
-                                                <Contact key={contact.id}
-                                                    contact={contact}
-                                                    onClick={() => handleOnClick(electrode, contact)} />
-                                                )
-                                            )
-                                        )
-                                    );
-                                })} {/* contact */}
+                                {showAvailableContacts(electrode)} {/* contact */}
                             </ul>
                         ) : (
                             <ul className="flex space-x-4">
-                                {electrode.contacts.map((contact, index) => { // Horizontal list for every contact
-                                    const pair = electrode.contacts[contact.pair - 1];
-
-                                    // Filter out the non-marked contacts.
-                                    const shouldAppear = !(droppedContacts.some((c) => c.id === contact.id)) && contact.isMarked();
-                                    const pairShouldAppear = !(droppedContacts.some((c) => c.id === pair.id)) && pair.isMarked();
-
-                                    return (
-                                        !(contact.isPlanning || pair.isPlanning) && (
-                                            areAllVisible ? (
-                                                <Contact key={contact.id}
-                                                    contact={contact}
-                                                    onClick={() => handleOnClick(electrode, contact)} />
-                                            ) : (
-                                                (shouldAppear || pairShouldAppear) && (
-                                                <Contact key={contact.id}
-                                                    contact={contact}
-                                                    onClick={() => handleOnClick(electrode, contact)} />
-                                                )
-                                            )
-                                        )
-                                    );
-                                })} {/* contact */}
+                                {showAvailableContacts(electrode)}
                             </ul>
                         )}
                     </li>

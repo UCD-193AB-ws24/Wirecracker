@@ -249,6 +249,18 @@ const HomePage = () => {
                     key={currentTab.id}
                     switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     isFunctionalMapping={false}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'functional-mapping':
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={true}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
                 />;
             case 'functional-test':
                 return <FunctionalTestSelection
