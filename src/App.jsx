@@ -250,12 +250,6 @@ const HomePage = () => {
                     switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     isFunctionalMapping={false}
                 />;
-            case 'functional-mapping':
-                return <ContactSelection
-                    key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    isFunctionalMapping={true}
-                />;
             case 'functional-test':
                 return <FunctionalTestSelection
                     key={currentTab.id}
