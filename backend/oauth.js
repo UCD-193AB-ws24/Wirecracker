@@ -85,15 +85,22 @@ passport.deserializeUser((obj, done) => {
 });
 
 // Google Auth Route
-router.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+router.get("/auth/google", (req, res, next) => {
+    const state = req.query.redirect_uri || '/';
+    passport.authenticate('google', { 
+        scope: ['profile', 'email'],
+        state: state
+    })(req, res, next);
+});
 
 // Google Auth Callback
 router.get(
-  "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "http://localhost:5173/" }),
-  (req, res) => {
-    res.redirect(`http://localhost:5173/auth-success?token=${req.user.token}`);
-  }
+    "/auth/google/callback",
+    passport.authenticate("google", { failureRedirect: "http://localhost:5173/" }),
+    (req, res) => {
+        const redirectPath = req.query.state || '/';
+        res.redirect(`http://localhost:5173/auth-success?token=${req.user.token}&redirect=${redirectPath}`);
+    }
 );
 
 export default router;
