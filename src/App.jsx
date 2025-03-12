@@ -262,6 +262,12 @@ const HomePage = () => {
         setActiveTab('home');
     };
 
+    const openSavedFile = (type, fileData) => {
+        // For now, this just opens a new tab with the file name
+        // In a real implementation, you'd load the actual data
+        addTab(type, { name: fileData.fileName });
+    };
+
     const renderTabContent = () => {
         const currentTab = tabs.find(tab => tab.id === activeTab);
         
@@ -278,7 +284,7 @@ const HomePage = () => {
                                     onFileUpload={handleFileUpload}
                                     error={error}
                                 />
-                                <Right />
+                                <Right onOpenFile={openSavedFile} />
                             </>
                         ) : (
                             <Center 
@@ -421,16 +427,84 @@ const Left = () => {
     );
 };
 
-const Right = () => {
+const Right = ({ onOpenFile }) => {
+    const [recentLocalizations, setRecentLocalizations] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    
+    useEffect(() => {
+        const fetchRecentFiles = async () => {
+            setIsLoading(true);
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    setRecentLocalizations([]);
+                    setIsLoading(false);
+                    return;
+                }
+                
+                // Get user ID from session
+                const { data: session } = await supabase
+                    .from('sessions')
+                    .select('user_id')
+                    .eq('token', token)
+                    .single();
+                
+                if (!session) {
+                    setRecentLocalizations([]);
+                    setIsLoading(false);
+                    return;
+                }
+                
+                // Fetch files for the current user
+                const { data: files, error } = await supabase
+                    .from('files')
+                    .select('*')
+                    .eq('owner_user_id', session.user_id)
+                    .order('modified_date', { ascending: false })
+                    .limit(5);
+                
+                if (error) {
+                    console.error('Error fetching recent files:', error);
+                    setRecentLocalizations([]);
+                } else {
+                    setRecentLocalizations(files || []);
+                }
+            } catch (error) {
+                console.error('Error fetching recent files:', error);
+                setRecentLocalizations([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        fetchRecentFiles();
+    }, []);
+    
     return (
         <div className="basis-80 justify-center">
             <h3 className="text-4xl font-bold">Recent Localizations</h3>
             <div className="mb-5">
-                <div>temp.csv</div>
+                {isLoading ? (
+                    <div className="text-gray-500">Loading...</div>
+                ) : recentLocalizations.length > 0 ? (
+                    <div>
+                        {recentLocalizations.map((file) => (
+                            <div key={file.file_id} className="py-1 hover:text-sky-600 cursor-pointer">
+                                {file.filename || 'Unnamed Localization'}
+                                <span className="text-xs text-gray-500 ml-2">
+                                    {new Date(file.modified_date).toLocaleDateString()}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-gray-500">No files available</div>
+                )}
             </div>
             <h3 className="text-4xl font-bold">Recent Stimulation Plans</h3>
             <div className="mb-5">
-                <div>temp.csv</div>
+                <div className="text-gray-500">No files available</div>
             </div>
         </div>
     );
