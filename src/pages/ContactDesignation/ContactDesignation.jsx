@@ -27,7 +27,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     });
 
     const [modifiedElectrodes, setModifiedElectrodes] = useState(() => {
-        if (Object.keys(savedState).length !== 0) {
+        if (savedState && savedState.electrodes) {
             return savedState.electrodes;
         }
 
@@ -46,8 +46,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             }));
         }
 
-        // return [];
-        // For now for demo purpose
+        // For demo purpose
         return demoContactData.map(electrode => ({
             ...electrode,
             contacts: electrode.contacts.map((contact, index) => ({

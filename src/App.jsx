@@ -186,27 +186,19 @@ const HomePage = () => {
     }, []);
 
     const addTab = (type, data = null) => {
-        let title = 'New Tab';
-        switch (type) {
-            case 'localization':        title = 'New Localization'; break;
-            case 'csv-localization':    title = data.name; break;
-            case 'stimulation':         title = 'New Stimulation'; break;
-            case 'designation':         title = 'New Designation'; break;
-            case 'csv-designation':     title = data.name; break;
-            case 'csv-test_plan':       title = data.name; break;
-        }
-
         const generateUniqueId = () => {
             // Generate an integer ID based on current timestamp
             return Math.floor(Date.now() % 1000000000); // Last 9 digits as integer
         };
 
-        let tabTitle;
-        if (type === 'localization') {
-            tabTitle = `Localization${localizationCounter}`;
-            setLocalizationCounter(prevCounter => prevCounter + 1);
-        } else {
-            tabTitle = data?.name || 'New Tab';
+        let title = 'New Tab';
+        switch (type) {
+            case 'localization':        title = `Localization${localizationCounter}`; setLocalizationCounter(prevCounter => prevCounter + 1); break;
+            case 'csv-localization':    title = data.name; break;
+            case 'stimulation':         title = 'New Stimulation'; break;
+            case 'designation':         title = 'New Designation'; break;
+            case 'csv-designation':     title = data.name; break;
+            case 'csv-test_plan':       title = data.name; break;
         }
 
         const newTab = {
@@ -216,7 +208,7 @@ const HomePage = () => {
             data: data,
             state: {
                 fileId: generateUniqueId(),
-                fileName: tabTitle,
+                fileName: title,
                 creationDate: new Date().toISOString(),
                 modifiedDate: new Date().toISOString()
             }
