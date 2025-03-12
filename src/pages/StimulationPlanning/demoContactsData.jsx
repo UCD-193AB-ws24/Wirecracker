@@ -29,18 +29,13 @@ let demoContactsData = [
 ]
 
 let demoTestData = [
-    {id: 301, name: "Visual Object Naming", region: "MedialInferiorTemporalCortex", description: "What is this test about-301", population: 15, disruptionRate: 58.2, tag: ["iPad", "speech", "vision"]},
-    {id: 302, name: "Colored Line Bisection", region: "MedialInferiorTemporalCortex", description: "What is this test about-302", population: 3, disruptionRate: 88.6, tag: ["iPad", "vision"]},
-    {id: 303, name: "Stroop", region: "RostralMiddleTemporalCortex", description: "What is this test about-303", population: 12, disruptionRate: 60.2, tag: ["iPad", "language", "vision", "color"]},
-    {id: 304, name: "Proper Noun Naming", region: "CaudalMiddleTemporalCortex", description: "What is this test about-304", population: 15, disruptionRate: 58.2, tag: ["iPad", "speaker", "microphone", "object recognition", "visual"]},
-    {id: 305, name: "Picture Verb Action Naming", region: "CaudalMiddleTemporalCortex", description: "What is this test about-305", population: 15, disruptionRate: 58.2, tag: ["iPad", "speaker", "microphone", "object recognition"]},
-    {id: 306, name: "Draw Object1", region: "Hippocampus", description: "What is this test about-306", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
-    {id: 307, name: "Draw Object2", region: "Hippocampus", description: "What is this test about-307", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
-    {id: 308, name: "Draw Object3", region: "Hippocampus", description: "What is this test about-308", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
-    {id: 309, name: "Draw Object4", region: "Hippocampus", description: "What is this test about-309", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
-    {id: 310, name: "Draw Object5", region: "Hippocampus", description: "What is this test about-310", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
-    {id: 311, name: "Draw Object6", region: "Hippocampus", description: "What is this test about-311", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
-    {id: 312, name: "Draw Object7", region: "Hippocampus", description: "What is this test about-312", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
+    {id: 301, name: "Visual Object Naming", region: "MedialInferiorTemporalCortex", description: "Name black-and-white outline pictures", population: 15, disruptionRate: 58.2, tag: ["iPad", "speech", "vision"]},
+    {id: 302, name: "Colored Line Bisection", region: "MedialInferiorTemporalCortex", description: "Determine if lines are of equal length", population: 3, disruptionRate: 88.6, tag: ["iPad", "vision"]},
+    {id: 303, name: "Stroop", region: "RostralMiddleTemporalCortex", description: "Say the color of a word", population: 12, disruptionRate: 60.2, tag: ["iPad", "language", "vision", "color"]},
+    {id: 304, name: "Proper Noun Naming", region: "CaudalMiddleTemporalCortex", description: "Name famous faces/landmarks/cartoon characters from pictures", population: 15, disruptionRate: 58.2, tag: ["iPad", "speaker", "microphone", "object recognition", "visual"]},
+    {id: 305, name: "Picture Verb Action Naming", region: "CaudalMiddleTemporalCortex", description: "Name action occurring in picture", population: 15, disruptionRate: 58.2, tag: ["iPad", "speaker", "microphone", "object recognition"]},
+    {id: 306, name: "Draw Object", region: "Hippocampus", description: "Draw object", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
+    {id: 307, name: "Draw Colored Object", region: "Hippocampus", description: "Draw object with colors", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
 ]
 
 export {demoContactsData, demoTestData}
