@@ -8,6 +8,7 @@ const PAGE_NAME = ["designation", "resection"];
 
 const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const [state, setState] = useState(savedState);
+    const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
     const [layout, setLayout] = useState(() => {
         // First check savedState for layout
@@ -27,7 +28,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     });
 
     const [modifiedElectrodes, setModifiedElectrodes] = useState(() => {
-        if (Object.keys(savedState).length !== 0) {
+        if (savedState && savedState.electrodes) {
             return savedState.electrodes;
         }
 
@@ -46,8 +47,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             }));
         }
 
-        // return [];
-        // For now for demo purpose
+        // For demo purpose
         return demoContactData.map(electrode => ({
             ...electrode,
             contacts: electrode.contacts.map((contact, index) => ({
@@ -97,17 +97,79 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         setLayout(newLayout);
     };
 
-    const exportContacts = (electrodes) => {
-        if (localizationData) {
-            // If we have localization data, use it to create a CSV with the same format
-            saveDesignationCSVFile(electrodes, localizationData, true);
-        } else {
-            // Fall back to the simple logging if no localization data
-            for (let electrode of electrodes) {
-                for (let contact of electrode.contacts) {
-                    console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
+    const exportContacts = async (electrodes, download = true) => {
+        try {
+            // First save to database if we have a file ID
+            if (state.fileId) {
+                console.log('Saving designation to database...');
+                
+                // Get user ID from session
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('User not authenticated. Please log in to save designations.');
+                    return;
+                }
+                
+                try {
+                    // First save/update file metadata
+                    const response = await fetch('http://localhost:5000/api/save-designation', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        },
+                        body: JSON.stringify({
+                            designationData: electrodes,
+                            localizationData: localizationData,
+                            fileId: state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString()
+                        }),
+                    });
+
+                    const result = await response.json();
+                    if (!result.success) {
+                        console.error('Failed to save designation:', result.error);
+                        alert(`Failed to save designation: ${result.error}`);
+                        return;
+                    }
+                    
+                    // Update the state with new modified date
+                    setState(prevState => ({
+                        ...prevState,
+                        modifiedDate: new Date().toISOString()
+                    }));
+                    
+                    // Show success feedback if this was a save operation
+                    if (!download) {
+                        setShowSaveSuccess(true);
+                        setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
+                    }
+                    
+                    console.log('Designation saved successfully');
+                } catch (error) {
+                    console.error('Error saving designation:', error);
+                    alert(`Error saving designation: ${error.message}`);
+                    return;
                 }
             }
+
+            // Then export to CSV as before
+            if (localizationData) {
+                // If we have localization data, use it to create a CSV with the same format
+                saveDesignationCSVFile(electrodes, localizationData, download);
+            } else {
+                // Fall back to the simple logging if no localization data
+                for (let electrode of electrodes) {
+                    for (let contact of electrode.contacts) {
+                        console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error exporting contacts:', error);
+            alert(`Error exporting contacts: ${error.message}`);
         }
     };
 
@@ -148,13 +210,28 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 )}
             </div>
 
-            {/* Floating Export Button at the Bottom Right */}
-            <button
-                className="fixed bottom-6 right-6 z-50 py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
-                onClick={() => exportContacts(modifiedElectrodes)}
-            >
-                Export
-            </button>
+            {/* Floating Save and Export Buttons at the Bottom Right */}
+            <div className="fixed bottom-6 right-6 z-50 flex gap-2">
+                <div className="relative">
+                    <button
+                        className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
+                        onClick={() => exportContacts(modifiedElectrodes, false)}
+                    >
+                        Save
+                    </button>
+                    {showSaveSuccess && (
+                        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap">
+                            Save successful!
+                        </div>
+                    )}
+                </div>
+                <button
+                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
+                    onClick={() => exportContacts(modifiedElectrodes)}
+                >
+                    Export
+                </button>
+            </div>
         </div>
     );
 };
