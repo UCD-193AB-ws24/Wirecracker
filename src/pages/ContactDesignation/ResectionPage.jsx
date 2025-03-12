@@ -1,4 +1,4 @@
-import { parseCSVFile, Identifiers } from '../../utils/CSVParser';
+import { parseCSVFile } from '../../utils/CSVParser';
 import load_untouch_nii from '../../utils/Nifti_viewer/load_untouch_nifti.js'
 import nifti_anatomical_conversion from '../../utils/Nifti_viewer/nifti_anatomical_conversion.js'
 import React, { useState, useRef, useEffect, useCallback } from "react";
@@ -79,9 +79,10 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
 const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onStateChange, savedState = {} }) => {
     const fixedMainViewSize = 600;
     const fixedSubViewSize = 300;
+
     const [niiData, setNiiData] = useState(savedState.nii || null);
     const [coordinates, setCoordinates] = useState(savedState.coordinate || []);
-    const [markers, setMarkers] = useState(savedState.canvas_markers || []);
+    const [markers, setMarkers] = useState([]);
     const [sliceIndex, setSliceIndex] = useState(savedState.canvas_main_slice || 0);
     const [maxSlices, setMaxSlices] = useState(savedState.canvas_main_maxSlice || 0);
     const [direction, setDirection] = useState(savedState.canvas_main_direction || 'Axial');
@@ -116,47 +117,43 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
     useEffect(() => {
         onStateChange({
             ...savedState,
-            layout: "resection",
             canvas_sub1_slice: subCanvas1SliceIndex,
             canvas_sub1_maxSlice: maxSubCanvas1Slices,
             canvas_sub1_direction: subCanvas1Direction,
         });
-    }, [subCanvas1SliceIndex, maxSubCanvas1Slices, subCanvas1Direction]);
+    }, [subCanvas1SliceIndex, maxSubCanvas1Slices, subCanvas1Direction, isLoaded]);
 
     useEffect(() => {
         onStateChange({
             ...savedState,
-            layout: "resection",
             canvas_sub0_slice: subCanvas0SliceIndex,
             canvas_sub0_maxSlice: maxSubCanvas0Slices,
             canvas_sub0_direction: subCanvas0Direction,
         });
-    }, [subCanvas0SliceIndex, maxSubCanvas0Slices, subCanvas0Direction]);
+    }, [subCanvas0SliceIndex, maxSubCanvas0Slices, subCanvas0Direction, isLoaded]);
 
     useEffect(() => {
         onStateChange({
             ...savedState,
-            layout: "resection",
-            canvas_markers: markers,
             canvas_main_slice: sliceIndex,
             canvas_main_maxSlice: maxSlices,
             canvas_main_direction: direction,
             canvas_hoveredMarker: hoveredMarker,
         });
-    }, [markers, sliceIndex, maxSlices, direction, hoveredMarker]);
+    }, [sliceIndex, maxSlices, direction, hoveredMarker, isLoaded]);
 
     useEffect(() => {
-        onStateChange({
-            ...savedState,
-            layout: "resection",
-            nii: niiData,
-        });
+        if (niiData !== null) {
+            onStateChange({
+                ...savedState,
+                nii: niiData
+            });
+        }
     }, [niiData]);
 
     useEffect(() => {
         onStateChange({
             ...savedState,
-            layout: "resection",
             coordinate: coordinates,
         });
     }, [coordinates]);
@@ -372,7 +369,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
             case 3: setSubCanvas1SliceIndex(Math.round(z)); break;
         }
     };
-    useEffect(focusOnContact, [markers, niiData, coordinates]);
+    useEffect(focusOnContact, [focus, niiData, coordinates]);
 
     // Unified scroll handler using refs
     const handleScroll = (event, setter, currentSliceRef, maxRef) => {
@@ -516,6 +513,10 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
             const arrayBuffer = await file.arrayBuffer();
             let nii = load_untouch_nii(file.name, arrayBuffer);
             nii = nifti_anatomical_conversion(nii);
+            nii = {
+                img: nii.img,
+                hdr: nii.hdr
+            }
 
             const isRGB = (nii.hdr.dime.datatype === 128 && nii.hdr.dime.bitpix === 24) ||
                     (nii.hdr.dime.datatype === 511 && nii.hdr.dime.bitpix === 96);

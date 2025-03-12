@@ -7,6 +7,8 @@ import { saveDesignationCSVFile } from "../../utils/CSVParser";
 const PAGE_NAME = ["designation", "resection"];
 
 const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }) => {
+    const [state, setState] = useState(savedState);
+
     const [layout, setLayout] = useState(() => {
         // First check savedState for layout
         if (savedState && savedState.layout) {
@@ -29,7 +31,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             return savedState.electrodes;
         }
 
-        if (Object.keys(initialData).length !== 0) {
+        if (initialData && Object.keys(initialData).length !== 0) {
             return initialData.data.map(electrode => ({
                 ...electrode,
                 contacts: electrode.contacts.map((contact, index) => ({
@@ -62,21 +64,18 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
 
     // Save state changes
     useEffect(() => {
+        console.log("Updated savedState:", state); // Debugging
+        onStateChange(state);
+    }, [state]);
+
+    useEffect(() => {
         const newState = {
+            ...state,
             electrodes: modifiedElectrodes,
             layout: layout,
             localizationData: localizationData
         };
-        
-        // Preserve other state values
-        if (savedState) {
-            Object.keys(savedState).forEach(key => {
-                if (key !== 'electrodes' && key !== 'layout' && key !== 'localizationData') {
-                    newState[key] = savedState[key];
-                }
-            });
-        }
-        onStateChange(newState);
+        setState(newState);
     }, [modifiedElectrodes, layout, localizationData]);
 
     const updateContact = (contactId, change) => {
@@ -145,7 +144,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 {layout === PAGE_NAME[0] ? (
                     <Designation electrodes={modifiedElectrodes} onClick={updateContact} />
                 ) : (
-                    <Resection electrodes={modifiedElectrodes} onClick={updateContact} onStateChange={onStateChange} savedState={savedState} />
+                    <Resection electrodes={modifiedElectrodes} onClick={updateContact} onStateChange={setState} savedState={state} />
                 )}
             </div>
 
