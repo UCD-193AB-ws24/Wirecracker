@@ -303,6 +303,29 @@ const HomePage = () => {
             
             setTabs([...tabs, newTab]);
             setActiveTab(newTab.id);
+        } 
+        else if (type === 'designation') {
+            console.log('Opening saved file:', fileData);
+            
+            const newTab = {
+                id: Date.now().toString(),
+                title: fileData.name,
+                content: 'designation',
+                data: { data: fileData.data, originalData: fileData.originalData },
+                state: {
+                    fileId: fileData.fileId,
+                    fileName: fileData.name,
+                    creationDate: fileData.creationDate || new Date().toISOString(),
+                    modifiedDate: fileData.modifiedDate || new Date().toISOString(),
+                    electrodes: fileData.data.data,
+                    localizationData: fileData.originalData
+                }
+            };
+
+            console.log('Created new tab with state:', newTab.state);
+
+            setTabs([...tabs, newTab]);
+            setActiveTab(newTab.id);
         } else {
             // Fallback to basic tab creation
             addTab(type, { name: fileData.name });
@@ -568,31 +591,49 @@ const Right = ({ onOpenFile }) => {
             console.log('Check result:', checkData);
             
             if (!checkData || checkData.length === 0) {
-                console.warn(`No localization records found with file_id=${file.file_id}`);
+                console.log('No localization records found, checking for designation data...');
                 
-                // Let's check what file_ids exist in the localization table
-                const { data: sampleData } = await supabase
-                    .from('localization')
-                    .select('file_id')
-                    .limit(10);
+                // Check if this is a designation file
+                const { data: designationData, error: designationError } = await supabase
+                    .from('designation')
+                    .select('*')
+                    .eq('file_id', file.file_id)
+                    .single();
                     
-                console.log('Sample file_ids in localization table:', sampleData);
+                if (designationError) {
+                    console.error('Error checking designation data:', designationError);
+                    
+                    // If no data found in either table, create new empty localization
+                    console.log('Creating new tab with empty data for:', file.filename);
+                    onOpenFile('localization', { 
+                        name: file.filename || 'Unnamed Localization',
+                        fileId: file.file_id,
+                        fileName: file.filename,
+                        creationDate: file.creation_date,
+                        modifiedDate: file.modified_date,
+                        data: { data: {} }
+                    });
+                    
+                    return;
+                }
                 
-                // Create a new tab anyway with empty data
-                console.log('Creating new tab with empty data for:', file.filename);
-                onOpenFile('localization', { 
-                    name: file.filename || 'Unnamed Localization',
-                    fileId: file.file_id,
-                    fileName: file.filename,
-                    creationDate: file.creation_date,
-                    modifiedDate: file.modified_date,
-                    data: { data: {} }
-                });
-                
-                return;
+                if (designationData) {
+                    console.log('Found designation data:', designationData);
+                    // Open in designation view with the saved data
+                    onOpenFile('designation', {
+                        name: file.filename || 'Unnamed Designation',
+                        fileId: file.file_id,
+                        fileName: file.filename,
+                        creationDate: file.creation_date,
+                        modifiedDate: file.modified_date,
+                        data: designationData.designation_data,
+                        originalData: designationData.localization_data
+                    });
+                    return;
+                }
             }
             
-            // Fetch complete localization data associated with this file_id
+            // If we found localization data, proceed with loading it
             const { data: localizationData, error: locError } = await supabase
                 .from('localization')
                 .select(`
@@ -611,7 +652,7 @@ const Right = ({ onOpenFile }) => {
             if (!localizationData || localizationData.length === 0) {
                 console.warn('No localization data found for file ID:', file.file_id);
                 
-                // Create a new tab anyway with empty data
+                // Create a new tab with empty data
                 onOpenFile('localization', { 
                     name: file.filename || 'Unnamed Localization',
                     fileId: file.file_id,
