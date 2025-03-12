@@ -265,6 +265,9 @@ const HomePage = () => {
             case 'functional-test':
                 return <FunctionalTestSelection
                     key={currentTab.id}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
                 />;
             case 'csv-localization':
                 return <Localization

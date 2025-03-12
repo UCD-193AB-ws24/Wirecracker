@@ -1,15 +1,36 @@
 import React, { useState, useEffect } from "react";
 import { demoContactsData, demoTestData } from "./demoContactsData";
 
-const FunctionalTestSelection = ({ contacts = demoContactsData }) => {
+const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState = {} }) => {
   const allAvailableTests = demoTestData;
 
-  const [tests, setTests] = useState({}); // Export tests upon completion. Includes contact id and associated test
-  const [availableTests, setAvailableTests] = useState([]);
-  const [showPopup, setShowPopup] = useState(false);
-  const [selectedContact, setSelectedContact] = useState(null);
-  const [selectedTest, setSelectedTest] = useState(null);
-  const [expandedTests, setExpandedTests] = useState(new Set()); // Tracks expanded tests uniquely
+  const [contacts, setContacts] = useState(savedState.contacts || demoContactsData)
+  const [tests, setTests] = useState(savedState.tests || {}); // Export tests upon completion. Includes contact id and associated test
+  const [availableTests, setAvailableTests] = useState(savedState.availableTests || []);
+  const [showPopup, setShowPopup] = useState(savedState.showPopup || false);
+  const [selectedContact, setSelectedContact] = useState(savedState.selectedContact || null);
+  const [selectedTest, setSelectedTest] = useState(savedState.selectedTest || null);
+  const [expandedTests, setExpandedTests] = useState(savedState.expandedTests || new Set()); // Tracks expanded tests uniquely
+
+  const [state, setState] = useState(savedState)
+
+  useEffect(() => {
+      onStateChange(state);
+  }, [state]);
+
+  useEffect(() => {
+        setState(() => {
+            return {
+                contacts: contacts,
+                tests: tests,
+                availableTests: availableTests,
+                showPopup: showPopup,
+                selectedContact: selectedContact,
+                selectedTest: selectedTest,
+                expandedTests: expandedTests,
+            }
+        })
+    }, [contacts, tests, availableTests, showPopup, selectedContact, selectedTest, expandedTests]);
 
   // Function to select the best test based on population and disruption rate
   const selectBestTest = (availableTests) => {
