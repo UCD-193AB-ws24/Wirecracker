@@ -169,7 +169,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 const keyNum = parseInt(key);
 
                                 if (!isNaN(keyNum)) {
-                                    return (<Contact label={label} number={key} />);
+                                    return (<Contact label={label} number={key} key={key + label} />);
                                 }
                             })}
                         </div>
