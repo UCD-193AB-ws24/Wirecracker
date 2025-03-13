@@ -4,7 +4,7 @@ import { demoContactsData, demoTestData } from "./demoContactsData";
 const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState = {} }) => {
   const allAvailableTests = demoTestData;
 
-  const [contacts, setContacts] = useState(savedState.contacts || demoContactsData)
+  const [contacts, setContacts] = useState((savedState.contacts || initialData.data) || demoContactsData)
   const [tests, setTests] = useState(savedState.tests || {}); // Export tests upon completion. Includes contact id and associated test
   const [availableTests, setAvailableTests] = useState(savedState.availableTests || []);
   const [showPopup, setShowPopup] = useState(savedState.showPopup || false);
@@ -46,7 +46,7 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
         .filter((test) => test.region === selectedContact.associatedLocation)
         .filter(
           (test) =>
-            !tests[selectedContact.label]?.some((t) => t.id === test.id)
+            !tests[selectedContact.id]?.some((t) => t.id === test.id)
         )
         .sort(
           (a, b) => b.population - a.population || b.disruptionRate - a.disruptionRate
@@ -64,7 +64,7 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
       );
       if (availableTests.length > 0) {
         const bestTest = selectBestTest(availableTests);
-        newTests[contact.label] = [bestTest];
+        newTests[contact.id] = [bestTest];
       }
     });
     setTests(newTests);
@@ -80,7 +80,7 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
     if (selectedContact && selectedTest) {
       setTests((prev) => ({
         ...prev,
-        [selectedContact.label]: [...(prev[selectedContact.label] || []), selectedTest],
+        [selectedContact.id]: [...(prev[selectedContact.id] || []), selectedTest],
       }));
     }
     setShowPopup(false);
@@ -121,9 +121,9 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
 
       <div className="bg-white py-4 px-40 shadow-md rounded-lg">
         {contacts.map((contact) => (
-          <div key={contact.label} className="border p-4 mb-4 rounded-lg shadow-sm bg-gray-100">
+          <div key={contact.id} className="border p-4 mb-4 rounded-lg shadow-sm bg-gray-100">
             <div className="flex justify-between items-center">
-              <span className="font-semibold text-lg">{contact.label}</span>
+              <span className="font-semibold text-lg">{contact.id}</span>
               <span className="text-gray-600 text-sm">{contact.associatedLocation}</span>
             </div>
             <div className="text-gray-500 text-sm">
@@ -132,13 +132,13 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
 
             {/* Display added tests */}
             <div className="mt-2">
-              {tests[contact.label]?.map((test, index) => {
-                const testKey = `${contact.label}-${test.id}`;
+              {tests[contact.id]?.map((test, index) => {
+                const testKey = `${contact.id}-${test.id}`;
                 return (
                   <div
                     key={index}
                     className="bg-blue-100 p-3 rounded mt-1 cursor-pointer"
-                    onClick={() => toggleTestDetails(contact.label, test.id)}
+                    onClick={() => toggleTestDetails(contact.id, test.id)}
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
@@ -155,7 +155,7 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
                         className="text-red-500 hover:text-red-700"
                         onClick={(e) => {
                           e.stopPropagation();
-                          removeTest(contact.label, index);
+                          removeTest(contact.id, index);
                         }}
                       >
                         ×
@@ -199,10 +199,10 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
       {showPopup && selectedContact && (
         <div className="fixed inset-0 bg-black/25 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-lg w-[500px] max-h-[450px]">
-            <h2 className="text-lg font-bold mb-4">Select a Test for {selectedContact.label}</h2>
+            <h2 className="text-lg font-bold mb-4">Select a Test for {selectedContact.id}</h2>
             <div className="overflow-y-auto max-h-[350px]">
               {availableTests.map((test) => {
-                const testKey = `${selectedContact.label}-${test.id}`; // Use the same key format as elsewhere
+                const testKey = `${selectedContact.id}-${test.id}`; // Use the same key format as elsewhere
                 return (
                   <div
                     key={test.id}
@@ -211,7 +211,7 @@ const FunctionalTestSelection = ({ initialData = {}, onStateChange, savedState =
                     }`}
                     onClick={() => {
                       if (selectedTest?.id === test.id) {
-                        toggleTestDetails(selectedContact.label, test.id); // Use the correct key format
+                        toggleTestDetails(selectedContact.id, test.id); // Use the correct key format
                       } else {
                         setSelectedTest(test);
                       }

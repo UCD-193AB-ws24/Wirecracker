@@ -316,6 +316,41 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
         }),
     }));
 
+    const createTestSelectionTab = () => {
+        if (Object.keys(contacts).length === 0) return;
+
+        // Get designation data from the current localization
+        try {
+            exportState(state, electrodes, false);
+        } catch (error) {
+            alert('Error saving data on database. Changes are not saved');
+        }
+
+        // Clean up the contacts
+        const functionalTestData = contacts.map(contact => {
+            return {
+                __contactDescription__: contact.__contactDescription__,
+                __electrodeDescription__: contact.__electrodeDescription__,
+                associatedLocation: contact.associatedLocation,
+                electrodeLabel: contact.electrodeLabel,
+                id: contact.id,
+                index: contact.index,
+                mark: contact.mark,
+                pair: contact.pair, // Grab pair here
+                surgeonMark: contact.surgeonMark,
+                duration: 3.0, // TODO
+                frequency: 105.225,
+                current: 2.445,
+            }
+        })
+
+        // Create a new tab with the designation data
+        const event = new CustomEvent('addFunctionalTestTab', {
+            detail: { data: functionalTestData }
+        });
+        window.dispatchEvent(event);
+    };
+
     return (
         <div ref={drop} className={`p-4 w-1/6 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
             <h2 className="text-2xl font-bold mb-4">Planning Pane</h2>
@@ -340,7 +375,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
                 {isFunctionalMapping ? (
                     <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
                             contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                            }`} onClick={() => switchContent('functional-test')}>
+                            }`} onClick={createTestSelectionTab}>
                         select tests
                     </button>
                 ) : (
@@ -404,7 +439,6 @@ const PlanningContact = ({ contact, onDropBack }) => {
 };
 
 const exportState = async (state, electrodes, download = true) => {
-    console.log(electrodes)
     try {
         // First save to database if we have a file ID
         if (state.fileId) {

@@ -393,6 +393,18 @@ const HomePage = () => {
         };
     }, []);
 
+    // Add event listener for stimulation tab creation
+    useEffect(() => {
+        const handleAddFunctionalTestTab = (event) => {
+            addTab('functional-test', event.detail);
+        };
+
+        window.addEventListener('addFunctionalTestTab', handleAddFunctionalTestTab);
+        return () => {
+            window.removeEventListener('addFunctionalTestTab', handleAddFunctionalTestTab);
+        };
+    }, []);
+
     useEffect(() => {
         // Find the highest localization number to initialize the counter
         if (tabs.length > 1) {
@@ -421,8 +433,9 @@ const HomePage = () => {
         switch (type) {
             case 'localization':        title = `Localization${localizationCounter}`; setLocalizationCounter(prevCounter => prevCounter + 1); break;
             case 'csv-localization':    title = data.name; break;
-            case 'stimulation':         title = 'New Stimulation'; break;
+            case 'stimulation':         title = 'New Stimulation Plan'; break;
             case 'designation':         title = 'New Designation'; break;
+            case 'functional-test':     title = 'New Functional Mapping'; break;
             case 'csv-designation':     title = data.name; break;
             case 'csv-test_plan':       title = data.name; break;
         }
@@ -636,7 +649,7 @@ const HomePage = () => {
             case 'functional-test':
                 return <FunctionalTestSelection
                     key={currentTab.id}
-                    initialData={{}}
+                    initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
