@@ -12,6 +12,7 @@ export const Identifiers = Object.freeze({
     TEST_PLANNING:  "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR TEST PLANNING ###",
     LOCALIZATION:   "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR LOCALIZATION ###",
     DESIGNATION:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR DESIGNATION ###",
+    STIMULATION:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR STIMULATION ###",
 });
 
 /**
@@ -65,6 +66,12 @@ export function parseCSVFile( file, coordinates = false ) {
                         data: designationData
                     }
                 });
+                return;
+            }
+            else if (identifier === Identifiers.STIMULATION) {
+                // const designationData = parseDesignation(csvWithoutIdentifier);
+                const stimulationData = parseStimulation(csvWithoutIdentifier);
+                resolve({identifier, data: stimulationData});
                 return;
             }
 
@@ -166,6 +173,66 @@ function parseDesignation(csvData) {
         parsedData[label].contacts[contactNumber - 1] = contactObj;
     });
     
+    // Convert to array format matching demo data
+    return Object.values(parsedData).map(electrode => ({
+        label: electrode.label,
+        contacts: electrode.contacts.filter(contact => contact !== null) // Remove any null entries
+    }));
+}
+
+/**
+ * Parses stimulation CSV data into a data structure format.
+ *
+ * @param {Object[]} data - Parsed CSV data from PapaParse
+ * @returns {Object} A data structure with the format [{ label: 'A'', contacts: [contact, contact, ...] }, ... ]
+ */
+function parseStimulation(csvData) {
+    const parsedData = {};
+    const rows = Papa.parse(csvData, { header: true, skipEmptyLines: true }).data;
+
+    // First pass: Group by electrode label and collect contacts
+    rows.forEach(row => {
+        const label = row.Label.trim();
+        const contactNumber = parseInt(row.ContactNumber);
+        let associatedLocation = row.AssociatedLocation.trim();
+        const contactDescription = row.ContactDescription.trim();
+        const mark = parseInt(row.Mark) || 0; // Default to 0 if not specified
+        const surgeonMark = parseInt(row.SurgeonMark) === 1; // Convert to boolean from int (0 or 1)
+        const pair = parseInt(row.Pair);
+        const isPlanning = parseInt(row.IsPlanning) === 1;
+
+        // Process associated location based on GM presence
+        if (associatedLocation === 'GM') {
+            associatedLocation = contactDescription;
+        } else if (associatedLocation === 'GM/WM') {
+            associatedLocation = `${contactDescription}/WM`;
+        } else if (associatedLocation === 'GM/GM') {
+            const [desc1, desc2] = contactDescription.split('+');
+            associatedLocation = `${desc1}/${desc2}`;
+        }
+        // For other cases (like WM), keep the original associatedLocation
+
+        if (!parsedData[label]) {
+            parsedData[label] = {
+                label: label,
+                contacts: []
+            };
+        }
+
+        const contactObj = {
+            ...(new contact(associatedLocation, mark, surgeonMark)),
+            pair: pair,
+            isPlanning: isPlanning
+        };
+
+        // Add to contacts array at the correct index (contactNumber - 1)
+        // Ensure the array is large enough
+        while (parsedData[label].contacts.length < contactNumber) {
+            parsedData[label].contacts.push(null);
+        }
+        parsedData[label].contacts[contactNumber - 1] = contactObj;
+    });
+
     // Convert to array format matching demo data
     return Object.values(parsedData).map(electrode => ({
         label: electrode.label,
