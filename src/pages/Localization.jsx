@@ -240,6 +240,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
     }) => {
         const contactData = electrodes[label][number];
         const associatedLocation = contactData.associatedLocation;
+        const [selectedValue, setSelectedValue] = useState(associatedLocation);
 
         let displayText = associatedLocation;
 
@@ -281,12 +282,13 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         >
                             <select
                                 className="w-full p-2 border border-gray-300 rounded-md mb-4"
-                                value={contactData.associatedLocation}
+                                value={selectedValue}
+                                onChange={(e) => setSelectedValue(e.target.value)}
                             >
-                                <option></option>
+                                <option value="">Select tissue type</option>
                                 {contactTypes.map((option, i) => {
                                     return (
-                                        <option key={i}>{option}</option>
+                                        <option key={i} value={option}>{option}</option>
                                     );
                                 })}
                             </select>
