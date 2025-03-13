@@ -241,6 +241,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const contactData = electrodes[label][number];
         const associatedLocation = contactData.associatedLocation;
         const [selectedValue, setSelectedValue] = useState(associatedLocation);
+        const [desc1, setDesc1] = useState(contactData.contactDescription?.split('+')[0] || '');
+        const [desc2, setDesc2] = useState(contactData.contactDescription?.split('+')[1] || '');
 
         let displayText = associatedLocation;
 
@@ -249,9 +251,26 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         } else if (associatedLocation === 'GM/WM') {
             displayText = `${contactData.contactDescription}/WM`;
         } else if (associatedLocation === 'GM/GM') {
-            const [desc1, desc2] = contactData.contactDescription.split('+');
-            displayText = `${desc1}/${desc2}`;
+            const [d1, d2] = contactData.contactDescription?.split('+') || ['', ''];
+            displayText = `${d1}/${d2}`;
         }
+
+        const handleSubmit = (event) => {
+            event.preventDefault();
+            let temp = { ...electrodes };
+            
+            if (selectedValue === 'GM/GM') {
+                temp[label][number].contactDescription = `${desc1}+${desc2}`;
+            } else if (selectedValue === 'GM' || selectedValue === 'GM/WM') {
+                temp[label][number].contactDescription = desc1;
+            }
+            
+            temp[label][number].associatedLocation = selectedValue;
+            setElectrodes(temp);
+            setModifiedDate(new Date().toISOString());
+            setSubmitFlag(!submitFlag);
+            close();
+        };
 
         return (
             <Popup
@@ -268,18 +287,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 {close => (
                     <div className="modal bg-white p-6 rounded-lg shadow-lg">
                         <h4 className="text-lg font-semibold mb-4">Add Contact</h4>
-                        <form
-                            onSubmit={(event) => {
-                                event.preventDefault();
-                                const selectedValue = event.target.querySelector('select').value;
-                                let temp = { ...electrodes };
-                                temp[label][number].associatedLocation = selectedValue;
-                                setElectrodes(temp);
-                                setModifiedDate(new Date().toISOString());
-                                setSubmitFlag(!submitFlag);
-                                close();
-                            }}
-                        >
+                        <form onSubmit={handleSubmit}>
                             <select
                                 className="w-full p-2 border border-gray-300 rounded-md mb-4"
                                 value={selectedValue}
@@ -292,6 +300,51 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                     );
                                 })}
                             </select>
+
+                            {(selectedValue === 'GM' || selectedValue === 'GM/WM') && (
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Contact Description
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                        value={desc1}
+                                        onChange={(e) => setDesc1(e.target.value)}
+                                        placeholder="Enter description"
+                                    />
+                                </div>
+                            )}
+
+                            {selectedValue === 'GM/GM' && (
+                                <>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            First Description
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                            value={desc1}
+                                            onChange={(e) => setDesc1(e.target.value)}
+                                            placeholder="Enter first description"
+                                        />
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Second Description
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                            value={desc2}
+                                            onChange={(e) => setDesc2(e.target.value)}
+                                            placeholder="Enter second description"
+                                        />
+                                    </div>
+                                </>
+                            )}
+
                             <button
                                 type="submit"
                                 className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200"
