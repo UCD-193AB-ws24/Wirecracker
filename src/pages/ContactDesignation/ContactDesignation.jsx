@@ -64,7 +64,6 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
 
     // Save state changes
     useEffect(() => {
-        console.log("Updated savedState:", state); // Debugging
         onStateChange(state);
     }, [state]);
 
@@ -95,6 +94,35 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     const toggleLayout = () => {
         const newLayout = layout === PAGE_NAME[0] ? PAGE_NAME[1] : PAGE_NAME[0];
         setLayout(newLayout);
+    };
+
+    const createStimulationTab = () => {
+        if (Object.keys(modifiedElectrodes).length === 0) return;
+
+        // Get designation data from the current localization
+        try {
+            exportContacts(modifiedElectrodes, false);
+        } catch (error) {
+            alert('Error saving data on database. Changes are not saved');
+        }
+
+        let stimulationData = modifiedElectrodes.map(electrode => ({
+            ...electrode,
+            contacts: electrode.contacts.map((contact, index) => {
+                let pair = index;
+                if (index == 0) pair = 2;
+                return {
+                    ...contact,
+                    pair: pair,
+                    isPlanning: false,
+                }
+            }),
+        }));
+        // Create a new tab with the designation data
+        const event = new CustomEvent('addStimulationTab', {
+            detail: { data: stimulationData }
+        });
+        window.dispatchEvent(event);
     };
 
     const exportContacts = async (electrodes, download = true) => {
@@ -212,6 +240,12 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
 
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-6 right-6 z-50 flex gap-2">
+                <button
+                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
+                    onClick={createStimulationTab}
+                >
+                    Open in Stimulation Plan
+                </button>
                 <div className="relative">
                     <button
                         className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"

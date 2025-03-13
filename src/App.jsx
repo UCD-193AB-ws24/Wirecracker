@@ -381,6 +381,18 @@ const HomePage = () => {
         };
     }, []);
 
+    // Add event listener for stimulation tab creation
+    useEffect(() => {
+        const handleAddStimulationTab = (event) => {
+            addTab('stimulation', event.detail);
+        };
+
+        window.addEventListener('addStimulationTab', handleAddStimulationTab);
+        return () => {
+            window.removeEventListener('addStimulationTab', handleAddStimulationTab);
+        };
+    }, []);
+
     useEffect(() => {
         // Find the highest localization number to initialize the counter
         if (tabs.length > 1) {
@@ -598,6 +610,8 @@ const HomePage = () => {
             case 'stimulation':
                 return <PlanTypePage
                     key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                 />;
             case 'seizure-recreation':
