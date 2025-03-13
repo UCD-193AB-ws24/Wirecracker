@@ -574,7 +574,6 @@ const HomePage = () => {
                                 <Center 
                                     token={token} 
                                     onNewLocalization={() => addTab('localization')}
-                                    onNewStimulation={() => addTab('stimulation')}
                                     onFileUpload={handleFileUpload}
                                     error={error}
                                 />
@@ -583,7 +582,6 @@ const HomePage = () => {
                         ) : (
                             <Center 
                                 onNewLocalization={() => addTab('localization')}
-                                onNewStimulation={() => addTab('stimulation')}
                                 onFileUpload={handleFileUpload}
                                 error={error}
                             />
@@ -707,7 +705,7 @@ const HomePage = () => {
     );
 };
 
-const Center = ({ token, onNewLocalization, onNewStimulation, onFileUpload, error }) => {
+const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     const [showDatabaseModal, setShowDatabaseModal] = useState(false);
     const [databaseFiles, setDatabaseFiles] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -735,16 +733,13 @@ const Center = ({ token, onNewLocalization, onNewStimulation, onFileUpload, erro
                 openText="Create New ▾"
                 closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
                 openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
-                options="Localization Stimulation"
+                options="Localization"
                 optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
                 onOptionClick={(option) => {
                     switch(option) {
                         case "Localization":
                             onNewLocalization();
-                            break;
-                        case "Stimulation":
-                            onNewStimulation();
                             break;
                     }
                 }}
