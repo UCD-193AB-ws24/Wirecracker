@@ -262,33 +262,41 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 </button>}
                 contentStyle={{ width: "500px" }}
                 modal
-                nested>
+                nested
+            >
                 {close => (
                     <div className="modal bg-white p-6 rounded-lg shadow-lg">
                         <h4 className="text-lg font-semibold mb-4">Add Contact</h4>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded-md mb-4"
-                            onChange={(event) => {
+                        <form
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                const selectedValue = event.target.querySelector('select').value;
                                 let temp = { ...electrodes };
-                                temp[label][number].associatedLocation = event.target.value;
+                                temp[label][number].associatedLocation = selectedValue;
                                 setElectrodes(temp);
                                 setModifiedDate(new Date().toISOString());
-                            }}>
-                            <option></option>
-                            {contactTypes.map((option, i) => {
-                                return (
-                                    <option key={i}>{option}</option>
-                                );
-                            })}
-                        </select>
-                        <button
-                            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200"
-                            onClick={() => {
                                 setSubmitFlag(!submitFlag);
                                 close();
-                            }}>
-                            Done
-                        </button>
+                            }}
+                        >
+                            <select
+                                className="w-full p-2 border border-gray-300 rounded-md mb-4"
+                                value={contactData.associatedLocation}
+                            >
+                                <option></option>
+                                {contactTypes.map((option, i) => {
+                                    return (
+                                        <option key={i}>{option}</option>
+                                    );
+                                })}
+                            </select>
+                            <button
+                                type="submit"
+                                className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200"
+                            >
+                                Done
+                            </button>
+                        </form>
                     </div>
                 )}
             </Popup>
