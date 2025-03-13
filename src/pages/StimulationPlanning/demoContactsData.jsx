@@ -36,6 +36,8 @@ let demoTestData = [
     {id: 305, name: "Picture Verb Action Naming", region: "CaudalMiddleTemporalCortex", description: "Name action occurring in picture", population: 15, disruptionRate: 58.2, tag: ["iPad", "speaker", "microphone", "object recognition"]},
     {id: 306, name: "Draw Object", region: "Hippocampus", description: "Draw object", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
     {id: 307, name: "Draw Colored Object", region: "Hippocampus", description: "Draw object with colors", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
+    {id: 308, name: "Draw Colored Object Meow", region: "OOB", description: "Draw object with colors", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
+    {id: 309, name: "Draw Colored Object Woof", region: "WM", description: "Draw object with colors", population: 15, disruptionRate: 58.2, tag: ["pen", "paper", "memory", "vision"]},
 ]
 
 export {demoContactsData, demoTestData}
