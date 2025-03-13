@@ -41,13 +41,15 @@ export function parseCSVFile( file, coordinates = false ) {
             }
 
             let identifier;
-            if (!coordinates) {
+            let csvWithoutIdentifier;
+            if (!coordinates) { 
                 identifier = lines[0].trim();
+                // Parse CSV content excluding the identifier line
+                csvWithoutIdentifier = lines.slice(2).join("\n");
             } else {
                 identifier = "coordinates";
+                csvWithoutIdentifier = lines.join("\n");
             }
-            // Parse CSV content excluding the identifier line
-            const csvWithoutIdentifier = lines.slice(2).join("\n");
 
             if (identifier === Identifiers.LOCALIZATION) {
                 resolve({ identifier, data: parseLocalization(csvWithoutIdentifier) });
