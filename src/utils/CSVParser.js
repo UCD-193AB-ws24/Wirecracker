@@ -142,6 +142,7 @@ function parseDesignation(csvData) {
         const contactNumber = parseInt(row.ContactNumber);
         let associatedLocation = row.AssociatedLocation.trim();
         const contactDescription = row.ContactDescription.trim();
+        const electrodeDescription = row.ElectrodeDescription;
         const mark = parseInt(row.Mark) || 0; // Default to 0 if not specified
         const surgeonMark = parseInt(row.SurgeonMark) === 1; // Convert to boolean from int (0 or 1)
         
@@ -163,7 +164,12 @@ function parseDesignation(csvData) {
             };
         }
         
-        const contactObj = new contact(associatedLocation, mark, surgeonMark);
+        const contactObj = {
+            ...(new contact(associatedLocation, mark, surgeonMark)),
+            index: contactNumber,
+            __electrodeDescription__: electrodeDescription,
+            __contactDescription__: contactDescription,
+        };
         
         // Add to contacts array at the correct index (contactNumber - 1)
         // Ensure the array is large enough
@@ -200,6 +206,7 @@ function parseStimulation(csvData) {
         const surgeonMark = parseInt(row.SurgeonMark) === 1; // Convert to boolean from int (0 or 1)
         const pair = parseInt(row.Pair);
         const isPlanning = parseInt(row.IsPlanning) === 1;
+        const electrodeDescription = row.ElectrodeDescription;
 
         // Process associated location based on GM presence
         if (associatedLocation === 'GM') {
@@ -221,8 +228,11 @@ function parseStimulation(csvData) {
 
         const contactObj = {
             ...(new contact(associatedLocation, mark, surgeonMark)),
+            index: contactNumber,
             pair: pair,
-            isPlanning: isPlanning
+            isPlanning: isPlanning,
+            __electrodeDescription__: electrodeDescription,
+            __contactDescription__: contactDescription,
         };
 
         // Add to contacts array at the correct index (contactNumber - 1)
@@ -274,6 +284,7 @@ export function saveCSVFile(identifier, data, download = true) {
                     returnData.push({
                         Label: label,
                         ContactNumber: parseInt(contactNumber),
+                        ElectrodeDescription: electrodeDescription,
                         AssociatedLocation: associatedLocation,
                         ContactDescription: contactDescription,
                         Mark: 0,
@@ -293,6 +304,10 @@ export function saveCSVFile(identifier, data, download = true) {
         link.click();
         document.body.removeChild(link);
     } else {
+        switch (identifier) {
+            case Identifiers.DESIGNATION: return parseDesignation(Papa.unparse(returnData));
+            case Identifiers.STIMULATION: return parseStimulation(Papa.unparse(returnData));
+        }
         return parseDesignation(Papa.unparse(returnData));
     }
 }
@@ -353,6 +368,57 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
         link.download = "designation_" + new Date().toISOString().split('T')[0] + ".csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    return csvContent;
+}
+
+/**
+ * Saves a CSV file from data and downloads it or returns the data.
+ *
+ * @param {Object[]} designationData - The data to be saved.
+ * @param {Object[]} localizationData - The localization data to be used.
+ * @param {boolean} download - Whether to download the file or return the data.
+ * @returns {string} The CSV content.
+ */
+export function saveStimulationCSVFile(stimulationData, download = true) {
+    let csvContent = `${Identifiers.STIMULATION}\n${IDENTIFIER_LINE_2}\n`;
+    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning"];
+    csvContent += headers.join(",") + "\n";
+
+    // Create a map of electrode contacts for quick lookup
+    const contactMap = {};
+    stimulationData.forEach(electrode => {
+        contactMap[electrode.label] = electrode.contacts;
+    });
+
+    // Reconstruct the data
+    const output = stimulationData.map(electrode => {
+        return electrode.contacts.map(contact => {
+            return [
+                electrode.label,
+                contact.index,
+                contact.__electrodeDescription__,
+                contact.__contactDescription__,
+                contact.associatedLocation,
+                contact.mark,
+                contact.surgeonMark,
+                contact.pair,
+                contact.isPlanning
+            ].join(",") + "\n";
+        })
+    })
+
+    csvContent = [csvContent, ...output].join()
+
+    if (download) {
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "stimulation_" + new Date().toISOString().split('T')[0] + ".csv";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

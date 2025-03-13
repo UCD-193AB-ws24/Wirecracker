@@ -1,9 +1,10 @@
 import { demoContactData } from "./demoData";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, setState, useEffect } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
+import { saveStimulationCSVFile } from "../../utils/CSVParser";
 
 const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, switchContent, isFunctionalMapping = false }) => {
     const [electrodes, setElectrodes] = useState(savedState.electrodes || demoContactData)
@@ -94,7 +95,6 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
             const contactId = `${electrode.label}${index + 1}`;
             contact.id = contactId;
             contact.electrodeLabel = electrode.label;
-            contact.index = index + 1;
         })
     });
 
@@ -103,7 +103,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
             <div className="flex h-screen p-6 space-x-6">
                 <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} isPairing={isPairing} submitPlanning={submitPlanning} onStateChange={setState} savedState={state} setElectrodes={setElectrodes}/>
 
-                <PlanningPane contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} switchContent={switchContent} isFunctionalMapping={isFunctionalMapping} />
+                <PlanningPane state={state} electrodes={electrodes} contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} switchContent={switchContent} isFunctionalMapping={isFunctionalMapping} />
             </div>
             <Container className="">
                 <Button
@@ -285,7 +285,7 @@ const Contact = ({ contact, onClick }) => {
 };
 
 // Planning pane on the right
-const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag, switchContent, isFunctionalMapping = false }) => {
+const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitFlag, setSubmitFlag, switchContent, isFunctionalMapping = false }) => {
     const [hoverIndex, setHoverIndex] = useState(null);
 
     let index = hoverIndex; // For synchronization between hover and drop
@@ -351,7 +351,7 @@ const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag,
                 {/* export button. Disabled if no contact is in the list */}
                 <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
                         contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                        }`} onClick={() => exportContacts(contacts)}>
+                        }`} onClick={() => exportState(state, electrodes)}>
                     export
                 </button>
             </div>
@@ -403,10 +403,71 @@ const PlanningContact = ({ contact, onDropBack }) => {
     );
 };
 
-function exportContacts(contacts) {
-    for (let contact of contacts) {
-        console.log(contact.id); // Simply put in console for now...
+const exportState = async (state, electrodes, download = true) => {
+    console.log(electrodes)
+    try {
+        // First save to database if we have a file ID
+        if (state.fileId) {
+            console.log('Saving designation to database...');
+
+            // Get user ID from session
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('User not authenticated. Please log in to save designations.');
+                return;
+            }
+
+//             try {
+//                 // First save/update file metadata
+//                 const response = await fetch('http://localhost:5000/api/save-designation', {
+//                     method: 'POST',
+//                     headers: {
+//                         'Content-Type': 'application/json',
+//                         'Authorization': token
+//                     },
+//                     body: JSON.stringify({
+//                         designationData: electrodes,
+//                         localizationData: localizationData,
+//                         fileId: state.fileId,
+//                         fileName: state.fileName,
+//                         creationDate: state.creationDate,
+//                         modifiedDate: new Date().toISOString()
+//                     }),
+//                 });
+//
+//                 const result = await response.json();
+//                 if (!result.success) {
+//                     console.error('Failed to save designation:', result.error);
+//                     alert(`Failed to save designation: ${result.error}`);
+//                     return;
+//                 }
+//
+//                 // Update the state with new modified date
+//                 setState(prevState => ({
+//                     ...prevState,
+//                     modifiedDate: new Date().toISOString()
+//                 }));
+//
+//                 // Show success feedback if this was a save operation
+//                 if (!download) {
+//                     setShowSaveSuccess(true);
+//                     setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
+//                 }
+//
+//                 console.log('Designation saved successfully');
+//             } catch (error) {
+//                 console.error('Error saving designation:', error);
+//                 alert(`Error saving designation: ${error.message}`);
+//                 return;
+//             }
+        }
+
+        // Then export to CSV as before
+        saveStimulationCSVFile(electrodes, download);
+    } catch (error) {
+        console.error('Error exporting contacts:', error);
+        alert(`Error exporting contacts: ${error.message}`);
     }
-}
+};
 
 export default ContactSelection;
