@@ -101,7 +101,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
     return (
         <DndProvider backend={HTML5Backend}>
             <div className="flex h-screen p-6 space-x-6">
-                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} isPairing={isPairing} submitPlanning={submitPlanning} onStateChange={setState} savedState={state}/>
+                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} isPairing={isPairing} submitPlanning={submitPlanning} onStateChange={setState} savedState={state} setElectrodes={setElectrodes}/>
 
                 <PlanningPane contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} switchContent={switchContent} isFunctionalMapping={isFunctionalMapping} />
             </div>
@@ -124,7 +124,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
 };
 
 // Generate list of contacts from list of electrodes
-const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisible, isPairing, submitPlanning, onStateChange, savedState }) => {
+const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisible, isPairing, submitPlanning, onStateChange, savedState, setElectrodes }) => {
     const [submitContact, setSubmitContact] = useState(savedState.submitContact || false);
     useEffect(() => {
         onStateChange((prevState) => {
