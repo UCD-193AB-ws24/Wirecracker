@@ -542,7 +542,7 @@ const exportState = async (state, electrodes, download = true) => {
     try {
         // First save to database if we have a file ID
         if (state.fileId) {
-            console.log('Saving designation to database...');
+            console.log('Saving stimulation plan to database...');
 
             // Get user ID from session
             const token = localStorage.getItem('token');
