@@ -35,9 +35,14 @@ export function parseCSVFile( file, coordinates = false ) {
             const fileContent = e.target.result;
             const lines = fileContent.split(/\r?\n/);
 
-            if (!coordinates && (lines.length < 2 || (lines[0].trim() !== Identifiers.TEST_PLANNING && 
-                lines[0].trim() !== Identifiers.LOCALIZATION && lines[0].trim() !== Identifiers.DESIGNATION) ||
-                lines[1].trim() !== IDENTIFIER_LINE_2)) {
+            if (!coordinates && (lines.length < 2 ||
+                (
+                    lines[0].trim() !== Identifiers.TEST_PLANNING &&
+                    lines[0].trim() !== Identifiers.LOCALIZATION &&
+                    lines[0].trim() !== Identifiers.DESIGNATION &&
+                    lines[0].trim() !== Identifiers.STIMULATION &&
+                    lines[0].trim() !== Identifiers.FUNCTIONAL_MAP
+                ) || lines[1].trim() !== IDENTIFIER_LINE_2 )) {
                 reject(new Error("Invalid file. The first line must be the correct identifier."));
                 return;
             }
@@ -147,7 +152,7 @@ function parseDesignation(csvData) {
         const contactNumber = parseInt(row.ContactNumber);
         let associatedLocation = row.AssociatedLocation.trim();
         const contactDescription = row.ContactDescription.trim();
-        const electrodeDescription = row.ElectrodeDescription;
+        const electrodeDescription = row.ElectrodeDescription.trim();
         const mark = parseInt(row.Mark) || 0; // Default to 0 if not specified
         const surgeonMark = parseInt(row.SurgeonMark) === 1; // Convert to boolean from int (0 or 1)
         
@@ -207,14 +212,14 @@ function parseStimulation(csvData) {
         const contactNumber = parseInt(row.ContactNumber);
         let associatedLocation = row.AssociatedLocation.trim();
         const contactDescription = row.ContactDescription.trim();
-        const mark = parseInt(row.Mark) || 0; // Default to 0 if not specified
-        const surgeonMark = parseInt(row.SurgeonMark) === 1; // Convert to boolean from int (0 or 1)
+        const mark = parseInt(row.Mark) || 0; // Default to 0 if not specified)
+        const surgeonMark = row.SurgeonMark.trim() === "true"; // Convert to boolean
         const pair = parseInt(row.Pair);
-        const isPlanning = parseInt(row.IsPlanning) === 1;
-        const electrodeDescription = row.ElectrodeDescription;
-        const frequency = row.Frequency || 105; // TODO : ask what default value should be
-        const duration = row.Duration || 3.0;
-        const current = row.Current || 2.445;
+        const isPlanning = row.IsPlanning.trim() === "true";
+        const electrodeDescription = row.ElectrodeDescription.trim();
+        const frequency = parseFloat(row.Frequency) || 105; // TODO : ask what default value should be
+        const duration = parseFloat(row.Duration) || 3.0;
+        const current = parseFloat(row.Current) || 2.445;
 
         // Process associated location based on GM presence
         if (associatedLocation === 'GM') {
@@ -236,11 +241,11 @@ function parseStimulation(csvData) {
 
         const contactObj = {
             ...(new contact(associatedLocation, mark, surgeonMark)),
+            __electrodeDescription__: electrodeDescription,
+            __contactDescription__: contactDescription,
             index: contactNumber,
             pair: pair,
             isPlanning: isPlanning,
-            __electrodeDescription__: electrodeDescription,
-            __contactDescription__: contactDescription,
             duration: duration,
             frequency: frequency,
             current: current,
@@ -279,14 +284,13 @@ function parseTests(csvData) {
         let associatedLocation = row.AssociatedLocation.trim();
         const contactDescription = row.ContactDescription.trim();
         const mark = parseInt(row.Mark) || 0; // Default to 0 if not specified
-        const surgeonMark = parseInt(row.SurgeonMark) === 1; // Convert to boolean from int (0 or 1)
+        const surgeonMark = row.SurgeonMark.trim() === "true"; // Convert to boolean
         const pair = parseInt(row.Pair);
-        const isPlanning = parseInt(row.IsPlanning) === 1;
-        const electrodeDescription = row.ElectrodeDescription;
-        const frequency = row.Frequency || 105; // TODO : ask what default value should be
-        const duration = row.Duration || 3.0;
-        const current = row.Current || 2.445;
-        const testID = row.TestID;
+        const electrodeDescription = row.ElectrodeDescription.trim();
+        const frequency = parseFloat(row.Frequency) || 105; // TODO : ask what default value should be
+        const duration = parseFloat(row.Duration) || 3.0;
+        const current = parseFloat(row.Current) || 2.445;
+        const testID = row.TestID.trim();
 
         // Process associated location based on GM presence
         if (associatedLocation === 'GM') {
@@ -301,13 +305,12 @@ function parseTests(csvData) {
 
         const contactObj = {
             ...(new contact(associatedLocation, mark, surgeonMark)),
+            __electrodeDescription__: electrodeDescription,
+            __contactDescription__: contactDescription,
             id: label + contactNumber,
             electrodeLabel: label,
             index: contactNumber,
             pair: pair,
-            isPlanning: isPlanning,
-            __electrodeDescription__: electrodeDescription,
-            __contactDescription__: contactDescription,
             duration: duration,
             frequency: frequency,
             current: current,
@@ -319,10 +322,12 @@ function parseTests(csvData) {
         }
 
         // Add test ID to the contact's test list
-        if (!tests[contactObj.id]) {
-            tests[contactObj.id] = [];
+        if (testID !== "") {
+            if (!tests[contactObj.id]) {
+                tests[contactObj.id] = [];
+            }
+            tests[contactObj.id].push({id: parseInt(testID)});
         }
-        tests[contactObj.id].push({id: testID});
     });
 
     // Convert to array format matching demo data
@@ -489,11 +494,11 @@ export function saveStimulationCSVFile(stimulationData, download = true) {
                 contact.frequency,
                 contact.duration,
                 contact.current,
-            ].join(",") + "\n";
-        })
+            ].join(",");
+        }).join("\n");
     })
 
-    csvContent = [csvContent, ...output].join()
+    csvContent += output;
 
     if (download) {
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
