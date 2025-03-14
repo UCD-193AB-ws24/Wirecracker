@@ -478,10 +478,16 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             <div>Modified: {new Date(modifiedDate).toLocaleString()}</div>
                         </div>
                         <button
-                            className="w-40 bg-sky-700 text-white font-semibold rounded p-2"
+                            className="w-40 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded p-2"
+                            onClick={() => handleSaveLocalization(false)}
+                        >
+                            Save
+                        </button>
+                        <button
+                            className="w-40 bg-green-500 hover:bg-green-600 text-white font-semibold rounded p-2"
                             onClick={() => handleSaveLocalization(true)}
                         >
-                            Save Localization
+                            Export
                         </button>
                     </div>
                 </div>
