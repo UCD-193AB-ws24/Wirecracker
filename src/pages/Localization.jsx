@@ -253,8 +253,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 .then(response => response.json())
                 .then(data => {
                     // Extract unique region names
-                    const names = [...new Set(data.map(region => region.name))];
-                    setRegionNames(names);
+                    setRegionNames(data.map(region => region.name));
                 })
                 .catch(error => {
                     console.error('Error fetching region names:', error);
@@ -272,14 +271,23 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             displayText = `${d1}/${d2}`;
         }
 
+        // Function to get existing region name if it exists (case-insensitive)
+        const getExistingRegion = (input) => {
+            const lowerInput = input.toLowerCase();
+            return regionNames.find(name => name.toLowerCase() === lowerInput);
+        };
+
         const handleSubmit = (event) => {
             event.preventDefault();
             let temp = { ...electrodes };
             
             if (selectedValue === 'GM/GM') {
-                temp[label][number].contactDescription = `${desc1}+${desc2}`;
+                const existingDesc1 = getExistingRegion(desc1) || desc1;
+                const existingDesc2 = getExistingRegion(desc2) || desc2;
+                temp[label][number].contactDescription = `${existingDesc1}+${existingDesc2}`;
             } else if (selectedValue === 'GM' || selectedValue === 'GM/WM') {
-                temp[label][number].contactDescription = desc1;
+                const existingDesc1 = getExistingRegion(desc1) || desc1;
+                temp[label][number].contactDescription = existingDesc1;
             }
             
             temp[label][number].associatedLocation = selectedValue;
@@ -289,7 +297,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             close();
         };
 
-        // Filter region names based on input
+        // Filter region names based on input, case-insensitive
         const filteredRegions1 = desc1Filter
             ? regionNames.filter(name => name.toLowerCase().includes(desc1Filter.toLowerCase()))
             : regionNames;
