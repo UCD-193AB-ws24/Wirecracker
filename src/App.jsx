@@ -631,7 +631,6 @@ const HomePage = () => {
             case 'cceps':
                 return <ContactSelection
                     key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     isFunctionalMapping={false}
                     initialData={{}}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}

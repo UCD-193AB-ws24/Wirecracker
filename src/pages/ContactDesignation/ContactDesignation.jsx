@@ -115,6 +115,9 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     ...contact,
                     pair: pair,
                     isPlanning: false,
+                    duration: 3.0, // TODO : ask what default value should be
+                    frequency: 105.225,
+                    current: 2.445,
                 }
             }),
         }));
