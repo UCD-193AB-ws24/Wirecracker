@@ -243,6 +243,23 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const [selectedValue, setSelectedValue] = useState(associatedLocation);
         const [desc1, setDesc1] = useState(contactData.contactDescription?.split('+')[0] || '');
         const [desc2, setDesc2] = useState(contactData.contactDescription?.split('+')[1] || '');
+        const [regionNames, setRegionNames] = useState([]);
+        const [desc1Filter, setDesc1Filter] = useState('');
+        const [desc2Filter, setDesc2Filter] = useState('');
+
+        useEffect(() => {
+            // Fetch region names when component mounts
+            fetch('http://localhost:5000/api/tables/region_name')
+                .then(response => response.json())
+                .then(data => {
+                    // Extract unique region names
+                    const names = [...new Set(data.map(region => region.name))];
+                    setRegionNames(names);
+                })
+                .catch(error => {
+                    console.error('Error fetching region names:', error);
+                });
+        }, []);
 
         let displayText = associatedLocation;
 
@@ -271,6 +288,15 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             setSubmitFlag(!submitFlag);
             close();
         };
+
+        // Filter region names based on input
+        const filteredRegions1 = desc1Filter
+            ? regionNames.filter(name => name.toLowerCase().includes(desc1Filter.toLowerCase()))
+            : regionNames;
+
+        const filteredRegions2 = desc2Filter
+            ? regionNames.filter(name => name.toLowerCase().includes(desc2Filter.toLowerCase()))
+            : regionNames;
 
         return (
             <Popup
@@ -306,13 +332,24 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Contact Description
                                     </label>
-                                    <input
-                                        type="text"
-                                        className="w-full p-2 border border-gray-300 rounded-md"
-                                        value={desc1}
-                                        onChange={(e) => setDesc1(e.target.value)}
-                                        placeholder="Enter description"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                            value={desc1}
+                                            onChange={(e) => {
+                                                setDesc1(e.target.value);
+                                                setDesc1Filter(e.target.value);
+                                            }}
+                                            placeholder="Enter or select description"
+                                            list="regions1"
+                                        />
+                                        <datalist id="regions1">
+                                            {filteredRegions1.map((name, index) => (
+                                                <option key={index} value={name} />
+                                            ))}
+                                        </datalist>
+                                    </div>
                                 </div>
                             )}
 
@@ -322,25 +359,47 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             First Description
                                         </label>
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 border border-gray-300 rounded-md"
-                                            value={desc1}
-                                            onChange={(e) => setDesc1(e.target.value)}
-                                            placeholder="Enter first description"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 border border-gray-300 rounded-md"
+                                                value={desc1}
+                                                onChange={(e) => {
+                                                    setDesc1(e.target.value);
+                                                    setDesc1Filter(e.target.value);
+                                                }}
+                                                placeholder="Enter or select first description"
+                                                list="regions1"
+                                            />
+                                            <datalist id="regions1">
+                                                {filteredRegions1.map((name, index) => (
+                                                    <option key={index} value={name} />
+                                                ))}
+                                            </datalist>
+                                        </div>
                                     </div>
                                     <div className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Second Description
                                         </label>
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 border border-gray-300 rounded-md"
-                                            value={desc2}
-                                            onChange={(e) => setDesc2(e.target.value)}
-                                            placeholder="Enter second description"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 border border-gray-300 rounded-md"
+                                                value={desc2}
+                                                onChange={(e) => {
+                                                    setDesc2(e.target.value);
+                                                    setDesc2Filter(e.target.value);
+                                                }}
+                                                placeholder="Enter or select second description"
+                                                list="regions2"
+                                            />
+                                            <datalist id="regions2">
+                                                {filteredRegions2.map((name, index) => (
+                                                    <option key={index} value={name} />
+                                                ))}
+                                            </datalist>
+                                        </div>
                                     </div>
                                 </>
                             )}
