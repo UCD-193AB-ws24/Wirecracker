@@ -251,6 +251,14 @@ function parseStimulation(csvData) {
             current: current,
         };
 
+        if (isPlanning) {
+            contactObj.order = parseInt(row.PlanOrder);
+            if (contactObj.order < 0) {
+                alert("error found on csv. Contact(s) will be missing from planning pane.");
+                contactObj.isPlanning = false;
+            }
+        }
+
         // Add to contacts array at the correct index (contactNumber - 1)
         // Ensure the array is large enough
         while (parsedData[label].contacts.length < contactNumber) {
@@ -467,9 +475,9 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {string} The CSV content.
  */
-export function saveStimulationCSVFile(stimulationData, isFunctionalMapping = false, download = true) {
+export function saveStimulationCSVFile(stimulationData, planOrder, isFunctionalMapping = false, download = true) {
     let csvContent = isFunctionalMapping ? `${Identifiers.STIMULATION_FUNCTION}\n${IDENTIFIER_LINE_2}\n` : `${Identifiers.STIMULATION}\n${IDENTIFIER_LINE_2}\n`;
-    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning", "Frequency", "Duration", "Current"];
+    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning", "Frequency", "Duration", "Current", "PlanOrder"];
     csvContent += headers.join(",") + "\n";
 
     // Create a map of electrode contacts for quick lookup
@@ -481,6 +489,7 @@ export function saveStimulationCSVFile(stimulationData, isFunctionalMapping = fa
     // Reconstruct the data
     const output = stimulationData.map(electrode => {
         return electrode.contacts.map(contact => {
+            let order = contact.isPlanning ? planOrder.indexOf(contact.id) : -1;
             return [
                 electrode.label,
                 contact.index,
@@ -494,6 +503,7 @@ export function saveStimulationCSVFile(stimulationData, isFunctionalMapping = fa
                 contact.frequency,
                 contact.duration,
                 contact.current,
+                order,
             ].join(",");
         }).join("\n");
     })

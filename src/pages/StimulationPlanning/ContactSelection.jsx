@@ -13,7 +13,9 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, is
         if (initialData.data) {
             return initialData.data.map(electrode => {
                 return electrode.contacts.filter((contact) => contact.isPlanning);
-            }).flat();
+            })
+            .flat()
+            .sort((a, b) => a.order - b.order);
         }
         return [];
     });
@@ -606,7 +608,8 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
         }
 
         // Then export to CSV as before
-        saveStimulationCSVFile(electrodes, isFunctionalMapping, download);
+        let planOrder = state.planningContacts.map(contact => contact.id);
+        saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
     } catch (error) {
         console.error('Error exporting contacts:', error);
         alert(`Error exporting contacts: ${error.message}`);
