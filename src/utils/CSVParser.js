@@ -74,13 +74,13 @@ export function parseCSVFile( file, coordinates = false ) {
                 });
                 return;
             }
-            else if (identifier === Identifiers.STIMULATION || identifier === Identifiers.TEST_PLANNING) {
+            else if (identifier === Identifiers.STIMULATION || identifier === Identifiers.STIMULATION_FUNCTION) {
                 // const designationData = parseDesignation(csvWithoutIdentifier);
                 const stimulationData = parseStimulation(csvWithoutIdentifier);
-                resolve({identifier, data: stimulationData, isFunctionalMapping: identifier === Identifiers.TEST_PLANNING});
+                resolve({identifier, data: stimulationData, isFunctionalMapping: identifier === Identifiers.STIMULATION_FUNCTION});
                 return;
             }
-            else if (identifier === Identifiers.FUNCTIONAL_MAP) {
+            else if (identifier === Identifiers.TEST_PLANNING) {
                 resolve({ identifier, data: parseTests(csvWithoutIdentifier) });
                 return;
             }
@@ -468,7 +468,7 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
  * @returns {string} The CSV content.
  */
 export function saveStimulationCSVFile(stimulationData, isFunctionalMapping = false, download = true) {
-    let csvContent = isFunctionalMapping ? `${Identifiers.TEST_PLANNING}\n${IDENTIFIER_LINE_2}\n` : `${Identifiers.STIMULATION}\n${IDENTIFIER_LINE_2}\n`;
+    let csvContent = isFunctionalMapping ? `${Identifiers.STIMULATION_FUNCTION}\n${IDENTIFIER_LINE_2}\n` : `${Identifiers.STIMULATION}\n${IDENTIFIER_LINE_2}\n`;
     const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning", "Frequency", "Duration", "Current"];
     csvContent += headers.join(",") + "\n";
 
@@ -522,7 +522,7 @@ export function saveStimulationCSVFile(stimulationData, isFunctionalMapping = fa
  * @returns {string} The CSV content.
  */
 export function saveTestCSVFile(testData, contacts, download = true) {
-    let csvContent = `${Identifiers.FUNCTIONAL_MAP}\n${IDENTIFIER_LINE_2}\n`;
+    let csvContent = `${Identifiers.TEST_PLANNING}\n${IDENTIFIER_LINE_2}\n`;
     const headers = [
             "Label",
             "ContactNumber",

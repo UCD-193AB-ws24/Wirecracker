@@ -160,9 +160,6 @@ const FunctionalTestSelection = ({
     };
 
     const exportTests = async (tests, contacts, download = true) => {
-        console.log(tests);
-        console.log(contacts);
-
 
         try {
             // First save to database if we have a file ID
