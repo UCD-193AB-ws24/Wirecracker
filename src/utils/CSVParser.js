@@ -13,6 +13,7 @@ export const Identifiers = Object.freeze({
     LOCALIZATION:   "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR LOCALIZATION ###",
     DESIGNATION:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR DESIGNATION ###",
     STIMULATION:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR STIMULATION ###",
+    FUNCTIONAL_MAP: "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR FUNCTIONAL MAPPING ###",
 });
 
 /**
@@ -385,8 +386,7 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
 /**
  * Saves a CSV file from data and downloads it or returns the data.
  *
- * @param {Object[]} designationData - The data to be saved.
- * @param {Object[]} localizationData - The localization data to be used.
+ * @param {Object[]} stimulationData - The data to be saved.
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {string} The CSV content.
  */
@@ -428,6 +428,85 @@ export function saveStimulationCSVFile(stimulationData, download = true) {
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
         link.download = "stimulation_" + new Date().toISOString().split('T')[0] + ".csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    return csvContent;
+}
+
+/**
+ * Saves a CSV file from data and downloads it or returns the data.
+ *
+ * @param {Object[]} testData - The test data to be saved.
+ * @param {Object[]} contacts - Contacts associated with tests.
+ * @param {boolean} download - Whether to download the file or return the data.
+ * @returns {string} The CSV content.
+ */
+export function saveTestCSVFile(testData, contacts, download = true) {
+    let csvContent = `${Identifiers.FUNCTIONAL_MAP}\n${IDENTIFIER_LINE_2}\n`;
+    const headers = [
+            "Label",
+            "ContactNumber",
+            "ElectrodeDescription",
+            "ContactDescription",
+            "AssociatedLocation",
+            "Mark",
+            "SurgeonMark",
+            "Pair",
+            "Frequency",
+            "Duration",
+            "Current",
+            "TestID" // Added TestID for associating tests
+        ];
+
+        // Create CSV rows
+        const rows = contacts.flatMap(contact => {
+            const contactTests = testData[contact.id] || [];
+            if (contactTests.length === 0) {
+                return [[
+                    contact.electrodeLabel, // Label
+                    contact.index, // ContactNumber
+                    contact.__electrodeDescription__, // ElectrodeDescription
+                    contact.__contactDescription__, // ContactDescription
+                    contact.associatedLocation, // AssociatedLocation
+                    contact.mark, // Mark
+                    contact.surgeonMark, // SurgeonMark
+                    contact.pair.index, // Pair
+                    contact.frequency, // Frequency
+                    contact.duration, // Duration
+                    contact.current, // Current
+                    "", // No test
+                ]];
+            }
+            return contactTests.map(test => [
+                contact.electrodeLabel, // Label
+                contact.index, // ContactNumber
+                contact.__electrodeDescription__, // ElectrodeDescription
+                contact.__contactDescription__, // ContactDescription
+                contact.associatedLocation, // AssociatedLocation
+                contact.mark, // Mark
+                contact.surgeonMark, // SurgeonMark
+                contact.pair.index, // Pair
+                contact.frequency, // Frequency
+                contact.duration, // Duration
+                contact.current, // Current
+                test.id, // TestID
+            ]);
+        });
+
+        // Combine headers and rows into CSV format
+        csvContent += [
+            headers.join(','), // Header row
+            ...rows.map(row => row.join(',')) // Data rows
+        ].join('\n');
+
+    if (download) {
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "tests_" + new Date().toISOString().split('T')[0] + ".csv";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

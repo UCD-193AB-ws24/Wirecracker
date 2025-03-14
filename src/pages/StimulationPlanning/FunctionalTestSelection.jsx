@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { demoContactsData, demoTestData } from "./demoContactsData";
+import { saveTestCSVFile } from "../../utils/CSVParser";
 
 const FunctionalTestSelection = ({
     initialData = {},
@@ -144,8 +145,11 @@ const FunctionalTestSelection = ({
         });
     };
 
-    const exportTests = async (tests, download = true) => {
+    const exportTests = async (tests, contacts, download = true) => {
         console.log(tests);
+        console.log(contacts);
+
+
         try {
             // First save to database if we have a file ID
             // if (state.fileId) {
@@ -203,7 +207,7 @@ const FunctionalTestSelection = ({
             //     }
             // }
             // Then export to CSV as before
-            // saveTestCSVFile(electrodes, localizationData, download);
+            saveTestCSVFile(tests, contacts, download);
         } catch (error) {
             console.error("Error exporting contacts:", error);
             alert(`Error exporting contacts: ${error.message}`);
@@ -432,7 +436,7 @@ const FunctionalTestSelection = ({
                 <div className="relative">
                     <button
                         className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
-                        onClick={() => exportTests(tests, false)}
+                        onClick={() => exportTests(tests, contacts, false)}
                     >
                         Save
                     </button>
@@ -444,7 +448,7 @@ const FunctionalTestSelection = ({
                 </div>
                 <button
                     className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
-                    onClick={() => exportTests(tests)}
+                    onClick={() => exportTests(tests, contacts)}
                 >
                     Export
                 </button>
