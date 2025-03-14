@@ -10,19 +10,21 @@ const FunctionalTestSelection = ({
     const allAvailableTests = demoTestData;
 
     const [contacts, setContacts] = useState(
-        savedState.contacts || initialData.contacts || demoContactsData
+        savedState.contacts || initialData.data.contacts || demoContactsData
     );
     const [tests, setTests] = useState(() => {
         if (savedState.tests) return savedState.tests;
-        if (initialData.tests) {
-            return Object.entries(initialData.tests).map(([contactID, tests]) => {
-                return tests.map(test => {
+        if (initialData.data.tests) {
+            let loadedTests = {};
+            Object.entries(initialData.data.tests).map(([contactID, tests]) => { // for each contact
+                loadedTests[contactID] = tests.map(test => {
                     if (!(test.name && test.region && test.description && test.population && test.disruptionRate && test.tag)) {
                         return allAvailableTests.find(candidate => candidate.id === test.id);
                     }
                     return test;
                 })
             })
+            return loadedTests;
         }
 
         return {};

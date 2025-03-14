@@ -393,7 +393,7 @@ const HomePage = () => {
         };
     }, []);
 
-    // Add event listener for stimulation tab creation
+    // Add event listener for functional mapping tab creation
     useEffect(() => {
         const handleAddFunctionalTestTab = (event) => {
             addTab('functional-test', event.detail);
@@ -433,11 +433,13 @@ const HomePage = () => {
         switch (type) {
             case 'localization':        title = `Localization${localizationCounter}`; setLocalizationCounter(prevCounter => prevCounter + 1); break;
             case 'csv-localization':    title = data.name; break;
+            case 'csv-designation':     title = data.name; break;
+            case 'csv-stimulation':     title = data.name; break; // Stimulation - CCEPs and seizure recreation
+            case 'csv-functional-mapping': title = data.name; break; // Stimulation - Functional Mapping
+            case 'csv-functional-test':       title = data.name; break; // Functional Mapping test selection
             case 'stimulation':         title = 'New Stimulation Plan'; break;
             case 'designation':         title = 'New Designation'; break;
             case 'functional-test':     title = 'New Functional Mapping'; break;
-            case 'csv-designation':     title = data.name; break;
-            case 'csv-test_plan':       title = data.name; break;
         }
 
         const newTab = {
@@ -516,8 +518,12 @@ const HomePage = () => {
                 addTab('csv-localization', { name: file.name, data });
             } else if (identifier === Identifiers.DESIGNATION) {
                 addTab('csv-designation', { name: file.name, data });
-            } else if (identifier === Identifiers.TEST_PLAN) {
-                addTab('csv-test_plan', { name: file.name, data });
+            } else if (identifier === Identifiers.STIMULATION) {
+                addTab('csv-stimulation', { name: file.name, data });
+            }else if (identifier === Identifiers.STIMULATION_FUNCTION) {
+                addTab('csv-functional-mapping', { name: file.name, data });
+            }else if (identifier === Identifiers.TEST_PLANNING) {
+                addTab('csv-functional-test', { name: file.name, data });
             }
         } catch (err) {
             setError(err.message);
@@ -588,7 +594,6 @@ const HomePage = () => {
 
     const renderTabContent = () => {
         const currentTab = tabs.find(tab => tab.id === activeTab);
-        
         switch (currentTab.content) {
             case 'home':
                 return (
@@ -620,38 +625,6 @@ const HomePage = () => {
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
-            case 'stimulation':
-                return <PlanTypePage
-                    key={currentTab.id}
-                    initialData={currentTab.data}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                />;
-            case 'seizure-recreation':
-            case 'cceps':
-                return <ContactSelection
-                    key={currentTab.id}
-                    isFunctionalMapping={false}
-                    initialData={{}}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
-            case 'functional-mapping':
-                return <ContactSelection
-                    key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    isFunctionalMapping={true}
-                    initialData={{}}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
-            case 'functional-test':
-                return <FunctionalTestSelection
-                    key={currentTab.id}
-                    initialData={currentTab.data}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
             case 'csv-localization':
                 return <Localization
                     key={currentTab.id}
@@ -673,30 +646,56 @@ const HomePage = () => {
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
-            case 'csv-test_plan':
-                return (
-                    <div className="p-4">
-                        <h2 className="text-2xl font-bold mb-4">{currentTab.data.name}</h2>
-                        <table className="w-full border-collapse border">
-                            <thead>
-                                <tr>
-                                    {Object.keys(currentTab.data.data[0] || {}).map((key) => (
-                                        <th key={key} className="border p-2">{key}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {currentTab.data.data.map((row, index) => (
-                                    <tr key={index}>
-                                        {Object.values(row).map((value, i) => (
-                                            <td key={i} className="border p-2">{value}</td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                );
+            case 'stimulation':
+                return <PlanTypePage
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                />;
+            case 'seizure-recreation':
+            case 'cceps':
+                return <ContactSelection
+                    key={currentTab.id}
+                    isFunctionalMapping={false}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-stimulation':
+                return <ContactSelection
+                    key={currentTab.id}
+                    isFunctionalMapping={false}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'functional-mapping':
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={true}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-functional-mapping':
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={true}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'functional-test':
+            case 'csv-functional-test':
+                return <FunctionalTestSelection
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
             default:
                 return null;
         }

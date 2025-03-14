@@ -331,7 +331,7 @@ function parseTests(csvData) {
     });
 
     // Convert to array format matching demo data
-    return [contacts, tests];
+    return {contacts: contacts, tests: tests};
 }
 
 /**

@@ -7,8 +7,16 @@ import { Container, Button, darkColors, lightColors } from 'react-floating-actio
 import { saveStimulationCSVFile } from "../../utils/CSVParser";
 
 const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, isFunctionalMapping = false }) => {
-    const [electrodes, setElectrodes] = useState(savedState.electrodes || demoContactData)
-    const [planningContacts, setPlanningContacts] = useState(savedState.planningContacts || []);
+    const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || demoContactData)
+    const [planningContacts, setPlanningContacts] = useState(() => {
+        if (savedState.planningContacts) return savedState.planningContacts;
+        if (initialData.data) {
+            return initialData.data.map(electrode => {
+                return electrode.contacts.filter((contact) => contact.isPlanning);
+            }).flat();
+        }
+        return [];
+    });
     const [areAllVisible, setAreAllVisible] = useState(savedState.areAllVisible || false);      // Boolean for if all contacts are visible
     const [isPairing, setIsPairing] = useState(savedState.isPairing || false);
     const [submitPlanning, setSubmitPlanning] = useState(savedState.submitPlanning || false);
@@ -410,6 +418,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
 
 // Draggable contact in planning pane area
 const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setElectrodes }) => {
+    console.log(contact)
     // To persist between tab switch and reload
     const [frequency, setFrequency] = useState(savedState.frequency?.[contact.id] || contact.frequency || 0);
     const [duration, setDuration] = useState(savedState.duration?.[contact.id] || contact.duration || 0);
