@@ -9,11 +9,11 @@ const IDENTIFIER_LINE_2 = "### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELE
  * @enum {string}
  */
 export const Identifiers = Object.freeze({
-    TEST_PLANNING:  "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR TEST PLANNING ###",
-    LOCALIZATION:   "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR LOCALIZATION ###",
-    DESIGNATION:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR DESIGNATION ###",
-    STIMULATION:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR STIMULATION ###",
-    FUNCTIONAL_MAP: "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR FUNCTIONAL MAPPING ###",
+    TEST_PLANNING:           "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR TEST PLANNING ###",
+    LOCALIZATION:            "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR LOCALIZATION ###",
+    DESIGNATION:             "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR DESIGNATION ###",
+    STIMULATION:             "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR CCEPS / SEIZURE RECREATION PLANNING ###",
+    STIMULATION_FUNCTION:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR FUNCTIONAL MAPPING PLANNING ###",
 });
 
 /**
@@ -41,7 +41,7 @@ export function parseCSVFile( file, coordinates = false ) {
                     lines[0].trim() !== Identifiers.LOCALIZATION &&
                     lines[0].trim() !== Identifiers.DESIGNATION &&
                     lines[0].trim() !== Identifiers.STIMULATION &&
-                    lines[0].trim() !== Identifiers.FUNCTIONAL_MAP
+                    lines[0].trim() !== Identifiers.STIMULATION_FUNCTION
                 ) || lines[1].trim() !== IDENTIFIER_LINE_2 )) {
                 reject(new Error("Invalid file. The first line must be the correct identifier."));
                 return;
@@ -74,10 +74,10 @@ export function parseCSVFile( file, coordinates = false ) {
                 });
                 return;
             }
-            else if (identifier === Identifiers.STIMULATION) {
+            else if (identifier === Identifiers.STIMULATION || identifier === Identifiers.TEST_PLANNING) {
                 // const designationData = parseDesignation(csvWithoutIdentifier);
                 const stimulationData = parseStimulation(csvWithoutIdentifier);
-                resolve({identifier, data: stimulationData});
+                resolve({identifier, data: stimulationData, isFunctionalMapping: identifier === Identifiers.TEST_PLANNING});
                 return;
             }
             else if (identifier === Identifiers.FUNCTIONAL_MAP) {
@@ -467,8 +467,8 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {string} The CSV content.
  */
-export function saveStimulationCSVFile(stimulationData, download = true) {
-    let csvContent = `${Identifiers.STIMULATION}\n${IDENTIFIER_LINE_2}\n`;
+export function saveStimulationCSVFile(stimulationData, isFunctionalMapping = false, download = true) {
+    let csvContent = isFunctionalMapping ? `${Identifiers.TEST_PLANNING}\n${IDENTIFIER_LINE_2}\n` : `${Identifiers.STIMULATION}\n${IDENTIFIER_LINE_2}\n`;
     const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning", "Frequency", "Duration", "Current"];
     csvContent += headers.join(",") + "\n";
 

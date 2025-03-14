@@ -327,7 +327,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
 
         // Get designation data from the current localization
         try {
-            exportState(state, electrodes, false);
+            exportState(state, electrodes, isFunctionalMapping, false);
         } catch (error) {
             alert('Error saving data on database. Changes are not saved');
         }
@@ -400,7 +400,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
                 {/* export button. Disabled if no contact is in the list */}
                 <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
                         contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                        }`} onClick={() => exportState(state, electrodes)}>
+                        }`} onClick={() => exportState(state, electrodes, isFunctionalMapping)}>
                     export
                 </button>
             </div>
@@ -538,7 +538,7 @@ const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setEl
     );
 };
 
-const exportState = async (state, electrodes, download = true) => {
+const exportState = async (state, electrodes, isFunctionalMapping, download = true) => {
     try {
         // First save to database if we have a file ID
         if (state.fileId) {
@@ -597,7 +597,7 @@ const exportState = async (state, electrodes, download = true) => {
         }
 
         // Then export to CSV as before
-        saveStimulationCSVFile(electrodes, download);
+        saveStimulationCSVFile(electrodes, isFunctionalMapping, download);
     } catch (error) {
         console.error('Error exporting contacts:', error);
         alert(`Error exporting contacts: ${error.message}`);
