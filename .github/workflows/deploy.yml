@@ -1,0 +1,60 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - github-pages  # Change this to your default branch if different
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Setup Node.js
+      - name: Setup Node.js for frontend
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      # Install dependencies and build frontend
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build frontend
+        run: npm run build
+
+      # Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: dist  # Vite outputs build files to `dist` by default
+
+  backend:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy  # Only start backend deployment after frontend is built
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js for backend
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      # Install dependencies and start backend
+      - name: Install backend dependencies
+        run: npm install
+        working-directory: ./backend
+
+      - name: Deploy backend
+        run: npm start
