@@ -207,6 +207,9 @@ function parseStimulation(csvData) {
         const pair = parseInt(row.Pair);
         const isPlanning = parseInt(row.IsPlanning) === 1;
         const electrodeDescription = row.ElectrodeDescription;
+        const frequency = row.Frequency || 105; // TODO : ask what default value should be
+        const duration = row.Duration || 3.0;
+        const current = row.Current || 2.445;
 
         // Process associated location based on GM presence
         if (associatedLocation === 'GM') {
@@ -233,6 +236,9 @@ function parseStimulation(csvData) {
             isPlanning: isPlanning,
             __electrodeDescription__: electrodeDescription,
             __contactDescription__: contactDescription,
+            duration: duration,
+            frequency: frequency,
+            current: current,
         };
 
         // Add to contacts array at the correct index (contactNumber - 1)
@@ -386,7 +392,7 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
  */
 export function saveStimulationCSVFile(stimulationData, download = true) {
     let csvContent = `${Identifiers.STIMULATION}\n${IDENTIFIER_LINE_2}\n`;
-    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning"];
+    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning", "Frequency", "Duration", "Current"];
     csvContent += headers.join(",") + "\n";
 
     // Create a map of electrode contacts for quick lookup
@@ -407,7 +413,10 @@ export function saveStimulationCSVFile(stimulationData, download = true) {
                 contact.mark,
                 contact.surgeonMark,
                 contact.pair,
-                contact.isPlanning
+                contact.isPlanning,
+                contact.frequency,
+                contact.duration,
+                contact.current,
             ].join(",") + "\n";
         })
     })
