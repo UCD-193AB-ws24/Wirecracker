@@ -2,7 +2,7 @@
 
 # Contributing to Wirecracker
 
-We would love for you to contribute to Angular and help make it even better than it is today!
+We would love for you to contribute to Wirecracker and help make it even better than it is today!
 As a contributor, here are the guidelines we would like you to follow:
 
  - [Question or Problem?](#question)
@@ -20,7 +20,7 @@ Instead, please contact contact@wirecracker.com
 
 ## <a name="issue"></a> Found a Bug?
 
-If you find a bug in the source code, you can help us by [submitting an issue](#submit-issue) to our [GitHub Repository][github].
+If you find a bug in the source code, you can help us by [submitting an issue](#submit-issue) to our [GitHub Repository](https://github.com/UCD-193AB-ws24/Wirecracker/).
 Even better, you can [submit a Pull Request](#submit-pr) with a fix.
 
 
@@ -55,7 +55,7 @@ We understand that sometimes it might be hard to extract essential bits of code 
 
 Unfortunately, we are not able to investigate / fix bugs without a minimal reproduction, so if we don't hear back from you, we are going to close an issue that doesn't have enough info to be reproduced.
 
-You can file new issues by selecting from our [new issue templates](https://github.com/UCD-193AB-ws24/Wirecracker/issues/new/choose) and filling out the issue template.
+You can file new issues by selecting from our [new issue templates](https://github.com/UCD-193AB-ws24/Wirecracker/issues/new?template=bug_report.md) and filling out the issue template.
 
 
 ### <a name="submit-pr"></a> Submitting a Pull Request (PR)
@@ -80,9 +80,7 @@ Before you submit your Pull Request (PR) consider the following guidelines:
 
 7. Follow our [Coding Rules](#rules).
 
-8. Run the full Angular test suite, as described in the [developer documentation][dev-doc], and ensure that all tests pass.
-
-9. Commit your changes using a descriptive commit message that follows our [commit message conventions](#commit).
+8. Commit your changes using a descriptive commit message that follows our [commit message conventions](#commit).
    Adherence to these conventions is necessary because release notes are automatically generated from these messages.
 
      ```shell
@@ -90,13 +88,13 @@ Before you submit your Pull Request (PR) consider the following guidelines:
      ```
     Note: the optional commit `--all` command line option will automatically "add" and "rm" edited files.
 
-10. Push your branch to GitHub:
+9. Push your branch to GitHub:
 
     ```shell
     git push origin my-fix-branch
     ```
 
-11. In GitHub, send a pull request to `angular:main`.
+10. In GitHub, send a pull request to `Wirecracker:main`.
 
 #### Addressing review feedback
 
@@ -111,14 +109,14 @@ If we ask for changes via code reviews then:
     git push
     ```
 
-    For more info on working with fixup commits see [here](./contributing-docs/using-fixup-commits.md).
+    For more info on working with fixup commits see [here](https://github.com/angular/angular/blob/main/contributing-docs/using-fixup-commits.md#about-fixup-commits).
 
 That's it! Thank you for your contribution!
 
 
 ##### Updating the commit message
 
-A reviewer might often suggest changes to a commit message (for example, to add more context for a change or adhere to our [commit message guidelines][commit-message-guidelines]).
+A reviewer might often suggest changes to a commit message (for example, to add more context for a change or adhere to our [commit message guidelines](#commit).
 In order to update the commit message of the last commit on your branch:
 
 1. Check out your branch:
@@ -177,19 +175,44 @@ After your pull request is merged, you can safely delete your branch and pull th
 To ensure consistency throughout the source code, keep these rules in mind as you are working:
 
 * Any new feature **must be documented**.
-* We follow [Google's JavaScript Style Guide][js-style-guide], but wrap all code at **100 characters**.
+* We follow [Google's JavaScript Style Guide](https://google.github.io/styleguide/jsguide.html).
+* Format the code using [Prettier](https://prettier.io/)
 
 
 ## <a name="commit"></a> Commit Message Guidelines
 
-We have very precise rules over how our Git commit messages must be formatted:
+We have rules over how our Git commit messages must be formatted:
 ```
 <type>: <short summary>
 ```
+```
+<type>: <short summary>
+  │            │
+  │            └─⫸ Summary in present tense. Not capitalized. No period at the end.
+  │
+  └─⫸ Commit Type: build|ci|docs|feat|fix|ui|refactor|test
+```
 
-See [Commit Message Guidelines][commit-message-guidelines] for details.
+### Type
+
+Must be one of the following:
+
+| Type         | Description                                                                                         |
+|--------------|-----------------------------------------------------------------------------------------------------|
+| **build**    | Changes that affect the build system or external dependencies                                       |
+| **ci**       | Changes to our CI configuration files and scripts (example: Github Actions)                         |
+| **docs**     | Documentation only changes                                                                          |
+| **feat**     | A new feature                                                                                       |
+| **fix**      | A bug fix                                                                                           |
+| **ui**       | A code change that improves user interface                                                          |
+| **refactor** | A code change that neither fixes a bug nor adds a feature                                           |
+| **test**     | Adding missing tests or correcting existing tests                                                   |
 
 
-[dev-doc]: ./contributing-docs/building-and-testing-angular.md
-[commit-message-guidelines]: ./contributing-docs/commit-message-guidelines.md
-[js-style-guide]: https://google.github.io/styleguide/jsguide.html
+### Summary
+
+Use the summary field to provide a succinct description of the change:
+
+* use the imperative, present tense: "change" not "changed" nor "changes"
+* don't capitalize the first letter
+* no dot (.) at the end
