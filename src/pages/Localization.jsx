@@ -4,6 +4,9 @@ import { Container, Button, darkColors, lightColors } from 'react-floating-actio
 import 'reactjs-popup/dist/index.css';
 import { saveCSVFile, Identifiers } from '../utils/CSVParser.js';
 import { supabase } from '../utils/supabaseClient';
+import config from "../../config.json" with { type: 'json' };
+
+const backendURL = config.backendURL;
 
 const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const [expandedElectrode, setExpandedElectrode] = useState(savedState.expandedElectrode || '');
@@ -179,7 +182,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             console.log('Sending data to backend:', dataToSend);
             
             // Save localization data with file ID
-            const response = await fetch('http://localhost:5000/api/save-localization', {
+            const response = await fetch(`${backendURL}/api/save-localization`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
