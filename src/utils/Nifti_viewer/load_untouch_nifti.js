@@ -203,7 +203,6 @@ function read_image ( hdr, filetype, machine,
         4:    { bitpix: 16, precision: 'int16'   },
         8:    { bitpix: 32, precision: 'int32'   },
         16:   { bitpix: 32, precision: 'float32' },
-        32:   { bitpix: 64, precision: 'float32' },
         64:   { bitpix: 64, precision: 'float64' },
         128:  { bitpix: 24, precision: 'uint8'   },
         256:  { bitpix: 8,  precision: 'int8'    },
@@ -212,7 +211,6 @@ function read_image ( hdr, filetype, machine,
         768:  { bitpix: 32, precision: 'uint32'  },
         1024: { bitpix: 64, precision: 'int64'   },
         1280: { bitpix: 64, precision: 'uint64'  },
-        1792: { bitpix: 128,precision: 'float64' }
     };
 
     const datatypeInfo = datatypeMap[hdr.dime.datatype];
@@ -239,7 +237,6 @@ function read_image ( hdr, filetype, machine,
     //  dimension size of an image, not the byte storage
     //  size of an image.
     let img_siz = prod(hdr.dime.dim.slice(1, 8));
-    if ([32, 1792].includes(hdr.dime.datatype)) img_siz *= 2; // Complex types
     if ([128, 511].includes(hdr.dime.datatype)) img_siz *= 3; // RGB types
 
     // Load image data
@@ -275,68 +272,18 @@ function read_image ( hdr, filetype, machine,
         }
     }
 
-    //  For complex float32 or complex float64, voxel values
-    //  include [real, imag]
-    if ( hdr.dime.datatype == 32 || hdr.dime.datatype == 1792 )
+    //  Update the global min and max values
+    img.flat(Infinity);
+    for (let item of img)
     {
-        img = img.flat(Infinity);
-        img_tmp = reshape(img, [2, img.length/2]);
-        img = {};
-        img = img_tmp[0];
-        img.imaginary = img_tmp[1];
-
-        //  Update the global min and max values
-        hdr.dime.glmax.imaginary = img.imaginary[0];
-        hdr.dime.glmax.real = img[0];
-
-        hdr.dime.glmin.imaginary = img.imaginary[0];
-        hdr.dime.glmin.real = img[0];
-
-        for ( let i = 1; i < img.length; i++ )
+        if ( hdr.dime.glmax < item )
         {
-            if ( Math.hypot(hdr.dime.glmax.imaginary, hdr.dime.glmax.real) < Math.hypot(img.imaginary[i], img[i]) )
-            {
-                hdr.dime.glmax.imaginary = img.imaginary[i];
-                hdr.dime.glmax.real = img[i];
-            }
-            else if ( Math.hypot(hdr.dime.glmin.imaginary, hdr.dime.glmin.real) > Math.hypot(img.imaginary[i], img[i]) )
-            {
-                hdr.dime.glmin.imaginary = img.imaginary[i];
-                hdr.dime.glmin.real = img[i];
-            }
-            else if ( Math.hypot(hdr.dime.glmax.imaginary, hdr.dime.glmax.real) == Math.hypot(img.imaginary[i], img[i]) )
-            {
-                if ( Math.atan2(hdr.dime.glmax.imaginary, hdr.dime.glmax.real) < Math.atan2(img.imaginary[i], img[i]) )
-                {
-                    hdr.dime.glmax.imaginary = img.imaginary[i];
-                    hdr.dime.glmax.real = img[i];
-                }
-            }
-            else if ( Math.hypot(hdr.dime.glmin.imaginary, hdr.dime.glmin.real) == Math.hypot(img.imaginary[i], img[i]) )
-            {
-                if ( Math.atan2(hdr.dime.glmin.imaginary, hdr.dime.glmin.real) > Math.atan2(img.imaginary[i], img[i]) )
-                {
-                    hdr.dime.glmin.imaginary = img.imaginary[i];
-                    hdr.dime.glmin.real = img[i];
-                }
-            }
+            hdr.dime.glmax = item;
         }
-    }
-    else
-    {
-        //  Update the global min and max values
-        img.flat(Infinity);
-        for (let item of img)
-        {
-            if ( hdr.dime.glmax < item )
-            {
-                hdr.dime.glmax = item;
-            }
 
-            if ( hdr.dime.glmin > item )
-            {
-                hdr.dime.glmin = item;
-            }
+        if ( hdr.dime.glmin > item )
+        {
+            hdr.dime.glmin = item;
         }
     }
 
