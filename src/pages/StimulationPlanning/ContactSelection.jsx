@@ -1,18 +1,35 @@
 import { demoContactData } from "./demoData";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, setState, useEffect } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
+import { saveStimulationCSVFile } from "../../utils/CSVParser";
 
-const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, switchContent, isFunctionalMapping = false }) => {
-    const [electrodes, setElectrodes] = useState(savedState.electrodes || demoContactData)
-    const [planningContacts, setPlanningContacts] = useState(savedState.planningContacts || []);
+const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, isFunctionalMapping = false }) => {
+    const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || demoContactData)
+    const [planningContacts, setPlanningContacts] = useState(() => {
+        if (savedState.planningContacts) return savedState.planningContacts;
+        if (initialData.data) {
+            return initialData.data.map(electrode => {
+                return electrode.contacts.filter((contact) => contact.isPlanning);
+            })
+            .flat()
+            .sort((a, b) => a.order - b.order);
+        }
+        return [];
+    });
     const [areAllVisible, setAreAllVisible] = useState(savedState.areAllVisible || false);      // Boolean for if all contacts are visible
     const [isPairing, setIsPairing] = useState(savedState.isPairing || false);
     const [submitPlanning, setSubmitPlanning] = useState(savedState.submitPlanning || false);
 
-    const [state, setState] = useState(savedState);
+    const [state, setState] = useState(() => {
+        if (!savedState.frequency) savedState.frequency = [];
+        if (!savedState.duration) savedState.duration = [];
+        if (!savedState.current) savedState.current = [];
+
+        return savedState;
+    });
 
     // Save state changes
     useEffect(() => {
@@ -94,7 +111,6 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
             const contactId = `${electrode.label}${index + 1}`;
             contact.id = contactId;
             contact.electrodeLabel = electrode.label;
-            contact.index = index + 1;
         })
     });
 
@@ -103,7 +119,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
             <div className="flex h-screen p-6 space-x-6">
                 <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} isPairing={isPairing} submitPlanning={submitPlanning} onStateChange={setState} savedState={state} setElectrodes={setElectrodes}/>
 
-                <PlanningPane contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} switchContent={switchContent} isFunctionalMapping={isFunctionalMapping} />
+                <PlanningPane state={state} electrodes={electrodes} contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} setElectrodes={setElectrodes} onStateChange={setState} savedState={state} isFunctionalMapping={isFunctionalMapping} />
             </div>
             <Container className="">
                 <Button
@@ -285,7 +301,7 @@ const Contact = ({ contact, onClick }) => {
 };
 
 // Planning pane on the right
-const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag, switchContent, isFunctionalMapping = false }) => {
+const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitFlag, setSubmitFlag, setElectrodes, onStateChange, savedState, isFunctionalMapping = false }) => {
     const [hoverIndex, setHoverIndex] = useState(null);
 
     let index = hoverIndex; // For synchronization between hover and drop
@@ -299,7 +315,7 @@ const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag,
             if (!clientOffset) return;
             // Estimate the index based on y coordinate
             const hoverY = clientOffset.y;
-            let elementSize = 114; // TODO get value more programmatically
+            let elementSize = document.querySelector('li.planning-contact')?.clientHeight || 155;
             const newIndex = Math.max(0, Math.floor((hoverY - elementSize / 2) / elementSize));
             setHoverIndex(newIndex);
             index = newIndex;
@@ -316,8 +332,51 @@ const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag,
         }),
     }));
 
+    const createTestSelectionTab = () => {
+        if (Object.keys(contacts).length === 0) return;
+
+        // Get designation data from the current localization
+        try {
+            exportState(state, electrodes, isFunctionalMapping, false);
+        } catch (error) {
+            alert('Error saving data on database. Changes are not saved');
+        }
+
+        // Clean up the contacts
+        const functionalTestData = contacts.map(contact => {
+            const updatedContact = electrodes
+                .flatMap(electrode => electrode.contacts)
+                .find(c => c.id === contact.id);
+
+            const pair = electrodes
+                .find(electrode => electrode.label === contact.electrodeLabel)
+                ?.contacts.find(c => c.index === contact.pair);
+
+            return {
+                __contactDescription__: contact.__contactDescription__,
+                __electrodeDescription__: contact.__electrodeDescription__,
+                associatedLocation: contact.associatedLocation,
+                electrodeLabel: contact.electrodeLabel,
+                id: contact.id,
+                index: contact.index,
+                mark: contact.mark,
+                pair: pair,
+                surgeonMark: contact.surgeonMark,
+                duration: updatedContact?.duration,
+                frequency: updatedContact?.frequency,
+                current: updatedContact?.current,
+            }
+        })
+
+        // Create a new tab with the designation data
+        const event = new CustomEvent('addFunctionalTestTab', {
+            detail: { data: { contacts: functionalTestData, tests: {} } }
+        });
+        window.dispatchEvent(event);
+    };
+
     return (
-        <div ref={drop} className={`p-4 w-1/6 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
+        <div ref={drop} className={`p-4 w-1/4 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
             <h2 className="text-2xl font-bold mb-4">Planning Pane</h2>
             {contacts.length === 0 ? (
                 <p className="text-lg text-gray-500">Drag contacts here</p> // Show text if there are no contacts in the pane
@@ -328,7 +387,7 @@ const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag,
                             {hoverIndex === index && isOver && (
                                 <div className="h-1 bg-blue-500 w-full my-1"></div> // Blue bar within the list
                             )}
-                            <PlanningContact contact={contact} onDropBack={onDropBack} />
+                            <PlanningContact contact={contact} onDropBack={onDropBack} onStateChange={onStateChange} savedState={savedState} setElectrodes={setElectrodes} />
                         </React.Fragment>
                     ))}
                     {hoverIndex >= contacts.length && isOver && (
@@ -340,7 +399,7 @@ const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag,
                 {isFunctionalMapping ? (
                     <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
                             contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                            }`} onClick={() => switchContent('functional-test')}>
+                            }`} onClick={createTestSelectionTab}>
                         select tests
                     </button>
                 ) : (
@@ -351,7 +410,7 @@ const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag,
                 {/* export button. Disabled if no contact is in the list */}
                 <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
                         contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                        }`} onClick={() => exportContacts(contacts)}>
+                        }`} onClick={() => exportState(state, electrodes, isFunctionalMapping)}>
                     export
                 </button>
             </div>
@@ -360,7 +419,13 @@ const PlanningPane = ({ contacts, onDrop, onDropBack, submitFlag, setSubmitFlag,
 };
 
 // Draggable contact in planning pane area
-const PlanningContact = ({ contact, onDropBack }) => {
+const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setElectrodes }) => {
+    console.log(contact)
+    // To persist between tab switch and reload
+    const [frequency, setFrequency] = useState(savedState.frequency?.[contact.id] || contact.frequency || 0);
+    const [duration, setDuration] = useState(savedState.duration?.[contact.id] || contact.duration || 0);
+    const [current, setCurrent] = useState(savedState.current?.[contact.id] || contact.current || 0);
+
     // Handle "Drag"
     const [{ isDragging }, drag] = useDrag(() => ({
         type: "CONTACT",
@@ -369,6 +434,56 @@ const PlanningContact = ({ contact, onDropBack }) => {
             isDragging: monitor.isDragging(),
         }),
     }));
+
+    // Update savedState when inputs change
+    const updateSavedState = (field, value) => {
+        onStateChange((prevState) => {
+            return {
+                ...prevState,
+                [field]: {
+                    ...prevState[field],
+                    [contact.id]: value,
+                },
+            };
+        });
+    };
+
+    const updateContact = (field, value) => {
+        setElectrodes((prevElectrodes) => {
+            return prevElectrodes.map((electrode) => {
+                return {
+                    ...electrode,
+                    contacts: electrode.contacts.map((c) => {
+                        if (c.id === contact.id) {
+                            return { ...c, [field]: value };
+                        }
+                        return c;
+                    }),
+                };
+            });
+        });
+    };
+
+    const handleFrequencyChange = (e) => {
+        const value = parseFloat(e.target.value);
+        setFrequency(value);
+        updateContact("frequency", value);
+        updateSavedState("frequency", value);
+    };
+
+    const handleDurationChange = (e) => {
+        const value = parseFloat(e.target.value);
+        setDuration(value);
+        updateContact("duration", value);
+        updateSavedState("duration", value);
+    };
+
+    const handleCurrentChange = (e) => {
+        const value = parseFloat(e.target.value);
+        setCurrent(value);
+        updateContact("current", value);
+        updateSavedState("current", value);
+    };
 
     let classes = `min-w-[100px] p-4 border rounded-lg shadow cursor-pointer ${
         isDragging ? "opacity-50" : "opacity-100"} `;
@@ -385,16 +500,47 @@ const PlanningContact = ({ contact, onDropBack }) => {
 
     return (
         <li ref={drag}
-            className={`p-2 border rounded bg-white shadow cursor-pointer ${
+            className={`planning-contact p-2 border rounded bg-white shadow cursor-pointer ${
                 isDragging ? "opacity-50" : "opacity-100"
             }`}
             key={contact.id}>
             {(contact.pair === contact.index) ? (
                 <p className="text-lg font-semibold">{contact.id}</p>
             ) : (
-                <p className="text-lg font-semibold">{contact.id} and {contact.electrodeLabel + contact.pair}</p>
+                <p className="text-lg font-semibold">{contact.id}-{contact.electrodeLabel + contact.pair}</p>
             )}
             <p className="text-sm font-semibold text-gray-500">Location: {contact.associatedLocation}</p>
+
+            <div className="flex space-x-2 mt-2">
+                <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700">Frequency (Hz)</label>
+                    <input
+                        type="number"
+                        value={frequency}
+                        onChange={handleFrequencyChange}
+                        className="w-full p-1 border rounded"
+                    />
+                </div>
+                <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700">Duration (s)</label>
+                    <input
+                        type="number"
+                        value={duration}
+                        onChange={handleDurationChange}
+                        className="w-full p-1 border rounded"
+                    />
+                </div>
+                <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700">Current (mA)</label>
+                    <input
+                        type="number"
+                        value={current}
+                        onChange={handleCurrentChange}
+                        className="w-full p-1 border rounded"
+                    />
+                </div>
+            </div>
+
             <button onClick={() => onDropBack(contact)}
                     className="text-red-500 text-sm mt-2 underline" >
                 Remove
@@ -403,10 +549,71 @@ const PlanningContact = ({ contact, onDropBack }) => {
     );
 };
 
-function exportContacts(contacts) {
-    for (let contact of contacts) {
-        console.log(contact.id); // Simply put in console for now...
+const exportState = async (state, electrodes, isFunctionalMapping, download = true) => {
+    try {
+        // First save to database if we have a file ID
+        if (state.fileId) {
+            console.log('Saving stimulation plan to database...');
+
+            // Get user ID from session
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('User not authenticated. Please log in to save designations.');
+                return;
+            }
+
+//             try {
+//                 // First save/update file metadata
+//                 const response = await fetch('http://localhost:5000/api/save-designation', {
+//                     method: 'POST',
+//                     headers: {
+//                         'Content-Type': 'application/json',
+//                         'Authorization': token
+//                     },
+//                     body: JSON.stringify({
+//                         designationData: electrodes,
+//                         localizationData: localizationData,
+//                         fileId: state.fileId,
+//                         fileName: state.fileName,
+//                         creationDate: state.creationDate,
+//                         modifiedDate: new Date().toISOString()
+//                     }),
+//                 });
+//
+//                 const result = await response.json();
+//                 if (!result.success) {
+//                     console.error('Failed to save designation:', result.error);
+//                     alert(`Failed to save designation: ${result.error}`);
+//                     return;
+//                 }
+//
+//                 // Update the state with new modified date
+//                 setState(prevState => ({
+//                     ...prevState,
+//                     modifiedDate: new Date().toISOString()
+//                 }));
+//
+//                 // Show success feedback if this was a save operation
+//                 if (!download) {
+//                     setShowSaveSuccess(true);
+//                     setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
+//                 }
+//
+//                 console.log('Designation saved successfully');
+//             } catch (error) {
+//                 console.error('Error saving designation:', error);
+//                 alert(`Error saving designation: ${error.message}`);
+//                 return;
+//             }
+        }
+
+        // Then export to CSV as before
+        let planOrder = state.planningContacts.map(contact => contact.id);
+        saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
+    } catch (error) {
+        console.error('Error exporting contacts:', error);
+        alert(`Error exporting contacts: ${error.message}`);
     }
-}
+};
 
 export default ContactSelection;
