@@ -1,4 +1,11 @@
-const PlanTypePage = ({ switchContent }) => {
+import { useEffect } from "react";
+
+const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
+    // Parse CSV and put into a format that contact selection can use.
+    useEffect(() => {
+        onStateChange({electrodes: initialData.data});
+    }, [initialData]);
+
     return (
         <div className="flex justify-center items-center h-screen bg-gray-100">
             <div className="grid gap-6">

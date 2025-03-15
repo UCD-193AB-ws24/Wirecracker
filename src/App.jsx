@@ -384,6 +384,30 @@ const HomePage = () => {
         };
     }, []);
 
+    // Add event listener for stimulation tab creation
+    useEffect(() => {
+        const handleAddStimulationTab = (event) => {
+            addTab('stimulation', event.detail);
+        };
+
+        window.addEventListener('addStimulationTab', handleAddStimulationTab);
+        return () => {
+            window.removeEventListener('addStimulationTab', handleAddStimulationTab);
+        };
+    }, []);
+
+    // Add event listener for functional mapping tab creation
+    useEffect(() => {
+        const handleAddFunctionalTestTab = (event) => {
+            addTab('functional-test', event.detail);
+        };
+
+        window.addEventListener('addFunctionalTestTab', handleAddFunctionalTestTab);
+        return () => {
+            window.removeEventListener('addFunctionalTestTab', handleAddFunctionalTestTab);
+        };
+    }, []);
+
     useEffect(() => {
         // Find the highest localization number to initialize the counter
         if (tabs.length > 1) {
@@ -412,10 +436,13 @@ const HomePage = () => {
         switch (type) {
             case 'localization':        title = `Localization${localizationCounter}`; setLocalizationCounter(prevCounter => prevCounter + 1); break;
             case 'csv-localization':    title = data.name; break;
-            case 'stimulation':         title = 'New Stimulation'; break;
-            case 'designation':         title = 'New Designation'; break;
             case 'csv-designation':     title = data.name; break;
-            case 'csv-test_plan':       title = data.name; break;
+            case 'csv-stimulation':     title = data.name; break; // Stimulation - CCEPs and seizure recreation
+            case 'csv-functional-mapping': title = data.name; break; // Stimulation - Functional Mapping
+            case 'csv-functional-test':       title = data.name; break; // Functional Mapping test selection
+            case 'stimulation':         title = 'New Stimulation Plan'; break;
+            case 'designation':         title = 'New Designation'; break;
+            case 'functional-test':     title = 'New Functional Mapping'; break;
         }
 
         const newTab = {
@@ -494,8 +521,12 @@ const HomePage = () => {
                 addTab('csv-localization', { name: file.name, data });
             } else if (identifier === Identifiers.DESIGNATION) {
                 addTab('csv-designation', { name: file.name, data });
-            } else if (identifier === Identifiers.TEST_PLAN) {
-                addTab('csv-test_plan', { name: file.name, data });
+            } else if (identifier === Identifiers.STIMULATION) {
+                addTab('csv-stimulation', { name: file.name, data });
+            }else if (identifier === Identifiers.STIMULATION_FUNCTION) {
+                addTab('csv-functional-mapping', { name: file.name, data });
+            }else if (identifier === Identifiers.TEST_PLANNING) {
+                addTab('csv-functional-test', { name: file.name, data });
             }
         } catch (err) {
             setError(err.message);
@@ -566,7 +597,6 @@ const HomePage = () => {
 
     const renderTabContent = () => {
         const currentTab = tabs.find(tab => tab.id === activeTab);
-        
         switch (currentTab.content) {
             case 'home':
                 return (
@@ -577,7 +607,6 @@ const HomePage = () => {
                                 <Center 
                                     token={token} 
                                     onNewLocalization={() => addTab('localization')}
-                                    onNewStimulation={() => addTab('stimulation')}
                                     onFileUpload={handleFileUpload}
                                     error={error}
                                 />
@@ -586,7 +615,6 @@ const HomePage = () => {
                         ) : (
                             <Center 
                                 onNewLocalization={() => addTab('localization')}
-                                onNewStimulation={() => addTab('stimulation')}
                                 onFileUpload={handleFileUpload}
                                 error={error}
                             />
@@ -595,37 +623,6 @@ const HomePage = () => {
                 );
             case 'localization':
                 return <Localization 
-                    key={currentTab.id}
-                    initialData={{}}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
-            case 'stimulation':
-                return <PlanTypePage
-                    key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                />;
-            case 'seizure-recreation':
-            case 'cceps':
-                return <ContactSelection
-                    key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    isFunctionalMapping={false}
-                    initialData={{}}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
-            case 'functional-mapping':
-                return <ContactSelection
-                    key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    isFunctionalMapping={true}
-                    initialData={{}}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
-            case 'functional-test':
-                return <FunctionalTestSelection
                     key={currentTab.id}
                     initialData={{}}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
@@ -652,30 +649,56 @@ const HomePage = () => {
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
-            case 'csv-test_plan':
-                return (
-                    <div className="p-4">
-                        <h2 className="text-2xl font-bold mb-4">{currentTab.data.name}</h2>
-                        <table className="w-full border-collapse border">
-                            <thead>
-                                <tr>
-                                    {Object.keys(currentTab.data.data[0] || {}).map((key) => (
-                                        <th key={key} className="border p-2">{key}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {currentTab.data.data.map((row, index) => (
-                                    <tr key={index}>
-                                        {Object.values(row).map((value, i) => (
-                                            <td key={i} className="border p-2">{value}</td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                );
+            case 'stimulation':
+                return <PlanTypePage
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                />;
+            case 'seizure-recreation':
+            case 'cceps':
+                return <ContactSelection
+                    key={currentTab.id}
+                    isFunctionalMapping={false}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-stimulation':
+                return <ContactSelection
+                    key={currentTab.id}
+                    isFunctionalMapping={false}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'functional-mapping':
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={true}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-functional-mapping':
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={true}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'functional-test':
+            case 'csv-functional-test':
+                return <FunctionalTestSelection
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
             default:
                 return null;
         }
@@ -710,7 +733,7 @@ const HomePage = () => {
     );
 };
 
-const Center = ({ token, onNewLocalization, onNewStimulation, onFileUpload, error }) => {
+const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     const [showDatabaseModal, setShowDatabaseModal] = useState(false);
     const [databaseFiles, setDatabaseFiles] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -738,16 +761,13 @@ const Center = ({ token, onNewLocalization, onNewStimulation, onFileUpload, erro
                 openText="Create New ▾"
                 closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
                 openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
-                options="Localization Stimulation"
+                options="Localization"
                 optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
                 onOptionClick={(option) => {
                     switch(option) {
                         case "Localization":
                             onNewLocalization();
-                            break;
-                        case "Stimulation":
-                            onNewStimulation();
                             break;
                     }
                 }}
@@ -783,7 +803,7 @@ const Center = ({ token, onNewLocalization, onNewStimulation, onFileUpload, erro
 
             {/* Database Files Modal */}
             {showDatabaseModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg shadow-xl w-4/5 max-w-3xl max-h-[80vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-2xl font-bold">Open File from Database</h2>
