@@ -112,17 +112,27 @@ Followings are required to host your own Wirecracker
    
    `./.env`
    ```filename="./.env"
-   VITE_SUPABASE_URL=
-   VITE_SUPABASE_ANON_KEY=
+   VITE_SUPABASE_URL=[your url to supabase]
+   VITE_SUPABASE_ANON_KEY=[your token for supabase]
    ```
    `./backend/.env`
    ```flename="backend/.env"
-   RESEND_API_KEY=
-   SUPABASE_URL=
-   SUPABASE_KEY=
-   GOOGLE_CLIENT_ID=
-   GOOGLE_CLIENT_SECRET=
-   SESSION_SECRET=
+   RESEND_API_KEY=[your ... for ...]
+   SUPABASE_URL=[your url to supabase. Same as VITE_SUPABASE_URL]
+   SUPABASE_KEY=[your token for supabase. Same as VITE_SUPABASE_ANON_KEY]
+   GOOGLE_CLIENT_ID=[your id for google auth]
+   GOOGLE_CLIENT_SECRET=[your token for google auth]
+   SESSION_SECRET=[your ... for ...]
+   ```
+4. Configure hosting environment variables in `config.json`
+   
+   `./config.json`
+   ```filename="./config.json"
+   {
+       "port": [back-end port],
+       "frontendURL": "[your front-end url]",
+       "backendURL": "[your back-end url]"
+   }
    ```
 5. Install NPM packages for backend and start it
    ```sh
