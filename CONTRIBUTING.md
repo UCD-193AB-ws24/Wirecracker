@@ -184,9 +184,6 @@ To ensure consistency throughout the source code, keep these rules in mind as yo
 We have rules over how our Git commit messages must be formatted:
 ```
 <type>: <short summary>
-```
-```
-<type>: <short summary>
   │            │
   │            └─⫸ Summary in present tense. Not capitalized. No period at the end.
   │
