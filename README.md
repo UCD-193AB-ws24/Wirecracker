@@ -53,15 +53,15 @@ Almost all the comments are left untouched.
   <summary>Table of Contents</summary>
   <ol>
     <li><a href="#about-the-project">About The Project</a></li>
+    <li><a href="#usage">Usage</a></li>
     <li>
-      <a href="#getting-started">Getting Started</a>
+      <a href="#self-hosting">Self Hosting</a>
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#contributing-guidelines">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
@@ -85,10 +85,21 @@ Key Development Goalst:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- GETTING STARTED -->
-## Getting Started
 
-This section provides a guide for self-hosting. If you are developer, please visit [documentation for developers](https://www.wirecracker.com/documentations/code)
+<!-- USAGE EXAMPLES -->
+## Usage
+
+How to use the web app. Additional screenshots and demos. Can be linked to more resources.
+
+_For more examples, please refer to the [Documentation](https://www.wirecracker.com/documentations)_
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- SELF HOSTING -->
+## Self Hosting
+
+This section provides a guide for self-hosting. For development, please visit [documentation for developers](https://www.wirecracker.com/documentations/code)
 
 ### Prerequisites
 
@@ -307,17 +318,6 @@ test_selection |o--|| files : ""
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
-<!-- USAGE EXAMPLES -->
-## Usage
-
-How to use the web app. Additional screenshots and demos. Can be linked to more resources.
-
-_For more examples, please refer to the [Documentation](https://www.wirecracker.com/documentations)_
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
 <!-- CONTRIBUTING -->
 <!-- Excerted from Angular repo -->
 ## Contributing Guidelines
@@ -343,7 +343,7 @@ Distributed under the MIT License. See [`LICENSE.txt`][license] for more informa
 
 ## Contact
 
-Support : contact@wirecracker.com
+Support: contact@wirecracker.com
 
 Project Link: [https://github.com/UCD-193AB-ws24/Wirecracker](https://github.com/UCD-193AB-ws24/Wirecracker)
 
