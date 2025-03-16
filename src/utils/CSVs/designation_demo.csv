@@ -1,0 +1,178 @@
+### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR DESIGNATION ###
+### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###
+Label,ContactNumber,ElectrodeDescription,ContactDescription,AssociatedLocation,Mark,SurgeonMark
+TB,1,Medial Inferior Temporal Cortex,Medial Inferior Temporal Cortex,GM,1,0
+TB,2,Medial Inferior Temporal Cortex,Medial Inferior Temporal Cortex,GM,1,0
+TB,3,Medial Inferior Temporal Cortex,Medial Inferior Temporal Cortex,GM,2,0
+TB,4,Medial Inferior Temporal Cortex,WM,WM,0,0
+TB,5,Medial Inferior Temporal Cortex,WM,WM,0,0
+TB,6,Medial Inferior Temporal Cortex,Medial Inferior Temporal Cortex,GM,0,0
+TB,7,Medial Inferior Temporal Cortex,Medial Inferior Temporal Cortex+Rostral Inferior Temporal Cortex,GM/GM,0,0
+TB,8,Medial Inferior Temporal Cortex,WM,WM,0,0
+TB,9,Medial Inferior Temporal Cortex,WM,WM,0,0
+TB,10,Medial Inferior Temporal Cortex,Medial Inferior Temporal Cortex+Rostral Inferior Temporal Cortex,GM/GM,0,0
+TB,11,Medial Inferior Temporal Cortex,Medial Inferior Temporal Cortex+Rostral Middle Temporal Cortex,GM/GM,0,0
+TB,12,Medial Inferior Temporal Cortex,Medial Inferior Temporal Cortex+Rostral Middle Temporal Cortex,GM/GM,2,0
+TB,13,Medial Inferior Temporal Cortex,WM,WM,2,0
+TB',1,Rostral Middle Temporal Cortex,Hippocampus,Hippocampus,0,0
+TB',2,Rostral Middle Temporal Cortex,WM,WM,0,0
+TB',3,Rostral Middle Temporal Cortex,Rostral Middle Temporal Cortex+Rostral Inferior Temporal Cortex,GM/GM,0,0
+TB',4,Rostral Middle Temporal Cortex,WM,WM,0,0
+TB',5,Rostral Middle Temporal Cortex,Rostral Inferior Temporal Cortex,Rostral Inferior Temporal Cortex,0,0
+TB',6,Rostral Middle Temporal Cortex,WM,WM,0,0
+TB',7,Rostral Middle Temporal Cortex,WM,WM,0,1
+TB',8,Rostral Middle Temporal Cortex,Rostral Middle Temporal Cortex,GM,0,1
+TB',9,Rostral Middle Temporal Cortex,Rostral Middle Temporal Cortex,GM,0,1
+TB',10,Rostral Middle Temporal Cortex,Rostral Middle Temporal Cortex,GM,0,1
+TB',11,Rostral Middle Temporal Cortex,WM,WM,0,1
+TP',1,Rostral Superior Temporal Cortex,WM,WM,0,0
+TP',2,Rostral Superior Temporal Cortex,Rostral Superior Temporal Cortex+Rostral Middle Temporal Cortex,GM/GM,0,0
+TP',3,Rostral Superior Temporal Cortex,Rostral Superior Temporal Cortex,GM,0,0
+TP',4,Rostral Superior Temporal Cortex,Rostral Superior Temporal Cortex,GM,0,0
+TP',5,Rostral Superior Temporal Cortex,Rostral Superior Temporal Cortex,GM,0,0
+TP',6,Rostral Superior Temporal Cortex,WM,WM,0,0
+TP',7,Rostral Superior Temporal Cortex,WM,WM,0,0
+TP',8,Rostral Superior Temporal Cortex,WM,WM,0,0
+TP',9,Rostral Superior Temporal Cortex,Rostral Superior Temporal Cortex,GM,0,0
+TP',10,Rostral Superior Temporal Cortex,WM,WM,0,0
+TP',11,Rostral Superior Temporal Cortex,WM,WM,0,0
+TP',12,Rostral Superior Temporal Cortex,WM,WM,0,0
+A',1,Amygdala,Amygdala,GM,0,0
+A',2,Amygdala,Amygdala,GM,0,0
+A',3,Amygdala,Amygdala,GM,0,0
+A',4,Amygdala,Amygdala,GM,0,0
+A',5,Amygdala,Amygdala,GM,0,0
+A',6,Amygdala,WM,WM,0,0
+A',7,Amygdala,WM,WM,0,0
+A',8,Amygdala,WM,WM,0,0
+A',9,Amygdala,Amygdala+Rostral Superior Temporal Cortex,GM/GM,0,0
+A',10,Amygdala,Amygdala+Rostral Superior Temporal Cortex,GM/GM,0,0
+A',11,Amygdala,Amygdala+Rostral Middle Temporal Cortex,GM/GM,0,0
+A',12,Amygdala,WM,WM,0,0
+A',13,Amygdala,Amygdala+Rostral Middle Temporal Cortex,GM/GM,0,1
+A',14,Amygdala,WM,WM,0,1
+A',15,Amygdala,WM,WM,0,1
+OR',1,Ventral Orbito Frontal Cortex,Ventral Orbito Frontal Cortex,GM,1,0
+OR',2,Ventral Orbito Frontal Cortex,Ventral Orbito Frontal Cortex,GM,1,0
+OR',3,Ventral Orbito Frontal Cortex,Ventral Orbito Frontal Cortex,GM,1,0
+OR',4,Ventral Orbito Frontal Cortex,Ventral Orbito Frontal Cortex,GM,0,0
+OR',5,Ventral Orbito Frontal Cortex,WM,WM,0,0
+OR',6,Ventral Orbito Frontal Cortex,WM,WM,0,0
+OR',7,Ventral Orbito Frontal Cortex,WM,WM,0,0
+OR',8,Ventral Orbito Frontal Cortex,WM,WM,0,0
+OR',9,Ventral Orbito Frontal Cortex,WM,WM,0,0
+OR',10,Ventral Orbito Frontal Cortex,WM,WM,0,1
+OR',11,Ventral Orbito Frontal Cortex,WM,WM,0,1
+OR',12,Ventral Orbito Frontal Cortex,Ventral Orbito Frontal Cortex+Rostral Dorsolateral Inferior Prefrontal Cortex,GM/GM,2,0
+OR',13,Ventral Orbito Frontal Cortex,Ventral Orbito Frontal Cortex+Rostral Dorsolateral Inferior Prefrontal Cortex,GM/GM,2,0
+OR',14,Ventral Orbito Frontal Cortex,WM,WM,2,0
+B,1,Caudal Middle Temporal Cortex,Caudal Middle Temporal Cortex+Hippocampus,GM/GM,0,0
+B,2,Caudal Middle Temporal Cortex,Caudal Middle Temporal Cortex+Hippocampus,GM/GM,0,0
+B,3,Caudal Middle Temporal Cortex,Caudal Middle Temporal Cortex+Hippocampus,GM/GM,0,0
+B,4,Caudal Middle Temporal Cortex,WM,WM,0,0
+B,5,Caudal Middle Temporal Cortex,WM,WM,0,0
+B,6,Caudal Middle Temporal Cortex,WM,WM,0,0
+B,7,Caudal Middle Temporal Cortex,WM,WM,0,0
+B,8,Caudal Middle Temporal Cortex,WM,WM,0,0
+B,9,Caudal Middle Temporal Cortex,Caudal Middle Temporal Cortex,GM,0,0
+B,10,Caudal Middle Temporal Cortex,Caudal Middle Temporal Cortex,GM,0,0
+B,11,Caudal Middle Temporal Cortex,Caudal Middle Temporal Cortex,GM,0,0
+B,12,Caudal Middle Temporal Cortex,Caudal Middle Temporal Cortex,GM,0,0
+B,13,Caudal Middle Temporal Cortex,Caudal Middle Temporal Cortex,GM,0,0
+B',1,Hippocampus,Hippocampus,GM,0,0
+B',2,Hippocampus,Hippocampus,GM,0,0
+B',3,Hippocampus,Hippocampus+Medial Inferior Temporal Cortex,GM/GM,0,0
+B',4,Hippocampus,WM,WM,0,0
+B',5,Hippocampus,WM,WM,0,0
+B',6,Hippocampus,WM,WM,0,0
+B',7,Hippocampus,WM,WM,0,0
+B',8,Hippocampus,WM,WM,0,0
+B',9,Hippocampus,WM,WM,0,0
+B',10,Hippocampus,WM,WM,0,0
+B',11,Hippocampus,WM,WM,0,0
+B',12,Hippocampus,Hippocampus+Rostral Middle Temporal Cortex,GM/GM,0,1
+B',13,Hippocampus,WM,WM,0,1
+B',14,Hippocampus,WM,WM,0,1
+GPH',1,Hippocampus,Hippocampus,GM,0,0
+GPH',2,Hippocampus,Hippocampus,GM,0,0
+GPH',3,Hippocampus,Hippocampus,GM,0,0
+GPH',4,Hippocampus,Hippocampus,GM,0,0
+GPH',5,Hippocampus,WM,WM,0,0
+GPH',6,Hippocampus,WM,WM,0,0
+GPH',7,Hippocampus,WM,WM,0,0
+GPH',8,Hippocampus,WM,WM,0,0
+GPH',9,Hippocampus,WM,WM,0,0
+GPH',10,Hippocampus,WM,WM,0,0
+GPH',11,Hippocampus,WM,WM,0,0
+GPH',12,Hippocampus,Hippocampus+Caudal Middle Temporal Cortex,GM/GM,0,0
+GPH',13,Hippocampus,Hippocampus+Caudal Middle Temporal Cortex,GM/GM,0,0
+GPH',14,Hippocampus,WM,WM,0,0
+GPH',15,Hippocampus,WM,WM,0,0
+I',1,Insular Cortex,Insular Cortex,GM,0,0
+I',2,Insular Cortex,Insular Cortex,GM,0,0
+I',3,Insular Cortex,Insular Cortex,GM,0,0
+I',4,Insular Cortex,Insular Cortex,GM,0,0
+I',5,Insular Cortex,WM,WM,0,0
+I',6,Insular Cortex,WM,WM,0,0
+I',7,Insular Cortex,WM,WM,0,0
+I',8,Insular Cortex,WM,WM,0,0
+I',9,Insular Cortex,WM,WM,0,0
+I',10,Insular Cortex,WM,WM,0,0
+I',11,Insular Cortex,Insular Cortex+Caudal Dorsolateral Prefrontal Cortex,GM/GM,0,0
+I',12,Insular Cortex,WM,WM,0,0
+I',13,Insular Cortex,WM,WM,0,0
+I',14,Insular Cortex,WM,WM,0,0
+I',15,Insular Cortex,WM,WM,0,0
+H',1,Caudal Superior Temporal Cortex,Caudal Superior Temporal Cortex,GM,0,0
+H',2,Caudal Superior Temporal Cortex,WM,WM,0,0
+H',3,Caudal Superior Temporal Cortex,Caudal Superior Temporal Cortex,GM,0,0
+H',4,Caudal Superior Temporal Cortex,Caudal Superior Temporal Cortex,GM,0,0
+H',5,Caudal Superior Temporal Cortex,Caudal Superior Temporal Cortex,GM,0,0
+H',6,Caudal Superior Temporal Cortex,WM,WM,0,0
+H',7,Caudal Superior Temporal Cortex,Caudal Superior Temporal Cortex,GM,0,0
+H',8,Caudal Superior Temporal Cortex,Caudal Superior Temporal Cortex,GM,0,0
+H',9,Caudal Superior Temporal Cortex,WM,WM,0,0
+H',10,Caudal Superior Temporal Cortex,WM,WM,0,0
+TI',1,Rostral Superior Temporal Cortex,Rostral Superior Temporal Cortex+Insular Cortex,GM/GM,0,0
+TI',2,Rostral Superior Temporal Cortex,Rostral Superior Temporal Cortex+Insular Cortex,GM/GM,0,0
+TI',3,Rostral Superior Temporal Cortex,WM,WM,0,0
+TI',4,Rostral Superior Temporal Cortex,Rostral Superior Temporal Cortex,GM,0,0
+TI',5,Rostral Superior Temporal Cortex,Rostral Superior Temporal Cortex,GM,0,0
+TI',6,Rostral Superior Temporal Cortex,WM,WM,0,0
+TI',7,Rostral Superior Temporal Cortex,Rostral Superior Temporal Cortex,GM,0,0
+TI',8,Rostral Superior Temporal Cortex,WM,WM,0,0
+TI',9,Rostral Superior Temporal Cortex,WM,WM,0,0
+TI',10,Rostral Superior Temporal Cortex,WM,WM,0,0
+TI',11,Rostral Superior Temporal Cortex,WM,WM,0,0
+OT',1,Lateral Visual Cortex,WM,WM,2,0
+OT',2,Lateral Visual Cortex,WM,WM,0,0
+OT',3,Lateral Visual Cortex,WM,WM,0,0
+OT',4,Lateral Visual Cortex,WM,WM,0,0
+OT',5,Lateral Visual Cortex,WM,WM,0,0
+OT',6,Lateral Visual Cortex,WM,WM,0,0
+OT',7,Lateral Visual Cortex,WM,WM,0,0
+OT',8,Lateral Visual Cortex,WM,WM,0,0
+OT',9,Lateral Visual Cortex,Lateral Visual Cortex,GM,0,0
+OT',10,Lateral Visual Cortex,Lateral Visual Cortex,GM,0,0
+OT',11,Lateral Visual Cortex,Lateral Visual Cortex,GM,0,0
+OT',12,Lateral Visual Cortex,WM,WM,0,0
+OT',13,Lateral Visual Cortex,Lateral Visual Cortex+Caudal Middle Temporal Cortex,GM/GM,0,0
+OT',14,Lateral Visual Cortex,Lateral Visual Cortex+Caudal Middle Temporal Cortex,GM/GM,0,0
+OT',15,Lateral Visual Cortex,Lateral Visual Cortex+Caudal Middle Temporal Cortex,GM/GM,0,1
+OT',16,Lateral Visual Cortex,WM,WM,2,1
+OT',17,Lateral Visual Cortex,WM,WM,2,1
+PI',1,Posterior Cingulate Cortex,Posterior Cingulate Cortex,GM,1,0
+PI',2,Posterior Cingulate Cortex,Posterior Cingulate Cortex,GM,1,0
+PI',3,Posterior Cingulate Cortex,WM,WM,0,0
+PI',4,Posterior Cingulate Cortex,WM,WM,0,0
+PI',5,Posterior Cingulate Cortex,WM,WM,0,0
+PI',6,Posterior Cingulate Cortex,WM,WM,0,0
+PI',7,Posterior Cingulate Cortex,WM,WM,0,0
+PI',8,Posterior Cingulate Cortex,WM,WM,0,0
+PI',9,Posterior Cingulate Cortex,WM,WM,0,0
+PI',10,Posterior Cingulate Cortex,Posterior Cingulate Cortex+Caudal Middle Temporal Cortex,GM/GM,0,0
+PI',11,Posterior Cingulate Cortex,WM,WM,0,0
+PI',12,Posterior Cingulate Cortex,Posterior Cingulate Cortex+Ventral Inferior Parietal Cortex,GM/GM,1,0
+PI',13,Posterior Cingulate Cortex,WM,WM,1,0
+PI',14,Posterior Cingulate Cortex,WM,WM,1,0
+PI',15,Posterior Cingulate Cortex,WM,WM,1,0
