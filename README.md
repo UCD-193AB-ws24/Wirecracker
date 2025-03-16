@@ -187,7 +187,7 @@ Distributed under the MIT License. See [`LICENSE.txt`][license] for more informa
 
 ## Contact
 
-Name - email@email_client.com
+contact@wirecracker.com
 
 Project Link: [https://github.com/UCD-193AB-ws24/Wirecracker](https://github.com/UCD-193AB-ws24/Wirecracker)
 
