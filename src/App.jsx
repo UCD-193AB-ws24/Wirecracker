@@ -247,6 +247,34 @@ const FileUtils = {
                     return;
                 }
 
+                // Check if this is a test selection file
+                console.log('Checking for test selection data...');
+                const { data: testSelectionData, error: testSelectionError } = await supabase
+                    .from('test_selection')
+                    .select('*')
+                    .eq('file_id', file.file_id)
+                    .single();
+
+                if (testSelectionError && testSelectionError.code !== 'PGRST116') {
+                    console.error('Error checking test selection data:', testSelectionError);
+                }
+
+                if (testSelectionData) {
+                    console.log('Found test selection data:', testSelectionData);
+                    openSavedFile('csv-functional-test', {
+                        name: file.filename || 'Unnamed Test Selection',
+                        fileId: file.file_id,
+                        fileName: file.filename,
+                        creationDate: file.creation_date,
+                        modifiedDate: file.modified_date,
+                        data: {
+                            tests: testSelectionData.tests,
+                            contacts: testSelectionData.contacts
+                        }
+                    });
+                    return;
+                }
+
                 // Check if this is a stimulation file
                 console.log('Checking for stimulation data...');
                 const { data: stimulationData, error: stimulationError } = await supabase
@@ -607,6 +635,29 @@ const HomePage = () => {
             };
 
             console.log('Created new tab with state:', newTab.state);
+
+            setTabs([...tabs, newTab]);
+            setActiveTab(newTab.id);
+        }
+        else if (type === 'csv-functional-test') {
+            console.log('Opening saved test selection file:', fileData);
+
+            const newTab = {
+                id: Date.now().toString(),
+                title: fileData.name,
+                content: type,
+                data: fileData.data,
+                state: {
+                    fileId: fileData.fileId,
+                    fileName: fileData.name,
+                    creationDate: fileData.creationDate || new Date().toISOString(),
+                    modifiedDate: fileData.modifiedDate || new Date().toISOString(),
+                    tests: fileData.data.tests,
+                    contacts: fileData.data.contacts
+                }
+            };
+
+            console.log('Created new test selection tab with state:', newTab.state);
 
             setTabs([...tabs, newTab]);
             setActiveTab(newTab.id);
