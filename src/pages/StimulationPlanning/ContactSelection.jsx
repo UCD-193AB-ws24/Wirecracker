@@ -551,6 +551,7 @@ const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setEl
 
 const exportState = async (state, electrodes, isFunctionalMapping, download = true) => {
     try {
+        let planOrder = state.planningContacts.map(contact => contact.id);
         // First save to database if we have a file ID
         if (state.fileId) {
             console.log('Saving stimulation plan to database...');
@@ -561,54 +562,42 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
                 alert('User not authenticated. Please log in to save designations.');
                 return;
             }
+            
+            try {
+                // Save stimulation data to database
+                const response = await fetch('http://localhost:5000/api/save-stimulation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token
+                    },
+                    body: JSON.stringify({
+                        electrodes: electrodes,
+                        planOrder: planOrder,
+                        isFunctionalMapping: isFunctionalMapping,
+                        fileId: state.fileId,
+                        fileName: state.fileName,
+                        creationDate: state.creationDate,
+                        modifiedDate: new Date().toISOString()
+                    }),
+                });
 
-//             try {
-//                 // First save/update file metadata
-//                 const response = await fetch('http://localhost:5000/api/save-designation', {
-//                     method: 'POST',
-//                     headers: {
-//                         'Content-Type': 'application/json',
-//                         'Authorization': token
-//                     },
-//                     body: JSON.stringify({
-//                         designationData: electrodes,
-//                         localizationData: localizationData,
-//                         fileId: state.fileId,
-//                         fileName: state.fileName,
-//                         creationDate: state.creationDate,
-//                         modifiedDate: new Date().toISOString()
-//                     }),
-//                 });
-//
-//                 const result = await response.json();
-//                 if (!result.success) {
-//                     console.error('Failed to save designation:', result.error);
-//                     alert(`Failed to save designation: ${result.error}`);
-//                     return;
-//                 }
-//
-//                 // Update the state with new modified date
-//                 setState(prevState => ({
-//                     ...prevState,
-//                     modifiedDate: new Date().toISOString()
-//                 }));
-//
-//                 // Show success feedback if this was a save operation
-//                 if (!download) {
-//                     setShowSaveSuccess(true);
-//                     setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
-//                 }
-//
-//                 console.log('Designation saved successfully');
-//             } catch (error) {
-//                 console.error('Error saving designation:', error);
-//                 alert(`Error saving designation: ${error.message}`);
-//                 return;
-//             }
+                const result = await response.json();
+                if (!result.success) {
+                    console.error('Failed to save stimulation:', result.error);
+                    alert(`Failed to save stimulation: ${result.error}`);
+                    return;
+                }
+
+                console.log('Stimulation saved successfully');
+            } catch (error) {
+                console.error('Error saving stimulation:', error);
+                alert(`Error saving stimulation: ${error.message}`);
+                return;
+            }
         }
 
         // Then export to CSV as before
-        let planOrder = state.planningContacts.map(contact => contact.id);
         saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
     } catch (error) {
         console.error('Error exporting contacts:', error);

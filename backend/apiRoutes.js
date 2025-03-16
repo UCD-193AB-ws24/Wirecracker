@@ -259,6 +259,152 @@ router.post('/save-designation', async (req, res) => {
   }
 });
 
+// Endpoint to save stimulation data
+router.post('/save-stimulation', async (req, res) => {
+  try {
+    console.log('Received stimulation save request', req.body);
+    
+    const { electrodes, planOrder, isFunctionalMapping, fileId, fileName, creationDate, modifiedDate } = req.body;
+    
+    if (!electrodes) {
+      return res.status(400).json({ success: false, error: 'Missing electrodes data' });
+    }
+    
+    if (!planOrder) {
+      return res.status(400).json({ success: false, error: 'Missing plan order data' });
+    }
+    
+    if (fileId === undefined || fileId === null) {
+      return res.status(400).json({ success: false, error: 'Missing file ID' });
+    }
+    
+    if (isFunctionalMapping === undefined) {
+      return res.status(400).json({ success: false, error: 'Missing isFunctionalMapping flag' });
+    }
+    
+    console.log(`Processing stimulation save request for file ID: ${fileId}`);
+
+    // First save/update file metadata
+    try {
+      // Check if file record already exists
+      const { data: existingFile } = await supabase
+        .from('files')
+        .select('*')
+        .eq('file_id', fileId)
+        .single();
+
+      if (existingFile) {
+        // Update existing file record
+        const { error: fileError } = await supabase
+          .from('files')
+          .update({
+            filename: fileName,
+            modified_date: modifiedDate
+          })
+          .eq('file_id', fileId);
+
+        if (fileError) throw fileError;
+      } else {
+        // Get user ID from session
+        const token = req.headers.authorization;
+        if (!token) {
+          return res.status(401).json({ success: false, error: 'No authentication token provided' });
+        }
+        
+        const { data: session } = await supabase
+          .from('sessions')
+          .select('user_id')
+          .eq('token', token)
+          .single();
+          
+        if (!session?.user_id) {
+          return res.status(401).json({ success: false, error: 'Invalid or expired session' });
+        }
+
+        // Insert new file record
+        const { error: fileError } = await supabase
+          .from('files')
+          .insert({
+            file_id: fileId,
+            owner_user_id: session.user_id,
+            filename: fileName,
+            creation_date: creationDate,
+            modified_date: modifiedDate
+          });
+
+        if (fileError) throw fileError;
+      }
+    } catch (error) {
+      console.error('Error saving file metadata:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: `Failed to save file metadata: ${error.message}`
+      });
+    }
+    
+    // Check for existing stimulation with this file_id
+    const { data: existingData, error: checkError } = await supabase
+      .from('stimulation')
+      .select('id')
+      .eq('file_id', fileId);
+      
+    if (checkError) {
+      console.error('Error checking existing stimulation:', checkError);
+    } else if (existingData && existingData.length > 0) {
+      console.log(`Found existing stimulation with file_id ${fileId}, updating...`);
+      const { error: updateError } = await supabase
+        .from('stimulation')
+        .update({
+          stimulation_data: electrodes,
+          plan_order: planOrder,
+          is_mapping: isFunctionalMapping
+        })
+        .eq('file_id', fileId);
+        
+      if (updateError) {
+        console.error('Error updating stimulation:', updateError);
+        return res.status(500).json({ 
+          success: false, 
+          error: `Failed to update existing stimulation: ${updateError.message}`
+        });
+      }
+      console.log('Successfully updated stimulation');
+    } else {
+      // Insert new stimulation record
+      console.log('Creating new stimulation record...');
+      const { error: insertError } = await supabase
+        .from('stimulation')
+        .insert({
+          file_id: fileId,
+          stimulation_data: electrodes,
+          plan_order: planOrder,
+          is_mapping: isFunctionalMapping
+        });
+        
+      if (insertError) {
+        console.error('Error inserting stimulation:', insertError);
+        return res.status(500).json({ 
+          success: false, 
+          error: `Failed to save stimulation: ${insertError.message}`
+        });
+      }
+      console.log('Successfully created new stimulation');
+    }
+    
+    res.status(200).json({ 
+      success: true,
+      message: 'Stimulation data saved successfully',
+      fileId: fileId
+    });
+  } catch (error) {
+    console.error('Error in save-stimulation endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message
+    });
+  }
+});
+
 /**
  * Generates an acronym from a description.
  * @param {string} description - The description to generate an acronym from.
