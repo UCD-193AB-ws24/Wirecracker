@@ -119,6 +119,66 @@ router.post('/save-localization', async (req, res) => {
   }
 });
 
+/**
+ * Handles file record management in the database.
+ * Creates a new file record if it doesn't exist, or updates an existing one.
+ * @param {string} fileId - The unique identifier for the file
+ * @param {string} fileName - The name of the file
+ * @param {string} creationDate - The creation date of the file
+ * @param {string} modifiedDate - The last modified date of the file
+ * @param {string} token - The authorization token for the user session
+ * @returns {Promise<void>} - Resolves when the operation is complete, throws on error
+ */
+async function handleFileRecord(fileId, fileName, creationDate, modifiedDate, token) {
+  // Check if file record already exists
+  const { data: existingFile } = await supabase
+    .from('files')
+    .select('*')
+    .eq('file_id', fileId)
+    .single();
+
+  if (existingFile) {
+    // Update existing file record
+    const { error: fileError } = await supabase
+      .from('files')
+      .update({
+        filename: fileName,
+        modified_date: modifiedDate
+      })
+      .eq('file_id', fileId);
+
+    if (fileError) throw fileError;
+  } else {
+    // Get user ID from session
+    if (!token) {
+      throw new Error('No authentication token provided');
+    }
+    
+    const { data: session } = await supabase
+      .from('sessions')
+      .select('user_id')
+      .eq('token', token)
+      .single();
+      
+    if (!session?.user_id) {
+      throw new Error('Invalid or expired session');
+    }
+
+    // Insert new file record
+    const { error: fileError } = await supabase
+      .from('files')
+      .insert({
+        file_id: fileId,
+        owner_user_id: session.user_id,
+        filename: fileName,
+        creation_date: creationDate,
+        modified_date: modifiedDate
+      });
+
+    if (fileError) throw fileError;
+  }
+}
+
 // Endpoint to save designation data
 router.post('/save-designation', async (req, res) => {
   try {
@@ -137,59 +197,10 @@ router.post('/save-designation', async (req, res) => {
     if (fileId === undefined || fileId === null) {
       return res.status(400).json({ success: false, error: 'Missing file ID' });
     }
-    
-    console.log(`Processing designation save request for file ID: ${fileId}`);
-    
-    // First save/update file metadata
+
+    // Handle file record
     try {
-      // Check if file record already exists
-      const { data: existingFile } = await supabase
-        .from('files')
-        .select('*')
-        .eq('file_id', fileId)
-        .single();
-
-      if (existingFile) {
-        // Update existing file record
-        const { error: fileError } = await supabase
-          .from('files')
-          .update({
-            filename: fileName,
-            modified_date: modifiedDate
-          })
-          .eq('file_id', fileId);
-
-        if (fileError) throw fileError;
-      } else {
-        // Get user ID from session
-        const token = req.headers.authorization;
-        if (!token) {
-          return res.status(401).json({ success: false, error: 'No authentication token provided' });
-        }
-        
-        const { data: session } = await supabase
-          .from('sessions')
-          .select('user_id')
-          .eq('token', token)
-          .single();
-          
-        if (!session?.user_id) {
-          return res.status(401).json({ success: false, error: 'Invalid or expired session' });
-        }
-
-        // Insert new file record
-        const { error: fileError } = await supabase
-          .from('files')
-          .insert({
-            file_id: fileId,
-            owner_user_id: session.user_id,
-            filename: fileName,
-            creation_date: creationDate,
-            modified_date: modifiedDate
-          });
-
-        if (fileError) throw fileError;
-      }
+      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization);
     } catch (error) {
       console.error('Error saving file metadata:', error);
       return res.status(500).json({ 
@@ -284,56 +295,9 @@ router.post('/save-stimulation', async (req, res) => {
     
     console.log(`Processing stimulation save request for file ID: ${fileId}`);
 
-    // First save/update file metadata
+    // Handle file record
     try {
-      // Check if file record already exists
-      const { data: existingFile } = await supabase
-        .from('files')
-        .select('*')
-        .eq('file_id', fileId)
-        .single();
-
-      if (existingFile) {
-        // Update existing file record
-        const { error: fileError } = await supabase
-          .from('files')
-          .update({
-            filename: fileName,
-            modified_date: modifiedDate
-          })
-          .eq('file_id', fileId);
-
-        if (fileError) throw fileError;
-      } else {
-        // Get user ID from session
-        const token = req.headers.authorization;
-        if (!token) {
-          return res.status(401).json({ success: false, error: 'No authentication token provided' });
-        }
-        
-        const { data: session } = await supabase
-          .from('sessions')
-          .select('user_id')
-          .eq('token', token)
-          .single();
-          
-        if (!session?.user_id) {
-          return res.status(401).json({ success: false, error: 'Invalid or expired session' });
-        }
-
-        // Insert new file record
-        const { error: fileError } = await supabase
-          .from('files')
-          .insert({
-            file_id: fileId,
-            owner_user_id: session.user_id,
-            filename: fileName,
-            creation_date: creationDate,
-            modified_date: modifiedDate
-          });
-
-        if (fileError) throw fileError;
-      }
+      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization);
     } catch (error) {
       console.error('Error saving file metadata:', error);
       return res.status(500).json({ 
