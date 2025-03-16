@@ -124,7 +124,7 @@ Followings are required to host your own Wirecracker
    GOOGLE_CLIENT_SECRET=[your token for google auth]
    SESSION_SECRET=[your ... for ...]
    ```
-4. Configure hosting environment variables in `config.json`
+4. Configure hosting information in `config.json`
    
    `./config.json`
    ```filename="./config.json"
