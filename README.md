@@ -343,7 +343,7 @@ Distributed under the MIT License. See [`LICENSE.txt`][license] for more informa
 
 ## Contact
 
-contact@wirecracker.com
+Support : contact@wirecracker.com
 
 Project Link: [https://github.com/UCD-193AB-ws24/Wirecracker](https://github.com/UCD-193AB-ws24/Wirecracker)
 
