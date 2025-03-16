@@ -5,6 +5,7 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import { saveStimulationCSVFile } from "../../utils/CSVParser";
+import config from "../../../config.json" with { type: 'json' };
 
 const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, isFunctionalMapping = false }) => {
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || demoContactData)
@@ -590,7 +591,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
             
             try {
                 // Save stimulation data to database
-                const response = await fetch('http://localhost:5000/api/save-stimulation', {  // TODO: change URL once merged
+                const response = await fetch(`${config.backendURL}/api/save-stimulation`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

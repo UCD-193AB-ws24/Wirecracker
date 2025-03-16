@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { demoContactsData, demoTestData } from "./demoContactsData";
 import { saveTestCSVFile } from "../../utils/CSVParser";
+import config from "../../../config.json" with { type: 'json' };
 
 const FunctionalTestSelection = ({
     initialData = {},
@@ -176,7 +177,7 @@ const FunctionalTestSelection = ({
 
                 try {
                     // Save/update test selection data
-                    const response = await fetch('http://localhost:5000/api/save-test-selection', {  // TODO: change URL once merged
+                    const response = await fetch(`${config.backendURL}/api/save-test-selection`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
