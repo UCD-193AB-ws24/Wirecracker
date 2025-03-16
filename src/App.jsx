@@ -228,21 +228,8 @@ const FileUtils = {
                     .eq('file_id', file.file_id)
                     .single();
                     
-                if (designationError) {
+                if (designationError && designationError.code !== 'PGRST116') {
                     console.error('Error checking designation data:', designationError);
-                    
-                    // If no data found in either table, create new empty localization
-                    console.log('Creating new tab with empty data for:', file.filename);
-                    openSavedFile('localization', { 
-                        name: file.filename || 'Unnamed Localization',
-                        fileId: file.file_id,
-                        fileName: file.filename,
-                        creationDate: file.creation_date,
-                        modifiedDate: file.modified_date,
-                        data: { data: {} }
-                    });
-                    
-                    return;
                 }
                 
                 if (designationData) {
@@ -259,6 +246,48 @@ const FileUtils = {
                     });
                     return;
                 }
+
+                // Check if this is a stimulation file
+                console.log('Checking for stimulation data...');
+                const { data: stimulationData, error: stimulationError } = await supabase
+                    .from('stimulation')
+                    .select('*')
+                    .eq('file_id', file.file_id)
+                    .single();
+
+                if (stimulationError && stimulationError.code !== 'PGRST116') {
+                    console.error('Error checking stimulation data:', stimulationError);
+                }
+
+                if (stimulationData) {
+                    console.log('Found stimulation data:', stimulationData);
+                    // Open in appropriate stimulation view based on is_mapping flag
+                    openSavedFile(stimulationData.is_mapping ? 'csv-functional-mapping' : 'csv-stimulation', {
+                        name: file.filename || 'Unnamed Stimulation',
+                        fileId: file.file_id,
+                        fileName: file.filename,
+                        creationDate: file.creation_date,
+                        modifiedDate: file.modified_date,
+                        data: {
+                            data: stimulationData.stimulation_data,
+                            planOrder: stimulationData.plan_order
+                        }
+                    });
+                    return;
+                }
+                
+                // If no data found in any table, create new empty localization
+                console.log('Creating new tab with empty data for:', file.filename);
+                openSavedFile('localization', { 
+                    name: file.filename || 'Unnamed Localization',
+                    fileId: file.file_id,
+                    fileName: file.filename,
+                    creationDate: file.creation_date,
+                    modifiedDate: file.modified_date,
+                    data: { data: {} }
+                });
+                
+                return;
             }
             
             // If we found localization data, proceed with loading it
@@ -572,12 +601,36 @@ const HomePage = () => {
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
-                    electrodes: fileData.data.data,
+                    electrodes: fileData.data,
                     localizationData: fileData.originalData
                 }
             };
 
             console.log('Created new tab with state:', newTab.state);
+
+            setTabs([...tabs, newTab]);
+            setActiveTab(newTab.id);
+        }
+        else if (type === 'csv-stimulation' || type === 'csv-functional-mapping') {
+            console.log('Opening saved stimulation file:', fileData);
+
+            const newTab = {
+                id: Date.now().toString(),
+                title: fileData.name,
+                content: type,
+                data: fileData.data,
+                state: {
+                    fileId: fileData.fileId,
+                    fileName: fileData.name,
+                    creationDate: fileData.creationDate || new Date().toISOString(),
+                    modifiedDate: fileData.modifiedDate || new Date().toISOString(),
+                    electrodes: fileData.data.data,
+                    planOrder: fileData.data.planOrder,
+                    isFunctionalMapping: type === 'csv-functional-mapping'
+                }
+            };
+
+            console.log('Created new stimulation tab with state:', newTab.state);
 
             setTabs([...tabs, newTab]);
             setActiveTab(newTab.id);
