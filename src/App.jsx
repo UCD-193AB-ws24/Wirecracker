@@ -904,7 +904,7 @@ const Right = ({ onOpenFile }) => {
     
     return (
         <div className="basis-80 justify-center">
-            <h3 className="text-4xl font-bold">Recent Localizations</h3>
+            <h3 className="text-4xl font-bold">Recent Files</h3>
             <div className="mb-5">
                 {isLoading ? (
                     <div className="text-gray-500">Loading...</div>
@@ -929,10 +929,6 @@ const Right = ({ onOpenFile }) => {
                 ) : (
                     <div className="text-gray-500">No files available</div>
                 )}
-            </div>
-            <h3 className="text-4xl font-bold">Recent Stimulation Plans</h3>
-            <div className="mb-5">
-                <div className="text-gray-500">No files available</div>
             </div>
         </div>
     );
