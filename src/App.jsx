@@ -878,7 +878,7 @@ const Right = ({ onOpenFile }) => {
         const fetchRecentFiles = async () => {
             setIsLoading(true);
             const files = await FileUtils.fetchUserFiles();
-            setRecentLocalizations(files.slice(0, 5)); // Limit to 5 most recent
+            setRecentLocalizations(files.slice(0, 7)); // Limit to 7 most recent
             setIsLoading(false);
         };
         
