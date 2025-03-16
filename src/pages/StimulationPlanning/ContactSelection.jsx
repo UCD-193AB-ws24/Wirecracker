@@ -591,7 +591,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
             
             try {
                 // Save stimulation data to database
-                const response = await fetch('http://localhost:5000/api/save-stimulation', {
+                const response = await fetch('http://localhost:5000/api/save-stimulation', {  // TODO: change URL once merged
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

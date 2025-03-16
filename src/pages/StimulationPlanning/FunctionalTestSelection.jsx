@@ -176,7 +176,7 @@ const FunctionalTestSelection = ({
 
                 try {
                     // Save/update test selection data
-                    const response = await fetch('http://localhost:5000/api/save-test-selection', {
+                    const response = await fetch('http://localhost:5000/api/save-test-selection', {  // TODO: change URL once merged
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
