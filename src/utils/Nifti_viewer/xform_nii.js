@@ -67,8 +67,22 @@
 //  This version is ported from original MatLab script into JavaScript by Wirecracker team and distributed under MIT license.
 
 import { flip, isequal, ndims, permute, prod, reshape, find, det, transpose, diag, bitset, inv } from "./matlab_functions.js";
+export default xform_nii;
 
-export default function xform_nii ( nii, tolerance = 0.1, preferredForm = 's' )
+/**
+ * Transforms a NIfTI (nii) image based on its header information.
+ * This function applies scaling, rotation, and flipping transformations
+ * according to the sform and qform matrices while considering the preferred
+ * transformation form and a given tolerance.
+ *
+ * @function
+ * @memberof module:nifti_viewer
+ * @param {Object} nii - The NIfTI image object containing header (hdr) and image data (img).
+ * @param {number} [tolerance=0.1] - The tolerance level for detecting transformations.
+ * @param {string} [preferredForm='s'] - The preferred transformation form ('s' for sform, 'q' for qform).
+ * @returns {Object} - The transformed NIfTI image object.
+ */
+function xform_nii ( nii, tolerance = 0.1, preferredForm = 's' )
 {
     //  save a copy of the header as it was loaded.  This is the
     //  header before any sform, qform manipulation is done.
@@ -288,6 +302,17 @@ export default function xform_nii ( nii, tolerance = 0.1, preferredForm = 's' )
     return nii;
 }
 
+/*
+ *
+ * Modifies the header of a NIfTI image based on its transformation matrices.
+ * Determines whether to use the sform or qform transformation and ensures
+ * that the transformation matrix is orthogonal.
+ *
+ * @param {Object} hdr - The NIfTI image header containing transformation matrices.
+ * @param {number} tolerance - The tolerance level for allowing minor distortions in transformations.
+ * @param {string} preferredForm - The preferred transformation form ('s' for sform, 'q' for qform).
+ * @returns {[Object, number[]]} - The modified header and the orientation array.
+ */
 function change_hdr(hdr, tolerance, preferredForm)
 {
 
