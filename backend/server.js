@@ -50,6 +50,8 @@ app.post('/send-verification-email', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on ${backendURL}:${PORT}`);
-});
+// app.listen(PORT, () => {
+//     console.log(`Server running on ${backendURL}:${PORT}`);
+// });
+// Vercel's server-less things
+export default app;
