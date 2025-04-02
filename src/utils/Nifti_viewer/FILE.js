@@ -14,12 +14,16 @@
 //
 //  Developed by Wirecracker team and distributed under MIT license.
 
-export default class FILE
+/**
+ * @module nifti_viewer
+ */
+
+class FILE
 {
     /**
-     * Creates an instance of the FILE class.
+     * @class FILE
      * @param {string} [filename] - The name of the file.
-     * @param {string} [machine] - The byte order used by the machine ('ieee-le' for little-endian, 'ieee-be' for big-endian).
+     * @param {('ieee-le'|'ieee-be')} [machine='ieee-le'] - The byte order used by the machine ('ieee-le' for little-endian, 'ieee-be' for big-endian).
      */
     constructor( filename = '', machine = 'ieee-le' )
     {
@@ -263,3 +267,5 @@ export default class FILE
         return this.offset;
     }
 }
+
+export default FILE;

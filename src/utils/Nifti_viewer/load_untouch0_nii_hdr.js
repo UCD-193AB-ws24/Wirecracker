@@ -5,8 +5,23 @@
 //  This version is ported from original MatLab script into JavaScript by Wirecracker team and distributed under MIT license.
 
 import FILE from "./FILE.js";
+export default load_untouch0_nii_hdr;
 
-export default function load_untouch0_nii_hdr ( machine, data )
+/**
+ * Loads the header of a NIfTI file.
+ *
+ * This function initializes a FILE object to read the binary data of a NIfTI header.
+ * It then extracts the header information and returns it.
+ * This function does not read anything regarding the transformation.
+ * @see For function that load transformation information:  {@link module:nifti_viewer.load_untouch_nii_hdr  load_untouch_nii_hdr}
+ *
+ * @function
+ * @memberof module:nifti_viewer
+ * @param {('ieee-le'|'ieee-be')} machine - Byte order used by the machine ('ieee-le' for little-endian, 'ieee-be' for big-endian).
+ * @param {ArrayBuffer} data - The binary data of the NIfTI file.
+ * @returns {Object} The parsed NIfTI header object.
+ */
+function load_untouch0_nii_hdr ( machine, data )
 {
     const fid = new FILE('', machine);
     fid.fopen(data);

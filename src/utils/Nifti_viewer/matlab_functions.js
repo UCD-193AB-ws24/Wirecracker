@@ -1,39 +1,43 @@
-//   _    _ _                              _
-//  | |  | (_)                            | |
-//  | |  | |_ _ __ ___  ___ _ __ __ _  ___| | _____ _ __
-//  | |/\| | | '__/ _ \/ __| '__/ _` |/ __| |/ / _ \ '__|
-//  \  /\  / | | |  __/ (__| | | (_| | (__|   <  __/ |
-//   \/  \/|_|_|  \___|\___|_|  \__,_|\___|_|\_\___|_|
-//
-//
-//  Collection of matlab function ported into javascript.
-//  The functions here does not have original algorithm.
-//
-//  This file contains:
-//
-//  @function isnumeric
-//  @function unique
-//  @function sub2ind
-//  @function reshape
-//  @function isequal
-//  @function permute
-//  @function transpose
-//  @function flip
-//  @function prod
-//  @function size
-//  @function ndims
-//  @function find
-//  @function det
-//  @function diag
-//  @function bitset
-//  @function inv
-//
-//  Developed by Wirecracker team and distributed under MIT license.
-
 /*
+ *  _    _ _                              _
+ * | |  | (_)                            | |
+ * | |  | |_ _ __ ___  ___ _ __ __ _  ___| | _____ _ __
+ * | |/\| | | '__/ _ \/ __| '__/ _` |/ __| |/ / _ \ '__|
+ * \  /\  / | | |  __/ (__| | | (_| | (__|   <  __/ |
+ *  \/  \/|_|_|  \___|\___|_|  \__,_|\___|_|\_\___|_|
+ *
+ *
+ * Collection of matlab function ported into javascript.
+ * The functions here does not have original algorithm.
+ *
+ * This file contains:
+ *
+ * isnumeric
+ * unique
+ * sub2ind
+ * reshape
+ * isequal
+ * permute
+ * transpose
+ * flip
+ * prod
+ * size
+ * ndims
+ * find
+ * det
+ * diag
+ * bitset
+ * inv
+ *
+ * Developed by Wirecracker team and distributed under MIT license.
+ */
+/**
+ * @module nifti_viewer/matlab_functions
+ */
+/**
  * Determine whether input is numeric array
  *
- * @param {Object|Object[]} value  -  Input array or value
+ * @param {(any|any[])} value  -  Input array or value
  *
  * @returns {boolean}  true if A is an array of numeric data type. Otherwise, it returns false.
  */
@@ -57,28 +61,29 @@ export function isnumeric ( value )
     return false;
 }
 
-/*
+/**
  * Given an array, return an array that does not contain any duplicates
  * Only tested with single dimensional array
  *
- * @param {Object[]} array  -  Input array
+ * @param {any[]} array  -  Input array
  *
- * @returns {Object[]}  Array with the same data as in A, but with no repetitions.
+ * @returns {any[]}  Array with the same data as in A, but with no repetitions.
  */
 export function unique(array)
 {
     return [...new Set(array)];
 }
 
-/*
+/**
  * Convert subscripts to linear indices
  *
- * @param {integer[]} sizes  -  Size of array, specified as a vector of positive integers.
+ * @param {number[]} sizes  -  Size of array, specified as a vector of positive integers.
  * Each element of this vector indicates the size of the corresponding dimension.
  *
- * @param {integer I1, I2, ..., In}  -  Multidimensional subscripts, specified in scalars.
+ * @param {...number} subs -  Multidimensional subscripts, specified in scalars.
  *
- * @returns {integer}  Linear index, returned as a scalar
+ * @returns {number}  Linear index, returned as a scalar
+ * @throws {Error} If number of subscripts does not match number of dimensions or subscript is out of bounds.
  */
 export function sub2ind(sizes, ...subs)
 {
@@ -103,17 +108,19 @@ export function sub2ind(sizes, ...subs)
 }
 
 
-/*
+/**
  * Reshape array by rearranging existing elements
  *
- * @param {Array} array  -  Input array, specified as a vector, matrix, or multidimensional array.
- * @param {integer[]} sizes  -  Output size, specified as a row vector of integers. Each element of
+ * @param {any[]} array  -  Input array, specified as a vector, matrix, or multidimensional array.
+ * @param {number[]} sizes  -  Output size, specified as a row vector of integers. Each element of
  * sizes indicates the size of the corresponding dimension in output. You must specify the size so
  * that the number of elements in input array and output array are the same. That is, prod(sizes) must
  * be the same as number_of_elements(input).
  *
- * @returns {Array}  Reshaped array, returned as a vector, matrix, multidimensional array. The data
+ * @returns {Object[]}  Reshaped array, returned as a vector, matrix, multidimensional array. The data
  * type and number of elements in output are the same as the data type and number of elements in input.
+ *
+ * @throws {Error} If number of elements changes after changing the transition.
  */
 export function reshape (array, sizes)
 {
@@ -142,11 +149,11 @@ export function reshape (array, sizes)
     return tmp;
 }
 
-/*
+/**
  * Determine array equality
  *
- * @param {Array} array1  -  Input to be compared
- * @param {Array} array1  -  Input to be compared
+ * @param {any[]} array1  -  Input to be compared
+ * @param {any[]} array2  -  Input to be compared
  *
  * @returns {boolean}  true if array1 and array2 are equivalent; otherwise, it returns false.
  */
@@ -173,14 +180,14 @@ export function isequal ( array1, array2 )
     return true;
 }
 
-/*
+/**
  * Permute array dimentions
  *
- * @param {Array} array  -  Input array, specified as a vector, matrix, or multidimensional array.
- * @param {integer[]} order  -  Dimension order, specified as a row vector with unique,
+ * @param {any[]} array  -  Input array, specified as a vector, matrix, or multidimensional array.
+ * @param {number[]} order  -  Dimension order, specified as a row vector with unique,
  * positive integer elements that represent the dimensions of the input array.
  *
- * @returns {Array}  Input array with the dimensions rearranged in the order specified by the vector
+ * @returns {any[]}  Input array with the dimensions rearranged in the order specified by the vector
  * dimorder. For example, permute(A,[1,0]) switches the row and column dimensions of a matrix A. In general,
  * the ith dimension of the output array is the dimension dimorder(i) from the input array.
  */
@@ -215,6 +222,15 @@ export function permute(array, order) {
     return tmp;
 }
 
+/*
+ * Transpose multi-dimensional matrix on nth dimension
+ *
+ * @param {any[]} arr  -  Input array, specified as a vector or matrix.
+ * @param {number} n  -  Dimension to transpose
+ *
+ * @returns {any[]}  the nonconjugate transpose of input array, that is,
+ * interchanges the row and column index for each element.
+ */
 function transpose_nth_dim ( arr, n ) {
     if ( n == 0 )
     {
@@ -237,12 +253,12 @@ function transpose_nth_dim ( arr, n ) {
     return arr;
 }
 
-/*
+/**
  * Transpose vector or matrix
  *
- * @param {Array} arr  -  Input array, specified as a vector or matrix.
+ * @param {any[][]} arr  -  Input array, specified as a vector or matrix.
  *
- * @returns {Array}  the nonconjugate transpose of input array, that is,
+ * @returns {any[][]}  the nonconjugate transpose of input array, that is,
  * interchanges the row and column index for each element.
  */
 export function transpose(arr) {
@@ -263,14 +279,14 @@ export function transpose(arr) {
     return transposed;
 }
 
-/*
+/**
  * Flip order of elements
- * CAUTION destructive
+ * CAUTION: This function modifies the original array.
  *
- * @param {Array} array  -  Input array, specified as a vector, matrix, or multidimensional array.
- * @param {integer} n  -  Dimension to operate along, specified as a positive integer scalar.
+ * @param {any[]} array  -  Input array, specified as a vector, matrix, or multidimensional array.
+ * @param {number} n  -  Dimension to operate along, specified as a positive integer scalar.
  *
- * @returns {Array}  array with the same size as input, but with the order of the elements at n-th dimension reversed.
+ * @returns {any[]}  array with the same size as input, but with the order of the elements at n-th dimension reversed.
  */
 export function flip( array, n )
 {
@@ -290,7 +306,7 @@ export function flip( array, n )
     }
 }
 
-/*
+/**
  * Product of array elements
  *
  * @param {number[]} array  -  Input array, specified as a one dimensional array.
@@ -301,10 +317,10 @@ export function prod(array) {
     return array.reduce((acc, num) => acc * num, 1);
 }
 
-/*
+/**
  * Array size
  *
- * @param {Array} array  -  Input array, specified as a scalar, a vector, a matrix, or a multidimensional array.
+ * @param {any[]} array  -  Input array, specified as a scalar, a vector, a matrix, or a multidimensional array.
  *
  * @returns {number[]}  a row vector whose elements are the lengths of the corresponding dimensions of input.
  */
@@ -317,10 +333,10 @@ export function size(array) {
     return dimension;
 }
 
-/*
+/**
  * Number of array dimensions
  *
- * @param {Array} array  -  Input array, specified as a scalar, a vector, a matrix, or a multidimensional array.
+ * @param {any[]} array  -  Input array, specified as a scalar, a vector, a matrix, or a multidimensional array.
  *
  * @returns {number[]}  the number of dimensions in the input array. The number of dimensions is always greater than or equal to 2.
  */
@@ -333,10 +349,10 @@ export function ndims(array) {
     return ndim;
 }
 
-/*
+/**
  * Find indices and values of nonzero elements
  *
- * @param {Array} array  -  Input array, specified as a scalar, vector, matrix, or multidimensional array.
+ * @param {any[]} array  -  Input array, specified as a scalar, vector, matrix, or multidimensional array.
  *
  * @returns {number[]}  a vector containing the linear indices of each nonzero element in array X.
  */
@@ -359,10 +375,10 @@ export function find(X) {
     return indices; // Return as column vector for multi-dimensional arrays
 }
 
-/*
+/**
  * Matrix determinant
  *
- * @param {number[]} array  -  Input matrix, specified as a square numeric matrix.
+ * @param {number[][]} array  -  Input matrix, specified as a square numeric matrix.
  *
  * @returns {number}  the determinant of square matrix.
  */
@@ -388,12 +404,12 @@ export function det(matrix) {
     return determinant;
 }
 
-/*
+/**
  * Create diagonal matrix or get diagonal elements of matrix
  *
- * @param {number[]} values  -  Diagonal elements, specified as a vector.
+ * @param {number[][]} values  -  Diagonal elements, specified as a vector.
  *
- * @returns {number[number[]]}  a square diagonal matrix with the elements of vector v on the main diagonal.
+ * @returns {number[][]}  a square diagonal matrix with the elements of vector v on the main diagonal.
  */
 export function diag(values) {
     // Create a square matrix of size values.length x values.length filled with zeros
@@ -407,14 +423,14 @@ export function diag(values) {
     return matrix;
 }
 
-/*
+/**
  * Set bit at specific location
  *
  * @param {number[]} value  -  Input value, specified as an scalar.
- * @param {integer} position  -  Bit position, specified as an integer.
- * @param {0|1} bit  -  Bit value, specified as a integer.
+ * @param {number} position  -  Bit position, specified as an integer.
+ * @param {(0|1)} bit  -  Bit value, specified as a integer.
  *
- * @returns {number[number[]]}  'value' with 'position' bit set to the value of 'bit'.
+ * @returns {number[][]}  'value' with 'position' bit set to the value of 'bit'.
  */
 export function bitset(value, position, bit) {
     if (bit === 1) {
@@ -424,13 +440,13 @@ export function bitset(value, position, bit) {
     }
 }
 
-/*
+/**
  * Matrix inverse
- * @see {http://web.archive.org/web/20210406035905/http://blog.acipo.com/matrix-inversion-in-javascript/}
+ * @see {@link http://web.archive.org/web/20210406035905/http://blog.acipo.com/matrix-inversion-in-javascript/}
  *
- * @param {number[number[]]} matrix  -  Input matrix, specified as a square matrix.
+ * @param {number[][]} matrix  -  Input matrix, specified as a square matrix.
  *
- * @returns {number[number[]]}  inverse of input matrix.
+ * @returns {number[][]}  inverse of input matrix.
  */
 export function inv (matrix) {
     if (matrix.length !== matrix[0].length) { return; }

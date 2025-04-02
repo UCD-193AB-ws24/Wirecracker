@@ -85,9 +85,26 @@ import load_nii_ext from './load_nii_ext.js';
 import load_nii_hdr from './load_nii_hdr.js';
 import load_untouch_nii_hdr from './load_untouch_nii_hdr.js';
 import load_untouch0_nii_hdr from './load_untouch0_nii_hdr.js';
+export default load_untouch_nii;
+/**
+ * Load a NIfTI or ANALYZE dataset without applying affine transformations or voxel intensity scaling.
+ * This function preserves the original NIfTI header and data untouched.
+ *
+ * @function
+ * @memberof module:nifti_viewer
+ * @param {string} filename - The NIfTI or ANALYZE file name (with extension).
+ * @param {ArrayBuffer} data - The raw content of the file.
+ * @param {number[]} [img_idx=[]] - A numerical array of image volume indices. Only the specified volumes will be loaded. Default is to load all available volumes.
+ * @param {number[]} [dim5_idx=[]] - A numerical array of 5th dimension indices. Default is to load all available slices.
+ * @param {number[]} [dim6_idx=[]] - A numerical array of 6th dimension indices. Default is to load all available slices.
+ * @param {number[]} [dim7_idx=[]] - A numerical array of 7th dimension indices. Default is to load all available slices.
+ * @param {0|1} [old_RGB=0] - A flag to handle old RGB format. Set to 1 if the image uses the old RGB format (Analyze 6.0), otherwise set to 0 (default).
+ * @param {number[]} [slice_idx=[]] - A numerical array of image slice indices. Default is to load all available slices.
+ *
+ * @returns {Object} nii - The NIfTI object containing the header and image data.
+ */
 
-
-export default function load_untouch_nii( filename, data, img_idx = [], dim5_idx = [], dim6_idx = [],
+function load_untouch_nii( filename, data, img_idx = [], dim5_idx = [], dim6_idx = [],
                                          dim7_idx = [], old_RGB = 0, slice_idx = [] )
 {
     if ( !filename )
