@@ -72,13 +72,11 @@ Almost all the comments are left untouched.
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
+_[Add small gif to show some feature]_
 
-<!-- Screenshot -->
-<!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
-_[Add screenshot of "home page"]_
 
 Wirecracker provides a intuitive solution for designing, executing, and managing localization and stimulation plans.
-Key Development Goalst:
+Key Development Goals:
 - Replace traditional CSV-based interfaces with a modern, user-friendly GUI for improved usability and efficiency.
 - Facilitate smooth communication and data sharing between teams to enhance productivity and reduce errors.
 - Build a centralized, well-organized database to store plans, enabling quick retrieval and analysis.
@@ -89,9 +87,7 @@ Key Development Goalst:
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-How to use the web app. Additional screenshots and demos. Can be linked to more resources.
-
-_For more examples, please refer to the [Documentation](https://www.wirecracker.com/documentations)_
+Usage of the website can be found in the [documentation page](https://www.wirecracker.com/documentations)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -99,7 +95,7 @@ _For more examples, please refer to the [Documentation](https://www.wirecracker.
 <!-- SELF HOSTING -->
 ## Self Hosting
 
-This section provides a guide for self-hosting. For development, please visit [documentation for developers](https://www.wirecracker.com/documentations/code)
+This section provides a guide for self-hosting. For development, please refer to [code documentation](https://www.wirecracker.com/documentations/code) and readme in each folder.
 
 ### Prerequisites
 
