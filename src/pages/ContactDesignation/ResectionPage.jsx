@@ -54,8 +54,8 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
 };
 
 const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onStateChange, savedState = {} }) => {
-    const fixedMainViewSize = 600;
-    const fixedSubViewSize = 300;
+    const fixedMainViewSize = 700;
+    const fixedSubViewSize = 520;
 
     const [niiData, setNiiData] = useState(null);
 //     const [niiData, setNiiData] = useState(savedState.nii || null);
@@ -295,7 +295,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
         if (!canvas) return;
 
         const mouseX = event.offsetX;
-        const mouseY = event.offsetY - 12;
+        const mouseY = event.offsetY;
 
         // Check if the mouse is over any marker
         const hovered = markers.find(marker => {
@@ -362,7 +362,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
         if (!canvas) return;
 
         const clickX = event.offsetX;
-        const clickY = event.offsetY - 12;
+        const clickY = event.offsetY;
 
         // Check if the click is within any marker's bounds
         markers.forEach(marker => {
@@ -539,10 +539,10 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
                     && data[0].z) {
                     setCoordinates(data); // Store CSV coordinates in state
                 } else {
-                    throw "Please check the column name of the CSV data. Required: [Electrode,Contact,x,y,z]"
+                    alert("Please check the column name of the CSV data. Required: [Electrode,Contact,x,y,z]");
                 }
             } else {
-                throw "Unknown CSV file format"
+                alert("Unknown CSV file format");
             }
         } catch (err) {
             console.error('Error parsing CSV file:', err);
@@ -667,36 +667,55 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
                 </button>
             </div>
             {isLoaded && (
-                <div className="space-y-6">
-                    <div className="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
-                        <canvas ref={mainCanvasRef} width={fixedMainViewSize} height={fixedMainViewSize} className="border border-gray-300 rounded-lg shadow-sm" />
-                        <div className="flex flex-col space-y-6">
-                            <canvas ref={subCanvas0Ref} width={fixedSubViewSize} height={fixedSubViewSize} className="border border-gray-300 rounded-lg shadow-sm" />
-                            <canvas ref={subCanvas1Ref} width={fixedSubViewSize} height={fixedSubViewSize} className="border border-gray-300 rounded-lg shadow-sm" />
-                        </div>
+                <div className="flex flex-col lg:flex-row gap-6">
+                    <div className="flex justify-center">
+                        <canvas
+                            ref={mainCanvasRef}
+                            width={fixedMainViewSize}
+                            height={fixedMainViewSize}
+                            className={"max-w-[" + fixedMainViewSize + "] max-h-[" + fixedMainViewSize + "] border border-gray-300 rounded-lg shadow-sm"}
+                        />
                     </div>
-                    <div className="bg-white p-6 rounded-lg shadow-md space-y-4 h-32">
-                        <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">
-                            {hoveredMarker !== null ? hoveredMarker.id : "Hover over on contact to see information..."}
-                        </h2>
-                        <div className="flex justify-between items-center">
-                            <div className="flex-1 min-w-0 pr-4">
-                                <p className="text-sm text-gray-600">Location</p>
-                                <p className="text-lg font-medium text-gray-900 truncate" title={hoveredMarker !== null ? hoveredMarker.associatedLocation : ""}>
-                                    {hoveredMarker !== null ? hoveredMarker.associatedLocation : ""}
-                                </p>
-                            </div>
-                            <div className="flex-shrink-0 px-4 min-w-[200px]">
-                                <p className="text-sm text-gray-600">Mark</p>
-                                <p className="text-lg font-medium text-gray-900">
-                                    {hoveredMarker !== null ? getMarkName(hoveredMarker) : ""}
-                                </p>
-                            </div>
-                            <div className="flex-shrink-0 pl-4 min-w-[50px]">
-                                <p className="text-sm text-gray-600">Surgeon Marked</p>
-                                <p className="text-lg font-medium text-gray-900">
-                                    {hoveredMarker !== null ? (hoveredMarker.surgeonMark ? 'Yes' : 'No') : ""}
-                                </p>
+
+                    <div className="flex flex-col gap-6">
+                        <div className="flex gap-6 justify-center">
+                            <canvas
+                                ref={subCanvas0Ref}
+                                width={fixedSubViewSize}
+                                height={fixedSubViewSize}
+                                className={"max-w-[" + fixedSubViewSize + "] max-h-[" + fixedSubViewSize + "] border border-gray-300 rounded-lg shadow-sm"}
+                            />
+                            <canvas
+                                ref={subCanvas1Ref}
+                                width={fixedSubViewSize}
+                                height={fixedSubViewSize}
+                                className={"max-w-[" + fixedSubViewSize + "] max-h-[" + fixedSubViewSize + "] border border-gray-300 rounded-lg shadow-sm"}
+                            />
+                        </div>
+
+                        <div className="bg-white p-4 rounded-lg shadow-md w-full">
+                            <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">
+                                {hoveredMarker !== null ? hoveredMarker.id : "Hover over a contact..."}
+                            </h2>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <p className="text-sm text-gray-600">Location</p>
+                                    <p className="text-lg font-medium text-gray-900 break-words">
+                                        {hoveredMarker !== null ? hoveredMarker.associatedLocation : ""}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-600">Mark</p>
+                                    <p className="text-lg font-medium text-gray-900">
+                                        {hoveredMarker !== null ? getMarkName(hoveredMarker) : ""}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-600">Surgeon Marked</p>
+                                    <p className="text-lg font-medium text-gray-900">
+                                        {hoveredMarker !== null ? (hoveredMarker.surgeonMark ? 'Yes' : 'No') : ""}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
