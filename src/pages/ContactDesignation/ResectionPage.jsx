@@ -27,29 +27,6 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
                 focus={focusedContact}
                 onStateChange={onStateChange}
                 savedState={savedState} />
-                {imageLoaded && (
-                    <div className="flex-1 md:ml-6">
-                        <div className="h-[870px] overflow-y-auto">
-                            <ul className="space-y-6">
-                                {electrodes.map((electrode) => (
-                                    <li key={electrode.label} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                                        <p className="text-xl font-bold text-gray-800 mb-4">{electrode.label}</p>
-                                        <ul className="flex flex-wrap gap-4">
-                                            {electrode.contacts.map((contact) => (
-                                                <Contact
-                                                    key={contact.id}
-                                                    contact={contact}
-                                                    onClick={onClick}
-                                                    setFocus={setFocusedContact}
-                                                />
-                                            ))}
-                                        </ul>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                )}
             </div>
             {!imageLoaded && (
                 <div className="flex-1 p-8 bg-gray-100 min-h-screen">
