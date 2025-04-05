@@ -201,23 +201,33 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
             const transformedCoord = transformCoordinates(coord);
             const { x, y, z } = transformedCoord;
             let canvasX, canvasY;
+            let originalCoord = [0, 0, 0];
             switch (dir) {
                 case 1:
                     if (Math.round(x) == slice) {
                         canvasX = (y * scale) + offsetX;
                         canvasY = maxDim - (z * scale) - offsetY;
+                        originalCoord[0] = y;
+                        originalCoord[1] = z;
+                        originalCoord[2] = x;
                     }
                     break;
                 case 2:
                     if (Math.round(y) == slice) {
                         canvasX = (x * scale) + offsetX;
                         canvasY = maxDim - (z * scale) - offsetY;
+                        originalCoord[0] = x;
+                        originalCoord[1] = z;
+                        originalCoord[2] = y;
                     }
                     break;
                 case 3:
                     if (Math.round(z) == slice) {
                         canvasX = (x * scale) + offsetX;
                         canvasY = maxDim - (y * scale) - offsetY;
+                        originalCoord[0] = x;
+                        originalCoord[1] = y;
+                        originalCoord[2] = z;
                     }
                     break;
             }
@@ -258,7 +268,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
                 ctx.stroke();
 
                 // Store the marker position
-                newMarkers.push({ x: canvasX, y: canvasY, contact: targetContact });
+                newMarkers.push({ x: canvasX, y: canvasY, contact: targetContact, originalCoord: originalCoord });
             }
         });
 
@@ -309,7 +319,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
             canvas.style.cursor = 'default';
         }
 
-        setHoveredMarker(hovered ? hovered.contact : hoveredMarker);
+        setHoveredMarker(hovered ? hovered : hoveredMarker);
     };
 
     // Handle mouse leave to clear hovered marker
@@ -376,8 +386,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
                 });
                 setHoveredMarker(
                     {
-                        ...marker.contact,
-                        surgeonMark: !(marker.contact.surgeonMark)
+                        ...marker,
+                        contact: {
+                            ...marker.contact,
+                            surgeonMark: !(marker.contact.surgeonMark)
+                        }
                     }
                 );
             }
@@ -668,13 +681,18 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
             </div>
             {isLoaded && (
                 <div className="flex flex-col lg:flex-row gap-6">
-                    <div className="flex justify-center">
+                    <div className="flex justify-center relative">
                         <canvas
                             ref={mainCanvasRef}
                             width={fixedMainViewSize}
                             height={fixedMainViewSize}
                             className={"max-w-[" + fixedMainViewSize + "] max-h-[" + fixedMainViewSize + "] border border-gray-300 rounded-lg shadow-sm"}
                         />
+                        {hoveredMarker && (
+                            <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+                                X: {hoveredMarker.originalCoord[0]}, Y: {hoveredMarker.originalCoord[1]}, Z: {hoveredMarker.originalCoord[2]}
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-6">
@@ -695,25 +713,25 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
 
                         <div className="bg-white p-4 rounded-lg shadow-md w-full">
                             <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">
-                                {hoveredMarker !== null ? hoveredMarker.id : "Hover over a contact..."}
+                                {hoveredMarker !== null ? hoveredMarker.contact.id : "Hover over a contact..."}
                             </h2>
                             <div className="flex justify-between items-center">
                                 <div>
                                     <p className="text-sm text-gray-600">Location</p>
                                     <p className="text-lg font-medium text-gray-900 break-words">
-                                        {hoveredMarker !== null ? hoveredMarker.associatedLocation : ""}
+                                        {hoveredMarker !== null ? hoveredMarker.contact.associatedLocation : ""}
                                     </p>
                                 </div>
                                 <div>
                                     <p className="text-sm text-gray-600">Mark</p>
                                     <p className="text-lg font-medium text-gray-900">
-                                        {hoveredMarker !== null ? getMarkName(hoveredMarker) : ""}
+                                        {hoveredMarker !== null ? getMarkName(hoveredMarker.contact) : ""}
                                     </p>
                                 </div>
                                 <div>
                                     <p className="text-sm text-gray-600">Surgeon Marked</p>
                                     <p className="text-lg font-medium text-gray-900">
-                                        {hoveredMarker !== null ? (hoveredMarker.surgeonMark ? 'Yes' : 'No') : ""}
+                                        {hoveredMarker !== null ? (hoveredMarker.contact.surgeonMark ? 'Yes' : 'No') : ""}
                                     </p>
                                 </div>
                             </div>
