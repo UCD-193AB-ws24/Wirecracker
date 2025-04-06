@@ -476,6 +476,121 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         );
     };
 
+    const AddElectrodeForm = ({ close, addElectrode, submitFlag, setSubmitFlag }) => {
+        const [selectedElectrodeType, setSelectedElectrodeType] = useState('DIXI');
+        const electrodeOverviewData = {
+            'Adtech': [4, 6, 8, 10, 12],
+            'DIXI': [5, 8, 10, 12, 15, 18]
+        };
+
+        const [sliderMarks, setSliderMarks] = useState(electrodeOverviewData[selectedElectrodeType]);
+        const [sliderValue, setSliderValue] = useState(electrodeOverviewData[selectedElectrodeType][0]);
+
+        useEffect(() => {
+            const marks = electrodeOverviewData[selectedElectrodeType];
+            setSliderMarks(marks);
+            if (!marks.includes(sliderValue)) {
+                setSliderValue(marks[0]);
+            }
+        }, [selectedElectrodeType]);
+
+        const handleSliderChange = (e) => {
+            setSliderValue(parseInt(e.target.value, 10));
+        };
+
+        const handleInputChange = (e) => {
+            let value = parseInt(e.target.value, 10);
+            const minValue = Math.min(...sliderMarks);
+            const maxValue = Math.max(...sliderMarks);
+            if (value < minValue) value = minValue;
+            if (value > maxValue) value = maxValue;
+            setSliderValue(value);
+        };
+
+        const minValue = Math.min(...sliderMarks);
+        const maxValue = Math.max(...sliderMarks);
+
+        const handleSubmit = (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            // Override the contacts field with the slider value and append electrode type.
+            formData.set('contacts', sliderValue);
+            formData.append('electrodeType', selectedElectrodeType);
+            addElectrode(formData);
+            setSubmitFlag(!submitFlag);
+            close();
+        };
+
+        return (
+            <div className="modal bg-white p-6 rounded-lg shadow-lg">
+                <h4 className="text-lg font-semibold mb-4">Add Electrode</h4>
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Electrode Label
+                        </label>
+                        <input name="label" className="w-full p-2 border border-gray-300 rounded-md" required />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Description
+                        </label>
+                        <input name="description" className="w-full p-2 border border-gray-300 rounded-md" required />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Electrode Contacts
+                        </label>
+                        <div className="flex space-x-4 mb-2">
+                            <button 
+                                type="button" 
+                                onClick={() => setSelectedElectrodeType('DIXI')}
+                                className={`py-2 px-4 rounded-md ${selectedElectrodeType === 'DIXI' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}
+                            >
+                                DIXI
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={() => setSelectedElectrodeType('Adtech')}
+                                className={`py-2 px-4 rounded-md ${selectedElectrodeType === 'Adtech' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}
+                            >
+                                AdTech
+                            </button>
+                        </div>
+                        <div className="flex items-center">
+                            <input 
+                                type="range" 
+                                list="tickmarks" 
+                                min={minValue} 
+                                max={maxValue} 
+                                step="1" 
+                                value={sliderValue} 
+                                onChange={handleSliderChange} 
+                                className="flex-1"
+                            />
+                            <input 
+                                type="number" 
+                                min={minValue} 
+                                max={maxValue} 
+                                value={sliderValue} 
+                                onChange={handleInputChange} 
+                                className="ml-2 w-16 p-2 border border-gray-300 rounded-md"
+                            />
+                        </div>
+                        <datalist id="tickmarks">
+                            {sliderMarks.map(mark => (
+                                <option key={mark} value={mark} />
+                            ))}
+                        </datalist>
+                    </div>
+                    <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200">
+                        Add
+                    </button>
+                </form>
+            </div>
+        );
+    };
+
     return (
         <div className="flex flex-col h-screen p-4">
             <div className="p-4">
@@ -516,34 +631,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     modal
                     nested>
                     {close => (
-                        <div className="modal bg-white p-6 rounded-lg shadow-lg">
-                            <h4 className="text-lg font-semibold mb-4">
-                                Add Electrode
-                            </h4>
-                            <form
-                                onSubmit={(event) => {
-                                    event.preventDefault();
-                                    const formData = new FormData(event.target);
-
-                                    addElectrode(formData);
-                                    setSubmitFlag(!submitFlag);
-                                    close();
-                                }}>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Electrode Label</label>
-                                    <input name="label" className="w-full p-2 border border-gray-300 rounded-md" />
-                                </div>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                    <input name="description" className="w-full p-2 border border-gray-300 rounded-md" />
-                                </div>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Number of Contacts</label>
-                                    <input type="number" name="contacts" min="0" className="w-full p-2 border border-gray-300 rounded-md" />
-                                </div>
-                                <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200">Add</button>
-                            </form>
-                        </div>
+                        <AddElectrodeForm
+                            close={close}
+                            addElectrode={addElectrode}
+                            submitFlag={submitFlag}
+                            setSubmitFlag={setSubmitFlag}
+                        />
                     )}
                 </Popup>
             </Container>
