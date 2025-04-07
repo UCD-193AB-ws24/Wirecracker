@@ -5,6 +5,7 @@ import 'reactjs-popup/dist/index.css';
 import { saveCSVFile, Identifiers } from '../utils/CSVParser.js';
 import { supabase } from '../utils/supabaseClient';
 import config from "../../config.json" with { type: 'json' };
+import ShareButton from '../components/ShareButton';
 
 const backendURL = config.backendURL;
 
@@ -480,8 +481,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         <div className="flex flex-col h-screen p-4">
             <div className="p-4">
                 <div className="flex justify-between">
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-4">
                         <h1 className="text-2xl font-bold">Localization</h1>
+                        <ShareButton />
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-sm text-gray-500">

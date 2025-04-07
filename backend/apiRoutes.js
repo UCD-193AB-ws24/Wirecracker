@@ -481,10 +481,10 @@ async function insertRegionsAndGetIds(regions) {
   const regionIdMap = {};
 
   try {
-    // Fetch existing regions
-    const { data: existingRegions, error: fetchError } = await supabase
-      .from('region_name')
-      .select('id, name');
+  // Fetch existing regions
+  const { data: existingRegions, error: fetchError } = await supabase
+    .from('region_name')
+    .select('id, name');
 
     if (fetchError) {
       console.error('Error fetching existing regions:', fetchError);
@@ -494,7 +494,7 @@ async function insertRegionsAndGetIds(regions) {
 
     // Create a map of lowercase names to their database versions and IDs
     const existingNamesMap = new Map();
-    existingRegions.forEach(region => {
+  existingRegions.forEach(region => {
       const lowerName = region.name.toLowerCase();
       existingNamesMap.set(lowerName, {
         id: region.id,
@@ -525,14 +525,14 @@ async function insertRegionsAndGetIds(regions) {
       return false;
     });
 
-    if (newRegions.length > 0) {
+  if (newRegions.length > 0) {
       console.log(`Inserting ${newRegions.length} new regions:`, newRegions);
       
-      // Insert new regions
-      const { data: insertedRegions, error: insertError } = await supabase
-        .from('region_name')
-        .insert(newRegions.map(name => ({ name })))
-        .select();
+    // Insert new regions
+    const { data: insertedRegions, error: insertError } = await supabase
+      .from('region_name')
+      .insert(newRegions.map(name => ({ name })))
+      .select();
 
       if (insertError) {
         console.error('Error inserting new regions:', insertError);
@@ -542,14 +542,14 @@ async function insertRegionsAndGetIds(regions) {
       }
 
       console.log(`Successfully inserted ${insertedRegions.length} new regions`);
-      
-      // Add new regions to the map
-      insertedRegions.forEach(region => {
-        regionIdMap[region.name] = region.id;
-      });
-    }
 
-    return regionIdMap;
+    // Add new regions to the map
+    insertedRegions.forEach(region => {
+      regionIdMap[region.name] = region.id;
+    });
+  }
+
+  return regionIdMap;
   } catch (error) {
     console.error('Error in insertRegionsAndGetIds:', error);
     console.error('Error stack:', error.stack);
@@ -614,13 +614,13 @@ async function saveLocalizationToDatabase(data, fileId) {
     Object.values(data).forEach(contacts => {
       Object.values(contacts).forEach(contactData => {
         if (typeof contactData === 'object' && contactData.associatedLocation) {
-          if (contactData.associatedLocation === 'GM/GM') {
-            const [desc1, desc2] = contactData.contactDescription.split('+');
-            uniqueRegions.add(desc1);
-            uniqueRegions.add(desc2);
-          }
-          else if (contactData.associatedLocation === 'GM' || contactData.associatedLocation === 'GM/WM') {
-            uniqueRegions.add(contactData.contactDescription);
+        if (contactData.associatedLocation === 'GM/GM') {
+          const [desc1, desc2] = contactData.contactDescription.split('+');
+          uniqueRegions.add(desc1);
+          uniqueRegions.add(desc2);
+        }
+        else if (contactData.associatedLocation === 'GM' || contactData.associatedLocation === 'GM/WM') {
+          uniqueRegions.add(contactData.contactDescription);
           }
         }
       });
@@ -693,7 +693,7 @@ async function saveLocalizationToDatabase(data, fileId) {
         
         processedContactCount++;
         console.log(`DEBUG: Valid contact found - ${label}/${contactNumber}: ${contactData.associatedLocation}`);
-        
+
         const { contactDescription, associatedLocation } = contactData;
         
         if (!electrodeIdMap[label]) {
@@ -701,7 +701,7 @@ async function saveLocalizationToDatabase(data, fileId) {
           console.log('DEBUG: Available electrode IDs:', electrodeIdMap);
           return; // Skip if no electrode ID found
         }
-        
+
         // Handle GM/GM case: Split into two entries
         if (associatedLocation === 'GM/GM') {
           const [desc1, desc2] = contactDescription.split('+');
@@ -758,7 +758,7 @@ async function saveLocalizationToDatabase(data, fileId) {
         }
       });
     });
-    
+
     console.log('DEBUG: Localization data build summary:');
     console.log(`DEBUG: - Skipped description keys: ${skippedDescriptionCount}`);
     console.log(`DEBUG: - Skipped non-object data: ${skippedNonObjectCount}`);

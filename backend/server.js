@@ -4,6 +4,7 @@ import cors from 'cors';
 import { Resend } from 'resend';
 import apiRoutes from './apiRoutes.js';
 import oauthRoutes from './oauth.js';
+import shareRoutes from './shareRoutes.js';
 import config from "../config.json" assert { type: 'json' };
 
 dotenv.config();
@@ -14,19 +15,50 @@ const PORT = config.PORT || 5000;
 const frontendURL = config.frontendURL;
 const backendURL = config.backendURL;
 
-// Configure CORS with specific options
+// Debug logging
+console.log('Initializing server...');
+
+// 1. CORS middleware
 app.use(cors({
-    origin: frontendURL, // Your frontend URL
-    credentials: true, // Allow credentials
-    methods: ['GET', 'POST'], // Allowed methods
+    origin: frontendURL,
+    credentials: true,
+    methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['set-cookie']
 }));
 
-app.use(express.json()); // Parse JSON request body
+// Add debug logging for middleware
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`, {
+        headers: req.headers,
+        body: req.body
+    });
+    next();
+});
 
+// 2. Body parsing middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Test route in main app
+app.get('/test', (req, res) => {
+    res.json({ message: 'Main app working' });
+});
+
+// 3. Routes
+app.use('/share', shareRoutes);
 app.use('/', oauthRoutes);
-app.use("/api", apiRoutes);
+app.use('/api', apiRoutes);
+
+// Catch-all route for debugging
+app.use('*', (req, res) => {
+    console.log('404 route hit:', req.originalUrl);
+    res.status(404).json({ 
+        error: 'Not found',
+        path: req.originalUrl,
+        method: req.method
+    });
+});
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -50,6 +82,20 @@ app.post('/send-verification-email', async (req, res) => {
     }
 });
 
+// Error handling middleware should come last
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    res.status(500).json({ 
+        error: 'Internal server error', 
+        message: err.message 
+    });
+});
+
+// Start server
 app.listen(PORT, () => {
-    console.log(`Server running on ${backendURL}:${PORT}`);
+    console.log(`Server running on ${backendURL}`);
+    console.log('Available routes:');
+    console.log('- GET /test');
+    console.log('- POST /share/validate-email');
+    console.log('- GET /share/test');
 });
