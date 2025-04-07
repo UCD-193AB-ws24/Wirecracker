@@ -15,6 +15,7 @@ import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
 import { supabase } from './utils/supabaseClient';
 import { FcGoogle } from 'react-icons/fc';
 import config from '../config.json' with { type: 'json' };
+import SharedFile from './pages/SharedFile';
 
 const backendURL = config.backendURL;
 
@@ -462,6 +463,22 @@ const HomePage = () => {
         window.addEventListener('addFunctionalTestTab', handleAddFunctionalTestTab);
         return () => {
             window.removeEventListener('addFunctionalTestTab', handleAddFunctionalTestTab);
+        };
+    }, []);
+
+    // Add new event listener for shared files
+    useEffect(() => {
+        const handleOpenSharedFile = (event) => {
+            const { fileId, fileName, type, data } = event.detail;
+            FileUtils.handleFileOpen({
+                file_id: fileId,
+                filename: fileName
+            }, openSavedFile);
+        };
+
+        window.addEventListener('openSharedFile', handleOpenSharedFile);
+        return () => {
+            window.removeEventListener('openSharedFile', handleOpenSharedFile);
         };
     }, []);
 
@@ -1151,10 +1168,7 @@ const App = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
-{/*                <Route path="/localization" element={<Localization />} />
-                <Route path="/stimulation" element={<PlanTypePage />} />
-                <Route path="/stimulation/contacts" element={<ContactSelection />} />
-                <Route path="/stimulation/functional-tests" element={<FunctionalTestSelection />} />*/}
+                <Route path="/shared/:fileId" element={<SharedFile />} />
                 <Route path="/debug" element={<Debug />} />
                 <Route path="/database/:table" element={<DatabaseTable />} />
                 <Route path="/auth-success" element={<GoogleAuthSuccess />} />

@@ -14,7 +14,13 @@ const Login = () => {
             const { token } = await login(email, password, rememberMe);
             localStorage.setItem('token', token);
             alert('Login successful');
-            navigate('/');
+            const redirectPath = localStorage.getItem('redirectAfterLogin');
+            if (redirectPath) {
+                localStorage.removeItem('redirectAfterLogin');
+                navigate(redirectPath);
+            } else {
+                navigate('/');
+            }
         } catch (error) {
             alert(error.message);
         }

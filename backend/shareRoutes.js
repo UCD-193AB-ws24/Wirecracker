@@ -2,11 +2,21 @@ import express from 'express';
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import config from "../config.json" assert { type: 'json' };
 
 dotenv.config();
 const router = express.Router();
 const resend = new Resend(process.env.RESEND_API_KEY);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+// Add debug logging to check config values
+console.log('Config loaded:', config);
+
+// Use fallback if config.frontendURL is undefined
+const frontendURL = config.frontendURL || 'http://localhost:3000';
+
+// Log the final URL being used
+console.log('Frontend URL for share links:', frontendURL);
 
 // Debug logging
 console.log('Initializing share routes...');
@@ -94,7 +104,7 @@ router.post('/create-share', async (req, res) => {
             });
         }
 
-        // Get user IDs
+        // Get user IDs and file info
         const { data: sessionData } = await supabase
             .from('sessions')
             .select('user_id')
@@ -107,9 +117,15 @@ router.post('/create-share', async (req, res) => {
             .eq('email', email)
             .single();
 
-        if (!sessionData || !targetUser) {
+        const { data: fileData } = await supabase
+            .from('files')
+            .select('filename')
+            .eq('file_id', fileId)
+            .single();
+
+        if (!sessionData || !targetUser || !fileData) {
             return res.status(400).json({ 
-                error: 'Invalid user or session' 
+                error: 'Invalid user, session, or file' 
             });
         }
 
@@ -132,12 +148,29 @@ router.post('/create-share', async (req, res) => {
             });
         }
 
-        // Send email notification
+        // Generate a file access URL using frontendURL from config
+        const fileUrl = `${frontendURL}/shared/${fileId}`;
+
+        // Send email notification with link
         const response = await resend.emails.send({
             from: 'send@wirecracker.com',
             to: email,
-            subject: 'A File Has Been Shared With You',
-            html: `<p>A file has been shared with you on Wirecracker.</p>`,
+            subject: `${fileData.filename} has been shared with you`,
+            html: `
+                <h2>A file has been shared with you on Wirecracker</h2>
+                <p><strong>${fileData.filename}</strong> has been shared with you.</p>
+                <p>Click the link below to view the file:</p>
+                <a href="${fileUrl}" style="
+                    display: inline-block;
+                    background-color: #0369a1;
+                    color: white;
+                    padding: 10px 20px;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                ">View File</a>
+                <p>If you're not already signed in, you'll be prompted to do so first.</p>
+            `,
         });
 
         res.status(200).json({ 
