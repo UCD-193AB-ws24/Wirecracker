@@ -53,6 +53,21 @@ router.get("/tables/:table", async (req, res) => {
   }
 });
 
+
+// Fetch electrode label descriptions
+router.get("/electrode-label-descriptions", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("electrode_label_description")
+      .select("*");
+    if (error) throw error;
+    res.status(200).json({ electrodeLabelDescriptions: data });
+  } catch (error) {
+    console.error("Error fetching electrode label descriptions:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Endpoint to save localization data
 router.post('/save-localization', async (req, res) => {
   try {
