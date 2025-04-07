@@ -28,24 +28,51 @@ router.get('/test', (req, res) => {
     res.json({ message: 'Share routes working' });
 });
 
-// Validate email route with explicit path
-router.post('/validate-email', (req, res) => {
-    console.log('POST /validate-email route hit');
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
-    
+// Validate email and check for existing share
+router.post('/validate-email', async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, fileId } = req.body;
         
-        if (!email) {
+        if (!email || !fileId) {
             return res.status(400).json({ 
                 valid: false,
-                error: 'Email is required'
+                error: 'Email and fileId are required'
             });
         }
 
-        // For testing, just return success
-        res.json({ valid: true });
+        // Get user ID for the email
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+            
+        if (userError || !userData) {
+            return res.status(400).json({ 
+                valid: false,
+                error: 'User not found'
+            });
+        }
+
+        // Check for existing share
+        const { data: existingShare, error: shareError } = await supabase
+            .from('fileshares')
+            .select('*')
+            .eq('file_id', fileId)
+            .eq('shared_with_user_id', userData.id)
+            .single();
+
+        if (existingShare) {
+            return res.status(400).json({
+                valid: false,
+                error: 'File already shared with this user'
+            });
+        }
+
+        res.json({ 
+            valid: true,
+            userId: userData.id
+        });
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ 
@@ -55,26 +82,73 @@ router.post('/validate-email', (req, res) => {
     }
 });
 
-// Send share notification email
-router.post('/send-share-email', async (req, res) => {
+// Create share record and send notification
+router.post('/create-share', async (req, res) => {
     try {
-        const { email } = req.body;
-        
-        if (!email) {
-            return res.status(400).json({ error: 'Email is required' });
+        const { email, fileId, permissionLevel } = req.body;
+        const token = req.headers.authorization;
+
+        if (!email || !fileId || !permissionLevel || !token) {
+            return res.status(400).json({ 
+                error: 'Missing required fields' 
+            });
         }
-        
+
+        // Get user IDs
+        const { data: sessionData } = await supabase
+            .from('sessions')
+            .select('user_id')
+            .eq('token', token)
+            .single();
+
+        const { data: targetUser } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (!sessionData || !targetUser) {
+            return res.status(400).json({ 
+                error: 'Invalid user or session' 
+            });
+        }
+
+        // Create share record
+        const { data: shareData, error: shareError } = await supabase
+            .from('fileshares')
+            .insert({
+                file_id: fileId,
+                shared_with_user_id: targetUser.id,
+                permission_level: permissionLevel,
+                shared_date: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (shareError) {
+            console.error('Share error:', shareError);
+            return res.status(500).json({ 
+                error: 'Failed to create share record' 
+            });
+        }
+
+        // Send email notification
         const response = await resend.emails.send({
             from: 'send@wirecracker.com',
             to: email,
-            subject: 'File Shared with You',
-            html: '<p>A file has been shared with you</p>',
+            subject: 'A File Has Been Shared With You',
+            html: `<p>A file has been shared with you on Wirecracker.</p>`,
         });
 
-        res.status(200).json({ message: 'Share notification email sent' });
+        res.status(200).json({ 
+            message: 'Share created successfully',
+            share: shareData
+        });
     } catch (error) {
-        console.error('Error sending share notification:', error);
-        res.status(500).json({ error: 'Failed to send share notification' });
+        console.error('Error creating share:', error);
+        res.status(500).json({ 
+            error: 'Failed to create share' 
+        });
     }
 });
 

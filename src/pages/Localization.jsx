@@ -483,7 +483,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 <div className="flex justify-between">
                     <div className="flex items-center gap-4">
                         <h1 className="text-2xl font-bold">Localization</h1>
-                        <ShareButton />
+                        <ShareButton fileId={fileId} />
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-sm text-gray-500">

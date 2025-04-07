@@ -3,7 +3,7 @@ import config from '../../config.json';
 
 const backendURL = config.backendURL || 'http://localhost:5000';
 
-const ShareButton = () => {
+const ShareButton = ({ fileId }) => {
     const [showModal, setShowModal] = useState(false);
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
@@ -28,71 +28,59 @@ const ShareButton = () => {
                 return;
             }
 
-            const url = `${backendURL}/share/validate-email`;
-            console.log('Sending request to:', url);
-            
-            // First try the test endpoint
-            try {
-                const testResponse = await fetch(`${backendURL}/share/test`);
-                console.log('Test endpoint response:', await testResponse.text());
-            } catch (testError) {
-                console.error('Test endpoint failed:', testError);
+            if (!fileId) {
+                setError('No file selected for sharing');
+                setIsLoading(false);
+                return;
             }
 
-            // Then try the actual endpoint
-            const validateResponse = await fetch(url, {
+            // First validate email and get user ID
+            const validateResponse = await fetch(`${backendURL}/share/validate-email`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Authorization': localStorage.getItem('token') // Add token for auth
                 },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({ 
+                    email,
+                    fileId // Include fileId in validation request
+                })
             });
 
-            console.log('Response status:', validateResponse.status);
-            console.log('Response headers:', Object.fromEntries(validateResponse.headers.entries()));
-
-            const responseText = await validateResponse.text();
-            console.log('Raw response:', responseText);
-
             if (!validateResponse.ok) {
-                throw new Error(`Server error: ${validateResponse.status} - ${responseText}`);
+                const text = await validateResponse.text();
+                throw new Error(`Server error: ${validateResponse.status} - ${text}`);
             }
 
-            let validateData;
-            try {
-                validateData = JSON.parse(responseText);
-            } catch (e) {
-                console.error('Failed to parse response as JSON:', e);
-                throw new Error(`Invalid server response: ${responseText}`);
-            }
+            const validateData = await validateResponse.json();
 
             if (!validateData.valid) {
                 setError('Email not found in system');
                 return;
             }
 
-            // Send share notification
-            const shareResponse = await fetch(`${backendURL}/share/send-share-email`, {
+            // Create share record and send notification
+            const shareResponse = await fetch(`${backendURL}/share/create-share`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': localStorage.getItem('token')
                 },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ 
+                    email,
+                    fileId,
+                    permissionLevel: 'view' // Default permission level
+                }),
             });
 
             if (!shareResponse.ok) {
                 const text = await shareResponse.text();
-                console.error('Share error response:', text);
-                throw new Error(`Failed to send share notification: ${shareResponse.status}`);
+                throw new Error(`Failed to create share: ${shareResponse.status} - ${text}`);
             }
-
-            const shareData = await shareResponse.json();
-            console.log('Share response:', shareData);
 
             setShowModal(false);
             setEmail('');
-            alert('Share notification sent successfully!');
+            alert('File shared successfully!');
         } catch (error) {
             console.error('Error sharing file:', error);
             setError(error.message || 'Failed to share file. Please try again.');
