@@ -810,24 +810,27 @@ const HomePage = () => {
 
     return (
         <div className="h-screen flex flex-col">
-            <div className="flex border-b">
-                {tabs.map(tab => (
-                    <Tab
-                        key={tab.id}
-                        title={tab.title}
-                        isActive={activeTab === tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        onClose={() => closeTab(tab.id)}
-                        onRename={(newTitle) => renameTab(tab.id, newTitle)}
-                    />
-                ))}
-                <button 
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                    onClick={() => addTab('localization')}
-                >
-                    +
-                </button>
-            </div>
+            {/* Only show tabs section when logged in */}
+            {token && (
+                <div className="flex border-b">
+                    {tabs.map(tab => (
+                        <Tab
+                            key={tab.id}
+                            title={tab.title}
+                            isActive={activeTab === tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            onClose={() => closeTab(tab.id)}
+                            onRename={(newTitle) => renameTab(tab.id, newTitle)}
+                        />
+                    ))}
+                    <button 
+                        className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                        onClick={() => addTab('localization')}
+                    >
+                        +
+                    </button>
+                </div>
+            )}
             {token && <UserProfile onSignOut={handleSignOut} />}
 
             <div className="flex-1">
@@ -851,62 +854,65 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     
     return (
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
-            {token && 
+            <Logo />
+            
+            {!token ? (
+                // Show only sign in buttons when logged out
+                <SignInButtons />
+            ) : (
+                // Show all functionality when logged in
                 <>
                     <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3">
                         Search the Database
                     </button>
+                    
+                    <Dropdown 
+                        closedText="Create New"
+                        openText="Create New ▾"
+                        closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
+                        openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
+                        options="Localization"
+                        optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                        onOptionClick={(option) => {
+                            if (option === "Localization") {
+                                onNewLocalization();
+                            }
+                        }}
+                    />
+                    
+                    <input
+                        type="file"
+                        accept=".csv"
+                        onChange={onFileUpload}
+                        style={{ display: 'none' }}
+                        id="fileInput"
+                    />
+                    
+                    <Dropdown 
+                        closedText="Open File"
+                        openText="Open File ▾"
+                        closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5 transition-colors duration-200 hover:bg-sky-700 hover:text-white"
+                        openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 my-5"
+                        options="Open-Local Open-Database"
+                        optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                        onOptionClick={(option) => {
+                            if (option === "Open-Local") {
+                                document.getElementById('fileInput').click();
+                            } else if (option === "Open-Database") {
+                                loadDatabaseFiles();
+                                setShowDatabaseModal(true);
+                            }
+                        }}
+                    />
                 </>
-            }
-            <Logo />
-            {!token && <SignInButtons />}
-            <Dropdown 
-                closedText="Create New"
-                openText="Create New ▾"
-                closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
-                openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
-                options="Localization"
-                optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
-                onOptionClick={(option) => {
-                    switch(option) {
-                        case "Localization":
-                            onNewLocalization();
-                            break;
-                    }
-                }}
-            />
-            <input
-                type="file"
-                accept=".csv"
-                onChange={onFileUpload}
-                style={{ display: 'none' }}
-                id="fileInput"
-            />
-            <Dropdown 
-                closedText="Open File"
-                openText="Open File ▾"
-                closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5 transition-colors duration-200 hover:bg-sky-700 hover:text-white"
-                openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 my-5"
-                options="Open-Local Open-Database"
-                optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
-                onOptionClick={(option) => {
-                    switch(option) {
-                        case "Open-Local":
-                            document.getElementById('fileInput').click();
-                            break;
-                        case "Open-Database":
-                            loadDatabaseFiles();
-                            setShowDatabaseModal(true);
-                            break;
-                    }
-                }}
-            />
+            )}
+            
             {error && <p className="text-red-500 mt-2">{error}</p>}
 
-            {/* Database Files Modal */}
-            {showDatabaseModal && (
+            {/* Database Files Modal - only shown when logged in */}
+            {token && showDatabaseModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg shadow-xl w-4/5 max-w-3xl max-h-[80vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">

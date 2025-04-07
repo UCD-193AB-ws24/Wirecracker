@@ -36,7 +36,7 @@ app.post('/send-verification-email', async (req, res) => {
 
     try {
         const response = await resend.emails.send({
-            from: 'onboarding@resend.dev',
+            from: 'send@wirecracker.com',
             to: email,
             subject: 'Your Verification Code',
             html: `<p>Your verification code is: <strong>${code}</strong></p>`,
