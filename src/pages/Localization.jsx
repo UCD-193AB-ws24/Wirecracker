@@ -252,7 +252,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
         useEffect(() => {
             // Fetch region names when component mounts
-            fetch('http://localhost:5000/api/tables/region_name')
+            fetch(`${backendURL}/api/tables/region_name`)
                 .then(response => response.json())
                 .then(data => {
                     // Extract unique region names
@@ -486,6 +486,37 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const [sliderMarks, setSliderMarks] = useState(electrodeOverviewData[selectedElectrodeType]);
         const [sliderValue, setSliderValue] = useState(electrodeOverviewData[selectedElectrodeType][0]);
 
+        const [labelInput, setLabelInput] = useState("");
+        const [descriptionInput, setDescriptionInput] = useState("");
+        const [electrodeLabelDescriptions, setElectrodeLabelDescriptions] = useState([]);
+        const [hemisphere, setHemisphere] = useState("Right");
+        const [showSuggestions, setShowSuggestions] = useState(false);
+
+        // Fetch electrode label descriptions from endpoint
+        useEffect(() => {
+            fetch(`${backendURL}/api/electrode-label-descriptions`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.electrodeLabelDescriptions) {
+                setElectrodeLabelDescriptions(data.electrodeLabelDescriptions);
+                }
+            })
+            .catch(error => console.error("Error fetching electrode label descriptions:", error));
+        }, []);
+
+        // Update hemisphere based on the label input: if it ends with an apostrophe, use left; otherwise, right.
+        useEffect(() => {
+            if (labelInput.endsWith("'")) {
+            setHemisphere("Left");
+            } else {
+            setHemisphere("Right");
+            }
+        }, [labelInput]);
+    
+        // Filter suggestions based on the letter portion of the label (removing any apostrophes)
+        const letterPortion = labelInput.replace(/'/g, "").toUpperCase();
+        const suggestions = electrodeLabelDescriptions.filter(item => item.label.toUpperCase() === letterPortion);
+
         useEffect(() => {
             const marks = electrodeOverviewData[selectedElectrodeType];
             setSliderMarks(marks);
@@ -512,7 +543,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
         const handleSubmit = (event) => {
             event.preventDefault();
-            const formData = new FormData(event.target);
+            const formData = new FormData();
+            formData.set("label", labelInput);
+            formData.set("description", descriptionInput);
             // Override the contacts field with the slider value and append electrode type.
             formData.set('contacts', sliderValue);
             formData.append('electrodeType', selectedElectrodeType);
@@ -529,13 +562,45 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Electrode Label
                         </label>
-                        <input name="label" className="w-full p-2 border border-gray-300 rounded-md" required />
+                        <input
+                            name="label"
+                            className="w-full p-2 border border-gray-300 rounded-md"
+                            value={labelInput}
+                            onChange={(e) => setLabelInput(e.target.value)}
+                            placeholder="e.g., A or A'"
+                            required
+                        />
                     </div>
-                    <div className="mb-4">
+                    <div className="mb-4 relative">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Description
                         </label>
-                        <input name="description" className="w-full p-2 border border-gray-300 rounded-md" required />
+                        <input
+                            name="description"
+                            className="w-full p-2 border border-gray-300 rounded-md"
+                            value={descriptionInput}
+                            onChange={(e) => setDescriptionInput(e.target.value)}
+                            placeholder="Enter or select description"
+                            onFocus={() => setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                            required
+                        />
+                        {showSuggestions && suggestions.length > 0 && (
+                            <div className="absolute bg-white border border-gray-300 w-full mt-1 rounded-md shadow-lg z-10">
+                            {suggestions.map((s, index) => (
+                                <div
+                                key={index}
+                                className="p-2 hover:bg-gray-100 cursor-pointer"
+                                onMouseDown={() => {
+                                    setDescriptionInput(`${hemisphere} ${s.description}`);
+                                    setShowSuggestions(false);
+                                }}
+                                >
+                                {hemisphere} {s.description}
+                                </div>
+                            ))}
+                            </div>
+                        )}
                     </div>
                     <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
