@@ -704,7 +704,7 @@ const HomePage = () => {
         switch (currentTab.content) {
             case 'home':
                 return (
-                    <div className="h-screen flex justify-around items-baseline">
+                    <div className="flex justify-around items-baseline">
                         {token ? (
                             <>
                                 <Left />
@@ -809,7 +809,7 @@ const HomePage = () => {
     };
 
     return (
-        <div className="h-screen flex flex-col">
+        <div className="flex flex-col">
             <div className="flex border-b">
                 {tabs.map(tab => (
                     <Tab
@@ -850,119 +850,107 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     };
     
     return (
-        <div className="h-screen basis-150 flex flex-col justify-center items-center">
-            {token && 
+        <div className="basis-150 flex flex-col justify-center items-center">
+            <Logo />
+            {token ? (
                 <>
                     <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3">
                         Search the Database
                     </button>
-                </>
-            }
-            <Logo />
-            {!token && <SignInButtons />}
-            <Dropdown 
-                closedText="Create New"
-                openText="Create New ▾"
-                closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
-                openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
-                options="Localization"
-                optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
-                onOptionClick={(option) => {
-                    switch(option) {
-                        case "Localization":
-                            onNewLocalization();
-                            break;
-                    }
-                }}
-            />
-            <input
-                type="file"
-                accept=".csv"
-                onChange={onFileUpload}
-                style={{ display: 'none' }}
-                id="fileInput"
-            />
-            <Dropdown 
-                closedText="Open File"
-                openText="Open File ▾"
-                closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5 transition-colors duration-200 hover:bg-sky-700 hover:text-white"
-                openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 my-5"
-                options="Open-Local Open-Database"
-                optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
-                onOptionClick={(option) => {
-                    switch(option) {
-                        case "Open-Local":
-                            document.getElementById('fileInput').click();
-                            break;
-                        case "Open-Database":
-                            loadDatabaseFiles();
-                            setShowDatabaseModal(true);
-                            break;
-                    }
-                }}
-            />
-            {error && <p className="text-red-500 mt-2">{error}</p>}
+                    <button
+                        className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5 hover:bg-sky-700 hover:text-white"
+                        onClick={onNewLocalization}>
+                        Create New Localization
+                    </button>
+                    <input
+                        type="file"
+                        accept=".csv"
+                        onChange={onFileUpload}
+                        style={{ display: 'none' }}
+                        id="fileInput"
+                    />
+                    <Dropdown 
+                        closedText="Open File"
+                        openText="Open File ▾"
+                        closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5 transition-colors duration-200 hover:bg-sky-700 hover:text-white"
+                        openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
+                        options="Open-Local Open-Database"
+                        optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                        onOptionClick={(option) => {
+                            switch(option) {
+                                case "Open-Local":
+                                    document.getElementById('fileInput').click();
+                                    break;
+                                case "Open-Database":
+                                    loadDatabaseFiles();
+                                    setShowDatabaseModal(true);
+                                    break;
+                            }
+                        }}
+                    />
+                    {error && <p className="text-red-500 mt-2">{error}</p>}
 
-            {/* Database Files Modal */}
-            {showDatabaseModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-xl w-4/5 max-w-3xl max-h-[80vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-2xl font-bold">Open File from Database</h2>
-                            <button 
-                                onClick={() => setShowDatabaseModal(false)}
-                                className="text-gray-500 hover:text-gray-700 text-xl"
-                            >
-                                ×
-                            </button>
-                        </div>
-                        
-                        {isLoading ? (
-                            <div className="text-center py-8">
-                                <p className="text-gray-600">Loading your files...</p>
-                            </div>
-                        ) : databaseFiles.length === 0 ? (
-                            <div className="text-center py-8">
-                                <p className="text-gray-600">No files found. Create a new file to get started.</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y">
-                                {databaseFiles.map(file => (
-                                    <div 
-                                        key={file.file_id}
-                                        className="py-3 px-4 hover:bg-sky-50 cursor-pointer flex justify-between items-center"
-                                        onClick={() => {
-                                            window.handleFileClick(file);
-                                            setShowDatabaseModal(false);
-                                        }}
+                    {/* Database Files Modal */}
+                    {showDatabaseModal && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                            <div className="bg-white p-6 rounded-lg shadow-xl w-4/5 max-w-3xl max-h-[80vh] overflow-y-auto">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-2xl font-bold">Open File from Database</h2>
+                                    <button 
+                                        onClick={() => setShowDatabaseModal(false)}
+                                        className="text-gray-500 hover:text-gray-700 text-xl"
                                     >
-                                        <div className="flex-1">
-                                            <div className="font-medium">{file.filename || 'Unnamed File'}</div>
-                                            <div className="text-sm text-gray-500">
-                                                Created: {new Date(file.creation_date).toLocaleDateString()}
-                                            </div>
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            Modified: {new Date(file.modified_date).toLocaleDateString()}
-                                        </div>
+                                        ×
+                                    </button>
+                                </div>
+                                
+                                {isLoading ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-600">Loading your files...</p>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                ) : databaseFiles.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-600">No files found. Create a new file to get started.</p>
+                                    </div>
+                                ) : (
+                                    <div className="divide-y">
+                                        {databaseFiles.map(file => (
+                                            <div 
+                                                key={file.file_id}
+                                                className="py-3 px-4 hover:bg-sky-50 cursor-pointer flex justify-between items-center"
+                                                onClick={() => {
+                                                    window.handleFileClick(file);
+                                                    setShowDatabaseModal(false);
+                                                }}
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="font-medium">{file.filename || 'Unnamed File'}</div>
+                                                    <div className="text-sm text-gray-500">
+                                                        Created: {new Date(file.creation_date).toLocaleDateString()}
+                                                    </div>
+                                                </div>
+                                                <div className="text-sm text-gray-500">
+                                                    Modified: {new Date(file.modified_date).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
 
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                onClick={() => setShowDatabaseModal(false)}
-                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-                            >
-                                Cancel
-                            </button>
+                                <div className="mt-6 flex justify-end">
+                                    <button
+                                        onClick={() => setShowDatabaseModal(false)}
+                                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            )}
+                    )}
+                </>
+            ) : <SignInButtons />}
         </div>
     );
 };
@@ -970,7 +958,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
 const Left = () => {
     return (
         <div className="basis-80">
-            <h2 className="text-6xl font-bold m-3">My Stuff</h2>
+            <h2 className="text-5xl font-bold m-3">My Stuff</h2>
             <ToReview />
             <Approved />
         </div>
@@ -1011,7 +999,7 @@ const Right = ({ onOpenFile }) => {
     
     return (
         <div className="basis-80 justify-center">
-            <h3 className="text-4xl font-bold">Recent Files</h3>
+            <h3 className="text-5xl font-bold">Recent Files</h3>
             <div className="mb-5">
                 {isLoading ? (
                     <div className="text-gray-500">Loading...</div>
