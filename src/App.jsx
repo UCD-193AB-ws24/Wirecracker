@@ -704,7 +704,10 @@ const HomePage = () => {
         switch (currentTab.content) {
             case 'home':
                 return (
-                    <div className="flex justify-around items-baseline">
+                    <div className="h-full px-2 flex justify-around items-baseline
+                                    md:px-5
+                                    lg:px-10
+                                    xl:px-15">
                         {token ? (
                             <>
                                 <Left />
@@ -809,7 +812,7 @@ const HomePage = () => {
     };
 
     return (
-        <div className="flex flex-col">
+        <div className="h-dvh flex flex-col">
             <div className="flex border-b">
                 {tabs.map(tab => (
                     <Tab
@@ -830,7 +833,7 @@ const HomePage = () => {
             </div>
             {token && <UserProfile onSignOut={handleSignOut} />}
 
-            <div className="flex-1">
+            <div className="grow">
                 {renderTabContent()}
             </div>
         </div>
@@ -850,15 +853,24 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     };
     
     return (
-        <div className="basis-150 flex flex-col justify-center items-center">
+        <div className="basis-7 px-2 flex-auto self-center flex flex-col justify-center items-center
+                        md:px-7
+                        lg:px-12
+                        xl:px-15">
             <Logo />
             {token ? (
                 <>
-                    <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3">
+                    <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-34 py-1 text-xs
+                                       md:w-40 md:text-sm
+                                       lg:w-48 lg:py-2 lg:text-md
+                                       xl:w-64 xl:py-3 xl:text-lg">
                         Search the Database
                     </button>
                     <button
-                        className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5 hover:bg-sky-700 hover:text-white"
+                        className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-34 h-12 mt-3 text-xs hover:bg-sky-700 hover:text-white
+                                   md:w-40 md:text-sm
+                                   lg:w-48 lg:mt-4 lg:py-2 lg:text-md
+                                   xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
                         onClick={onNewLocalization}>
                         Create New Localization
                     </button>
@@ -872,11 +884,23 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                     <Dropdown 
                         closedText="Open File"
                         openText="Open File ▾"
-                        closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5 transition-colors duration-200 hover:bg-sky-700 hover:text-white"
-                        openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
+                        closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-34 h-12 mt-3 text-xs transition-colors duration-200 hover:bg-sky-700 hover:text-white
+                                         md:w-40 md:text-sm
+                                         lg:w-48 lg:mt-4 lg:text-md
+                                         xl:w-64 xl:mt-5 xl:text-lg"
+                        openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-3 text-xs
+                                       md:w-40 md:text-sm
+                                       lg:w-48 lg:mt-4 lg:text-md
+                                       xl:w-64 xl:mt-5 xl:text-lg"
                         options="Open-Local Open-Database"
-                        optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                        optionClassName="block w-34 py-1 text-xs text-gray-700 hover:bg-gray-100
+                                         md:w-40
+                                         lg:w-48 lg:py-2 lg:text-sm
+                                         xl:w-64"
+                        menuClassName="w-34 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none
+                                       md:w-40
+                                       lg:w-48
+                                       xl:w-64"
                         onOptionClick={(option) => {
                             switch(option) {
                                 case "Open-Local":
@@ -957,8 +981,13 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
 
 const Left = () => {
     return (
-        <div className="basis-80">
-            <h2 className="text-5xl font-bold m-3">My Stuff</h2>
+        <div className="basis-6 flex-auto">
+            <h2 className="text-xl font-bold m-1 whitespace-nowrap
+                           md:text-2xl
+                           lg:text-3xl lg:m-2
+                           xl:text-5xl xl:m-3">
+                My Stuff
+            </h2>
             <ToReview />
             <Approved />
         </div>
@@ -998,8 +1027,13 @@ const Right = ({ onOpenFile }) => {
     };
     
     return (
-        <div className="basis-80 justify-center">
-            <h3 className="text-5xl font-bold">Recent Files</h3>
+        <div className="basis-6 flex-auto justify-center">
+            <h3 className="text-xl font-bold
+                           md:text-2xl
+                           lg:text-3xl
+                           xl:text-5xl">
+                Recent Files
+            </h3>
             <div className="mb-5">
                 {isLoading ? (
                     <div className="text-gray-500">Loading...</div>
@@ -1009,10 +1043,14 @@ const Right = ({ onOpenFile }) => {
                             <div 
                                 id={`file-${file.file_id}`}
                                 key={file.file_id} 
-                                className="py-1 hover:bg-sky-50 hover:text-sky-600 cursor-pointer rounded px-2 transition-colors duration-150 flex justify-between items-center"
+                                className="hover:bg-sky-50 hover:text-sky-600 cursor-pointer rounded pt-1 transition-colors duration-150 flex justify-between items-center
+                                           lg:pt-2"
                                 onClick={() => handleFileClick(file)}
                             >
-                                <div className="truncate max-w-[200px] filename">
+                                <div className="text-xs truncate max-w-34 filename px-1
+                                                md:max-w-42
+                                                lg:max-w-50 lg:text-sm lg:px-2
+                                                xl:max-w-64">
                                     {file.filename || 'Unnamed Localization'}
                                 </div>
                                 <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
@@ -1032,7 +1070,12 @@ const Right = ({ onOpenFile }) => {
 const Logo = () => {
     return (
         <div className="flex flex-col items-center m-5">
-            <h1 className="text-8xl font-bold mt-5">Wirecracker</h1>
+            <h1 className="text-2xl font-bold mt-5
+                           md:text-3xl
+                           lg:text-5xl
+                           xl:text-8xl">
+                Wirecracker
+            </h1>
         </div>
     );
 };
@@ -1045,7 +1088,8 @@ export const GoogleSignInButton = () => {
     return (
         <button
             onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50
+                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
             <FcGoogle className="h-5 w-5 mr-2" />
             Sign in with Google
@@ -1056,16 +1100,36 @@ export const GoogleSignInButton = () => {
 const SignInButtons = () => {
     return (
         <div>
-            <div className="flex m-10">
+            <div className="flex justify-center m-5
+                            md:m-6
+                            lg:m-8
+                            xl:m-10">
                 <Link to="/signup">
-                    <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3 mr-5">Sign Up</button>
+                    <button
+                        className="bg-slate-300 font-semibold rounded-xl w-24 py-1 mr-2 text-xs
+                                   md:w-28 md:mr-3
+                                   lg:w-32 lg:py-2 lg:mr-4 lg:text-sm
+                                   xl:w-40 xl:py-3 xl:mr-5"
+                    >
+                        Sign Up
+                    </button>
                 </Link>
                 <Link to="/login">
-                    <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3">Log In</button>
+                    <button
+                        className="bg-slate-300 font-semibold rounded-xl w-24 py-1 text-xs
+                                   md:w-28
+                                   lg:w-32 lg:py-2 lg:text-sm
+                                   xl:w-40 xl:py-3"
+                    >
+                        Log In
+                    </button>
                 </Link>
             </div>
-            <div className="flex m-10 justify-center">
-                <div className="w-[335px]">
+            <div className="flex m-5 justify-center
+                            md:m-6
+                            lg:m-8
+                            xl:m-10">
+                <div className="w-50 md:w-59 lg:w-68 xl:w-85">
                     <GoogleSignInButton />
                 </div>
             </div>
@@ -1078,7 +1142,10 @@ const ToReview = () => {
 
     return (
         <div
-            className="text-violet-500 text-2xl font-semibold flex gap-x-2"
+            className="text-violet-500 text-base font-semibold flex gap-x-2
+                       md:text-lg
+                       lg:text-xl
+                       xl:text-2xl"
             onClick={() => setIsReviewOpen(!isReviewOpen)}
         >
             {isReviewOpen ? (
@@ -1105,7 +1172,10 @@ const Approved = () => {
 
     return (
         <div
-            className="text-green-500 text-2xl font-semibold flex gap-x-2"
+            className="text-green-500 text-base font-semibold flex gap-x-2
+                       md:text-lg
+                       lg:text-xl
+                       xl:text-2xl"
             onClick={() => setIsApprovedOpen(!isApprovedOpen)}
         >
             {isApprovedOpen ? (
