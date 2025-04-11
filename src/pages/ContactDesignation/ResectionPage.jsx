@@ -68,6 +68,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     const [maxSubCanvas1Slices, setMaxSubCanvas1Slices] = useState(savedState.canvas_sub0_maxSlice || 0);
     const [hoveredMarker, setHoveredMarker] = useState(savedState.canvas_hoveredMarker || null);
 
+    const [selectedContacts, setSelectedContacts] = useState([]);
+    const [isSelecting, setIsSelecting] = useState(false);
+    const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
+    const [selectionEnd, setSelectionEnd] = useState({ x: 0, y: 0 });
+
     const [focus, setFocus] = useState(savedState.focusedContact || null);
 
     const mainCanvasRef = useRef(null);
@@ -155,6 +160,20 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                 imageDataCache.current[cacheKey] = imageData;
                 ctx.putImageData(imageData, 0, 0);
             }
+
+            // Selection rectangle
+            if (canvasRef === mainCanvasRef && isSelecting) {
+                ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                const width = selectionEnd.x - selectionStart.x;
+                const height = selectionEnd.y - selectionStart.y;
+                ctx.rect(selectionStart.x, selectionStart.y, width, height);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
             drawMarkers(ctx, dir, slice, viewSize);
             canvas.rafId = null;
         });
@@ -250,6 +269,9 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
                 ctx.beginPath();
                 let markSize = viewSize / 100 - 1 - dist * 2;
+                if (selectedContacts.includes(targetContact.id)) {
+                    markSize += 2;
+                }
                 if (focus !== null && focus.id === targetContact.id) {
                     markSize += 2;
                 }
@@ -266,11 +288,9 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                         ctx.fillStyle = "rgb(139 139 139)"; break;
                 }
                 ctx.fill();
-                if (focus !== null && focus.id === targetContact.id) {
-                    ctx.strokeStyle = "rgb(0, 255, 0)"; // Green color for focused contact
-                } else {
-                    ctx.strokeStyle = targetContact.surgeonMark ? 'black' : ctx.fillStyle;
-                }
+
+                ctx.strokeStyle = targetContact.surgeonMark ? 'black' : ctx.fillStyle;
+
                 ctx.stroke();
 
                 // Store the marker position
@@ -301,9 +321,53 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     };
 
     // Effects to redraw canvases when dependencies change
-    useEffect(redrawMainCanvas, [sliceIndex, direction, niiData, coordinates, markers]);
-    useEffect(redrawSubCanvas0, [subCanvas0SliceIndex, subCanvas0Direction, niiData, coordinates]);
-    useEffect(redrawSubCanvas1, [subCanvas1SliceIndex, subCanvas1Direction, niiData, coordinates]);
+    useEffect(redrawMainCanvas, [sliceIndex, direction, niiData, coordinates, markers, focus, selectedContacts]);
+    useEffect(redrawSubCanvas0, [subCanvas0SliceIndex, subCanvas0Direction, niiData, coordinates, focus, selectedContacts]);
+    useEffect(redrawSubCanvas1, [subCanvas1SliceIndex, subCanvas1Direction, niiData, coordinates, focus, selectedContacts]);
+
+    const handleMouseDown = (event, canvasRef) => {
+        if (canvasRef !== mainCanvasRef) return;
+
+        const mouseX = event.offsetX;
+        const mouseY = event.offsetY;
+
+        // Check if user is clicking on a marker
+        const clickedMarker = markers.find(marker => {
+            const distance = Math.sqrt((mouseX - marker.x) ** 2 + (mouseY - marker.y) ** 2);
+            return distance <= 6;
+        });
+
+        if (!clickedMarker && event.button === 0) {
+            // Start selection if not clicking on a marker and left mouse button
+            setIsSelecting(true);
+            setSelectionStart({ x: mouseX, y: mouseY });
+            setSelectionEnd({ x: mouseX, y: mouseY });
+        }
+    };
+
+    const handleMouseUp = (event, canvasRef) => {
+        if (canvasRef !== mainCanvasRef || !isSelecting) return;
+
+        setIsSelecting(false);
+
+        // Calculate selection rectangle
+        const x1 = Math.min(selectionStart.x, selectionEnd.x);
+        const y1 = Math.min(selectionStart.y, selectionEnd.y);
+        const x2 = Math.max(selectionStart.x, selectionEnd.x);
+        const y2 = Math.max(selectionStart.y, selectionEnd.y);
+
+        // Find markers within the selection rectangle
+        const selectedMarkers = markers.filter(marker => {
+            return marker.x >= x1 && marker.x <= x2 && marker.y >= y1 && marker.y <= y2;
+        });
+
+        // Update selected contacts
+        if (selectedMarkers.length > 0) {
+            setSelectedContacts(selectedMarkers.map(m => m.contact.id));
+        } else {
+            setSelectedContacts([]);
+        }
+    };
 
     // Handle mouse move to detect hover over markers
     const handleMouseMove = (event, canvasRef) => {
@@ -312,6 +376,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
         const mouseX = event.offsetX;
         const mouseY = event.offsetY;
+
+        if (isSelecting && canvasRef === mainCanvasRef) {
+            setSelectionEnd({ x: mouseX, y: mouseY });
+            return;
+        }
 
         // Check if the mouse is over any marker
         const hovered = markers.find(marker => {
@@ -384,12 +453,54 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         markers.forEach(marker => {
             const distance = Math.sqrt((clickX - marker.x) ** 2 + (clickY - marker.y) ** 2);
             if (distance <= 6) {
-                onContactClick(marker.contact.id, (contact) => {
-                    return {
-                        ...contact,
-                        surgeonMark: !(contact.surgeonMark)
-                    };
-                });
+                switch (event.detail) {
+                    case 1:
+                        if (selectedContacts.length > 0 && selectedContacts.includes(marker.contact.id)) {
+                            selectedContacts.forEach(contactId => {
+                                onContactClick(contactId, (contact) => {
+                                    return {
+                                        ...contact,
+                                        surgeonMark: !(contact.surgeonMark)
+                                    };
+                                });
+                            });
+                        } else {
+                            // Otherwise just mark the clicked contact
+                            onContactClick(marker.contact.id, (contact) => {
+                                return {
+                                    ...contact,
+                                    surgeonMark: !(contact.surgeonMark)
+                                };
+                            });
+
+                            setSelectedContacts([]);
+                        }
+
+
+                        break;
+                    case 2:
+                        // UNDO the first click
+                        onContactClick(marker.contact.id, (contact) => {
+                            return {
+                                ...contact,
+                                focus: true,
+                                surgeonMark: !(contact.surgeonMark)
+                            };
+                        });
+                        onContactClick(focus.id, (contact) => {
+                            return {
+                                ...contact,
+                                focus: false
+                            };
+                        });
+                        setFocus(marker.contact);
+
+                        setSelectedContacts([]);
+
+                        break;
+                }
+
+
                 setHoveredMarker(
                     {
                         ...marker,
@@ -411,17 +522,23 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         const handleClick = (e) => handleCanvasClick(e, mainCanvasRef);
         const handleMove = (e) => handleMouseMove(e, mainCanvasRef);
         const handleLeave = () => handleMouseLeave();
+        const handleDown = (e) => handleMouseDown(e, mainCanvasRef);
+        const handleUp = (e) => handleMouseUp(e, mainCanvasRef);
 
         if (mainCanvas) {
             mainCanvas.addEventListener('wheel', handleWheel);
             mainCanvas.addEventListener('click', handleClick);
             mainCanvas.addEventListener('mousemove', handleMove);
             mainCanvas.addEventListener('mouseleave', handleLeave);
+            mainCanvas.addEventListener('mousedown', handleDown);
+            mainCanvas.addEventListener('mouseup', handleUp);
             return () => {
                 mainCanvas.removeEventListener('wheel', handleWheel);
                 mainCanvas.removeEventListener('click', handleClick);
                 mainCanvas.removeEventListener('mousemove', handleMove);
                 mainCanvas.removeEventListener('mouseleave', handleLeave);
+                mainCanvas.removeEventListener('mousedown', handleDown);
+                mainCanvas.removeEventListener('mouseup', handleUp);
             };
         }
     }, [isLoaded, markers]);
@@ -533,6 +650,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
             clearImageDataCache();
 
             setHoveredMarker(null);
+            setSelectedContacts([]);
 
             onLoad(true);
         } catch (error) {
@@ -693,11 +811,14 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                             height={fixedMainViewSize}
                             className={"max-w-[" + fixedMainViewSize + "] max-h-[" + fixedMainViewSize + "] border border-gray-300 rounded-lg shadow-sm"}
                         />
-                        {hoveredMarker && (
-                            <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
-                                X: {hoveredMarker.originalCoord[0]}, Y: {hoveredMarker.originalCoord[1]}, Z: {hoveredMarker.originalCoord[2]}
-                            </div>
-                        )}
+                        <div className='absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm flex-row'>
+                            {hoveredMarker && (
+                                <p className='justify-end flex'>X: {hoveredMarker.originalCoord[0]}, Y: {hoveredMarker.originalCoord[1]}, Z: {hoveredMarker.originalCoord[2]}</p>
+                            )}
+                            {selectedContacts.length !== 0 && (
+                                <p className='justify-end flex'>Selected: {selectedContacts.join(", ")}</p>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex flex-col gap-6">
