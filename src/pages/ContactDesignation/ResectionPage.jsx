@@ -480,13 +480,24 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                         break;
                     case 2:
                         // UNDO the first click
-                        onContactClick(marker.contact.id, (contact) => {
-                            return {
-                                ...contact,
-                                focus: true,
-                                surgeonMark: !(contact.surgeonMark)
-                            };
-                        });
+                        if (selectedContacts.length > 0 && selectedContacts.includes(marker.contact.id)) {
+                            selectedContacts.forEach(contactId => {
+                                onContactClick(contactId, (contact) => {
+                                    return {
+                                        ...contact,
+                                        surgeonMark: !(contact.surgeonMark)
+                                    };
+                                });
+                            });
+                        } else {
+                            onContactClick(marker.contact.id, (contact) => {
+                                return {
+                                    ...contact,
+                                    focus: true,
+                                    surgeonMark: !(contact.surgeonMark)
+                                };
+                            });
+                        }
                         onContactClick(focus.id, (contact) => {
                             return {
                                 ...contact,
