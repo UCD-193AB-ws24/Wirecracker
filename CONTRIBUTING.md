@@ -88,13 +88,19 @@ Before you submit your Pull Request (PR) consider the following guidelines:
      ```
     Note: the optional commit `--all` command line option will automatically "add" and "rm" edited files.
 
-9. Push your branch to GitHub:
+9. Update documentation:
+
+     ```shell
+     npm run generate-docs
+     ```
+
+10. Push your branch to GitHub:
 
     ```shell
     git push origin my-fix-branch
     ```
 
-10. In GitHub, send a pull request to `Wirecracker:main`.
+11. In GitHub, send a pull request to `Wirecracker:main`.
 
 #### Addressing review feedback
 
