@@ -200,9 +200,12 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
             const { x, y, z } = transformedCoord;
             let canvasX, canvasY;
             let originalCoord = [0, 0, 0];
+            let dist = 0;
+            const threshold = 1
             switch (dir) {
                 case 1:
-                    if (Math.round(x) == slice) {
+                    dist = Math.abs(x - slice);
+                    if (dist < threshold) {
                         canvasX = (y * scale) + offsetX;
                         canvasY = maxDim - (z * scale) - offsetY;
                         originalCoord[0] = y;
@@ -211,7 +214,8 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     }
                     break;
                 case 2:
-                    if (Math.round(y) == slice) {
+                    dist = Math.abs(y - slice);
+                    if (dist < threshold) {
                         canvasX = (x * scale) + offsetX;
                         canvasY = maxDim - (z * scale) - offsetY;
                         originalCoord[0] = x;
@@ -220,7 +224,8 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     }
                     break;
                 case 3:
-                    if (Math.round(z) == slice) {
+                    dist = Math.abs(z - slice);
+                    if (dist < threshold) {
                         canvasX = (x * scale) + offsetX;
                         canvasY = maxDim - (y * scale) - offsetY;
                         originalCoord[0] = x;
@@ -244,7 +249,10 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                 }
 
                 ctx.beginPath();
-                const markSize = viewSize / 100 - 1;
+                let markSize = viewSize / 100 - 1 - dist * 2;
+                if (focus !== null && focus.id === targetContact.id) {
+                    markSize += 2;
+                }
                 ctx.arc(canvasX, canvasY, markSize, 0, 2 * Math.PI);
 
                 switch (targetContact.mark) {
