@@ -5,16 +5,14 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 
 const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
     const [imageLoaded, setImageLoaded] = useState(savedState.isLoaded || false);
-    const [focusedContact, setFocusedContact] = useState(savedState.focusedContact || null);
 
     useEffect(() => {
         onStateChange({
             ...savedState,
             layout: "resection",
             //isLoaded: imageLoaded,
-            focusedContact: focusedContact
         });
-    }, [imageLoaded, focusedContact]);
+    }, [imageLoaded]);
 
     return (
         <div className="flex-1">
@@ -24,7 +22,6 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
                 onLoad={setImageLoaded}
                 electrodes={electrodes}
                 onContactClick={onClick}
-                focus={focusedContact}
                 onStateChange={onStateChange}
                 savedState={savedState} />
             </div>
@@ -40,7 +37,6 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
                                             key={contact.id}
                                             contact={contact}
                                             onClick={onClick}
-                                            setFocus={setFocusedContact}
                                         />
                                     ))}
                                 </ul>
@@ -53,7 +49,7 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
     );
 };
 
-const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onStateChange, savedState = {} }) => {
+const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChange, savedState = {} }) => {
     const fixedMainViewSize = 700;
     const fixedSubViewSize = 520;
 
@@ -71,6 +67,9 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
     const [subCanvas1SliceIndex, setSubCanvas1SliceIndex] = useState(savedState.canvas_sub0_slice || 0);
     const [maxSubCanvas1Slices, setMaxSubCanvas1Slices] = useState(savedState.canvas_sub0_maxSlice || 0);
     const [hoveredMarker, setHoveredMarker] = useState(savedState.canvas_hoveredMarker || null);
+
+    const [focus, setFocus] = useState(savedState.focusedContact || null);
+
     const mainCanvasRef = useRef(null);
     const subCanvas0Ref = useRef(null);
     const subCanvas1Ref = useRef(null);
@@ -140,7 +139,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
         imageDataCache.current = {};
     };
 
-    // Throttled redraw functions using requestAnimationFrame
     const redrawCanvas = (canvasRef, dir, slice, viewSize, cacheKey) => {
         const canvas = canvasRef.current;
         if (!canvas || !niiData) return;
@@ -397,7 +395,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
         });
     };
 
-    // Stable event listeners using refs and proper dependencies
     useEffect(() => {
         if (!isLoaded) return;
 
@@ -419,7 +416,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
                 mainCanvas.removeEventListener('mouseleave', handleLeave);
             };
         }
-    }, [isLoaded, markers]); // Re-attach when canvas becomes available
+    }, [isLoaded, markers]);
 
     const handleSubCanvasClick = useCallback((clickedSubIndex) => {
         // Get current directions before any updates
@@ -743,41 +740,19 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, focus, onSta
     );
 };
 
-const Contact = ({ contact, onClick, setFocus }) => {
-    const [clickCount, setClickCount] = useState(0);
-
-    useEffect(() => {
-        let singleClickTimer;
-
-        if (clickCount === 1) {
-        singleClickTimer = setTimeout(() => {
-            onClick(contact.id, (contact) => {
-                return {
-                    ...contact,
-                    surgeonMark: !(contact.surgeonMark)
-                };
-            });
-            setClickCount(0);
-        }, 200); // Delay to differentiate between single and double clicks
-        } else if (clickCount === 2) {
-            onClick(contact.id, (contact) => {
-                return {
-                    ...contact,
-                    focus: true
-                };
-            });
-            setClickCount(0);
-            setFocus(contact);
-        }
-
-
-        return () => clearTimeout(singleClickTimer);
-    }, [clickCount]);
+const Contact = ({ contact, onClick }) => {
 
     return (
         <li
             className={`w-[100px] p-4 rounded-lg shadow-sm cursor-pointer flex-shrink-0 transition-transform transform hover:scale-105 ${getMarkColor(contact)}`}
-            onClick={() => setClickCount(clickCount + 1)}
+            onClick={() => {
+                onClick(contact.id, (contact) => {
+                    return {
+                        ...contact,
+                        surgeonMark: !(contact.surgeonMark)
+                    };
+                });
+            }}
         >
             <p className="text-xl font-bold text-gray-800">{contact.index}</p>
             <p className="text-sm font-medium text-gray-600 truncate" title={contact.associatedLocation}>
