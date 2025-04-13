@@ -5,6 +5,7 @@ import 'reactjs-popup/dist/index.css';
 import { saveCSVFile, Identifiers } from '../utils/CSVParser.js';
 import { supabase } from '../utils/supabaseClient';
 import config from "../../config.json" with { type: 'json' };
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 const backendURL = config.backendURL;
 
@@ -436,7 +437,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         return (
             <div className="w-full bg-white rounded-lg shadow-md mb-5 overflow-hidden">
                 <button
-                    className="w-full flex justify-between items-center p-4 bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors duration-200"
+                    className="w-full flex justify-between items-center p-4 bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors duration-200 relative group"
                     onClick={() => {
                         if (label === expandedElectrode) {
                             setExpandedElectrode('');
@@ -446,11 +447,35 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     }}
                     key={label}>
                     <div className="text-xl">{label}</div>
-                    <div className="text-lg">{electrodes[label].description}</div>
+                    <div className="flex items-center gap-4">
+                        <div className="text-lg">{electrodes[label].description}</div>
+                        <div className="flex gap-2">
+                            <button 
+                                className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center hover:bg-green-600 transition-colors duration-200"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Edit functionality will be added later
+                                }}
+                                title="Edit electrode"
+                            >
+                                <PencilIcon className="w-4 h-4 text-white" />
+                            </button>
+                            <button 
+                                className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Delete functionality will be added later
+                                }}
+                                title="Delete electrode"
+                            >
+                                <TrashIcon className="w-4 h-4 text-white" />
+                            </button>
+                        </div>
+                    </div>
                 </button>
                 {label === expandedElectrode &&
                     <div className="p-4 bg-gray-50">
-                        <div className="flex gap-1 flex-wrap overflow-x-auto"> {/* Delete flex-wrap to make it horizontal scroll */}
+                        <div className="flex gap-1 flex-wrap overflow-x-auto">
                             {Object.keys(electrodes[label]).map((key) => {
                                 const keyNum = parseInt(key);
 
@@ -531,10 +556,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
         const handleInputChange = (e) => {
             let value = parseInt(e.target.value, 10);
-            const minValue = Math.min(...sliderMarks);
-            const maxValue = Math.max(...sliderMarks);
-            if (value < minValue) value = minValue;
-            if (value > maxValue) value = maxValue;
+            // Allow any positive integer value
+            if (isNaN(value) || value < 1) value = 1;
             setSliderValue(value);
         };
 
@@ -635,8 +658,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             />
                             <input 
                                 type="number" 
-                                min={minValue} 
-                                max={maxValue} 
+                                min="1"
                                 value={sliderValue} 
                                 onChange={handleInputChange} 
                                 className="ml-2 w-16 p-2 border border-gray-300 rounded-md"
@@ -647,8 +669,23 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 <option key={mark} value={mark} />
                             ))}
                         </datalist>
+                        <div className="flex mt-0 relative" style={{ width: 'calc(100% - 5.625em)', marginLeft: '0.6em' }}>
+                            {sliderMarks.map((mark, index) => {
+                                // Calculate position as percentage
+                                const position = ((mark - minValue) / (maxValue - minValue)) * 100;
+                                return (
+                                    <div 
+                                        key={mark} 
+                                        className="text-xs text-gray-500 absolute"
+                                        style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
+                                    >
+                                        {mark}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
-                    <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200">
+                    <button type="submit" className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200">
                         Add
                     </button>
                 </form>
