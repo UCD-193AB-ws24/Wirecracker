@@ -434,6 +434,18 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
     }) => {
         const [label, setLabel] = useState(name);
 
+        const handleDelete = () => {
+            setElectrodes(prevElectrodes => {
+                const newElectrodes = { ...prevElectrodes };
+                delete newElectrodes[label];
+                return newElectrodes;
+            });
+            // If the deleted electrode was expanded, collapse it
+            if (label === expandedElectrode) {
+                setExpandedElectrode('');
+            }
+        };
+
         return (
             <div className="w-full bg-white rounded-lg shadow-md mb-5 overflow-hidden">
                 <button
@@ -460,16 +472,45 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             >
                                 <PencilIcon className="w-4 h-4 text-white" />
                             </button>
-                            <button 
-                                className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Delete functionality will be added later
-                                }}
-                                title="Delete electrode"
+                            <Popup
+                                trigger={
+                                    <button 
+                                        className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                        }}
+                                        title="Delete electrode"
+                                    >
+                                        <TrashIcon className="w-4 h-4 text-white" />
+                                    </button>
+                                }
+                                modal
+                                nested
                             >
-                                <TrashIcon className="w-4 h-4 text-white" />
-                            </button>
+                                {close => (
+                                    <div className="modal bg-white p-6 rounded-lg shadow-lg">
+                                        <h4 className="text-lg font-semibold mb-4">Delete Electrode</h4>
+                                        <p className="text-gray-600 mb-6">Are you sure you want to delete electrode {label}? This action cannot be undone.</p>
+                                        <div className="flex justify-end gap-4">
+                                            <button
+                                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors duration-200"
+                                                onClick={close}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors duration-200"
+                                                onClick={() => {
+                                                    handleDelete();
+                                                    close();
+                                                }}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </Popup>
                         </div>
                     </div>
                 </button>
