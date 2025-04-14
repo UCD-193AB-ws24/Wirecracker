@@ -1110,27 +1110,105 @@ const SignInButtons = () => {
 
 const ToReview = () => {
     const [isReviewOpen, setIsReviewOpen] = useState(false);
+    const [sharedFiles, setSharedFiles] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchSharedFiles = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+
+                // Get current user's ID
+                const { data: session } = await supabase
+                    .from('sessions')
+                    .select('user_id')
+                    .eq('token', token)
+                    .single();
+
+                if (!session) return;
+
+                // Get files shared with the user
+                const { data: shares, error } = await supabase
+                    .from('fileshares')
+                    .select(`
+                        file_id,
+                        permission_level,
+                        shared_date,
+                        files:file_id (
+                            filename,
+                            creation_date,
+                            modified_date,
+                            owner_user_id
+                        )
+                    `)
+                    .eq('shared_with_user_id', session.user_id);
+
+                if (error) throw error;
+
+                setSharedFiles(shares || []);
+            } catch (error) {
+                console.error('Error fetching shared files:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchSharedFiles();
+    }, []);
 
     return (
-        <div
-            className="text-violet-500 text-2xl font-semibold flex gap-x-2"
-            onClick={() => setIsReviewOpen(!isReviewOpen)}
-        >
-            {isReviewOpen ? (
-                <>
-                    <div className="before:content-['▾']"></div>
-                    <div className="mb-5">
-                        <div>To Review</div>
-                    </div>
-                </>
-            ) : (
-                <>
-                    {/* Triangle */}
-                    <div className="before:content-['▸']"></div>
-                    <div>To Review</div>
-                </>
-            )}
+        <div className="mb-4">
+            <div
+                className="text-violet-500 text-2xl font-semibold flex gap-x-2 cursor-pointer"
+                onClick={() => setIsReviewOpen(!isReviewOpen)}
+            >
+                <div className={`transition-transform ${isReviewOpen ? 'rotate-90' : ''}`}>
+                    ▸
+                </div>
+                <div>To Review</div>
+            </div>
             
+            {isReviewOpen && (
+                <div className="ml-6 mt-2">
+                    {isLoading ? (
+                        <div className="text-gray-500">Loading...</div>
+                    ) : sharedFiles.length === 0 ? (
+                        <div className="text-gray-500">No files to review</div>
+                    ) : (
+                        <div className="space-y-2">
+                            {sharedFiles.map((share) => (
+                                <div
+                                    key={share.file_id}
+                                    className="flex items-center justify-between py-1 px-2 hover:bg-violet-50 rounded cursor-pointer"
+                                    onClick={() => {
+                                        // Dispatch event to open the file
+                                        const event = new CustomEvent('openSharedFile', {
+                                            detail: {
+                                                fileId: share.file_id,
+                                                fileName: share.files.filename
+                                            }
+                                        });
+                                        window.dispatchEvent(event);
+                                    }}
+                                >
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-gray-700">
+                                            {share.files.filename}
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                            Shared: {new Date(share.shared_date).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs text-violet-500 font-medium">
+                                        {share.permission_level}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
