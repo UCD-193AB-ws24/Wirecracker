@@ -59,10 +59,14 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const label = formData.get('label').replace(/[,;]/g, '');
         const description = formData.get('description').replace(/[,;]/g, '');
         const numContacts = formData.get('contacts');
+        const electrodeType = formData.get('electrodeType') || 'DIXI'; // Default to DIXI if not specified
 
         setElectrodes(prevElectrodes => {
             const tempElectrodes = { ...prevElectrodes };
-            tempElectrodes[label] = { description: description };
+            tempElectrodes[label] = { 
+                description: description,
+                type: electrodeType // Store the electrode type
+            };
             for (let i = 1; i <= numContacts; i++) {
                 tempElectrodes[label][i] = {
                     contactDescription: description,

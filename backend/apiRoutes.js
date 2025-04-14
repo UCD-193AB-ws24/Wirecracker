@@ -595,8 +595,9 @@ async function saveLocalizationToDatabase(data, fileId) {
     const electrodeData = Object.keys(data).map(label => ({
       acronym: generateAcronym(data[label].description),  // Generate acronym from description
       description: data[label].description, // Use description as electrode_desc
-      contact_number: Object.keys(data[label]).length - 1, // Subtract 1 to exclude the 'description' key
-      label: label
+      contact_number: Object.keys(data[label]).filter(key => key !== 'description' && key !== 'type').length, // Subtract description and type keys
+      label: label,
+      type: data[label].type || 'DIXI' // Include the electrode type, default to DIXI if not specified
     }));
 
     console.log(`Inserting ${electrodeData.length} electrodes...`);
