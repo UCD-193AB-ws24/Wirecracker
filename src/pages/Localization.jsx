@@ -63,16 +63,82 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
         setElectrodes(prevElectrodes => {
             const tempElectrodes = { ...prevElectrodes };
-            tempElectrodes[label] = { 
-                description: description,
-                type: electrodeType // Store the electrode type
-            };
-            for (let i = 1; i <= numContacts; i++) {
-                tempElectrodes[label][i] = {
-                    contactDescription: description,
-                    associatedLocation: ''
+            
+            // Check if we're editing an existing electrode
+            const existingElectrode = tempElectrodes[label];
+            
+            if (existingElectrode) {
+                // Store the old description for comparison
+                const oldDescription = existingElectrode.description;
+                
+                // Update the existing electrode's description and type
+                tempElectrodes[label].description = description;
+                tempElectrodes[label].type = electrodeType;
+                
+                // If the number of contacts has changed, update accordingly
+                const currentContacts = Object.keys(existingElectrode).filter(key => !isNaN(parseInt(key)));
+                const currentCount = currentContacts.length;
+                const newCount = parseInt(numContacts);
+                
+                if (newCount > currentCount) {
+                    // Add new contacts
+                    for (let i = currentCount + 1; i <= newCount; i++) {
+                        tempElectrodes[label][i] = {
+                            contactDescription: description,
+                            associatedLocation: ''
+                        };
+                    }
+                } else if (newCount < currentCount) {
+                    // Remove excess contacts
+                    for (let i = newCount + 1; i <= currentCount; i++) {
+                        delete tempElectrodes[label][i];
+                    }
+                }
+                
+                // Update existing contacts that used the old electrode description
+                for (let i = 1; i <= Math.min(currentCount, newCount); i++) {
+                    const contact = tempElectrodes[label][i];
+                    
+                    // For GM/GM contacts, we need to check the parts separately
+                    if (contact.associatedLocation === 'GM/GM') {
+                        // For GM/GM, check if either part matches the old description
+                        const [desc1, desc2] = contact.contactDescription.split('+');
+                        
+                        if (desc1 === oldDescription) {
+                            contact.contactDescription = `${description}+${desc2}`;
+                        } else if (desc2 === oldDescription) {
+                            contact.contactDescription = `${desc1}+${description}`;
+                        }
+                    }
+                    // For other contact types, check if the entire description matches
+                    else if (contact.contactDescription === oldDescription) {
+                        if (contact.associatedLocation === 'GM') {
+                            contact.contactDescription = description;
+                        } else if (contact.associatedLocation === 'GM/WM') {
+                            contact.contactDescription = description;
+                        } else if (contact.associatedLocation === 'WM') {
+                            contact.contactDescription = description;
+                        } else if (contact.associatedLocation === 'OOB') {
+                            contact.contactDescription = description;
+                        }
+                    }
+                }
+            } else {
+                // Create a new electrode
+                tempElectrodes[label] = { 
+                    description: description,
+                    type: electrodeType
                 };
+                
+                // Add contacts
+                for (let i = 1; i <= numContacts; i++) {
+                    tempElectrodes[label][i] = {
+                        contactDescription: description,
+                        associatedLocation: ''
+                    };
+                }
             }
+            
             return tempElectrodes;
         });
 
@@ -333,7 +399,13 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             <select
                                 className="w-full p-2 border border-gray-300 rounded-md mb-4"
                                 value={selectedValue}
-                                onChange={(e) => setSelectedValue(e.target.value)}
+                                onChange={(e) => {
+                                    setSelectedValue(e.target.value);
+                                    // If changing to GM, pre-fill with electrode description
+                                    if (e.target.value === 'GM' && !desc1) {
+                                        setDesc1(electrodes[label].description);
+                                    }
+                                }}
                             >
                                 <option value="">Select tissue type</option>
                                 {contactTypes.map((option, i) => {
@@ -437,6 +509,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         name
     }) => {
         const [label, setLabel] = useState(name);
+        const [showEditPopup, setShowEditPopup] = useState(false);
 
         const handleDelete = () => {
             setElectrodes(prevElectrodes => {
@@ -450,10 +523,32 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             }
         };
 
+        // Get the electrode data for editing
+        const getElectrodeData = () => {
+            const electrode = electrodes[label];
+            
+            // Create a complete electrode data object
+            const electrodeData = {
+                label: label,
+                description: electrode.description,
+                type: electrode.type || 'DIXI',
+                contacts: {}
+            };
+            
+            // Add all contact data
+            Object.keys(electrode).forEach(key => {
+                if (!isNaN(parseInt(key))) {
+                    electrodeData.contacts[key] = electrode[key];
+                }
+            });
+            
+            return electrodeData;
+        };
+
         return (
             <div className="w-full bg-white rounded-lg shadow-md mb-5 overflow-hidden">
-                <button
-                    className="w-full flex justify-between items-center p-4 bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors duration-200 relative group"
+                <div 
+                    className="w-full flex justify-between items-center p-4 bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors duration-200 relative group cursor-pointer"
                     onClick={() => {
                         if (label === expandedElectrode) {
                             setExpandedElectrode('');
@@ -466,27 +561,45 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     <div className="flex items-center gap-4">
                         <div className="text-lg">{electrodes[label].description}</div>
                         <div className="flex gap-2">
-                            <button 
-                                className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center hover:bg-green-600 transition-colors duration-200"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Edit functionality will be added later
-                                }}
-                                title="Edit electrode"
-                            >
-                                <PencilIcon className="w-4 h-4 text-white" />
-                            </button>
                             <Popup
                                 trigger={
-                                    <button 
-                                        className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors duration-200"
+                                    <div 
+                                        className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center hover:bg-green-600 transition-colors duration-200 cursor-pointer"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                        }}
+                                        title="Edit electrode"
+                                    >
+                                        <PencilIcon className="w-4 h-4 text-white" />
+                                    </div>
+                                }
+                                contentStyle={{ width: "500px" }}
+                                modal
+                                nested
+                            >
+                                {close => (
+                                    <AddElectrodeForm
+                                        close={close}
+                                        addElectrode={addElectrode}
+                                        submitFlag={submitFlag}
+                                        setSubmitFlag={setSubmitFlag}
+                                        setElectrodes={setElectrodes}
+                                        editMode={true}
+                                        electrodeData={getElectrodeData()}
+                                    />
+                                )}
+                            </Popup>
+                            <Popup
+                                trigger={
+                                    <div 
+                                        className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors duration-200 cursor-pointer"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                         }}
                                         title="Delete electrode"
                                     >
                                         <TrashIcon className="w-4 h-4 text-white" />
-                                    </button>
+                                    </div>
                                 }
                                 modal
                                 nested
@@ -517,7 +630,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             </Popup>
                         </div>
                     </div>
-                </button>
+                </div>
                 {label === expandedElectrode &&
                     <div className="p-4 bg-gray-50">
                         <div className="flex gap-1 flex-wrap overflow-x-auto">
@@ -546,18 +659,74 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         );
     };
 
-    const AddElectrodeForm = ({ close, addElectrode, submitFlag, setSubmitFlag }) => {
-        const [selectedElectrodeType, setSelectedElectrodeType] = useState('DIXI');
+    const AddElectrodeForm = ({ close, addElectrode, submitFlag, setSubmitFlag, editMode = false, electrodeData = null, setElectrodes }) => {
+        // Default to DIXI if no type is provided
+        const defaultType = 'DIXI';
+        const [selectedElectrodeType, setSelectedElectrodeType] = useState(
+            editMode && electrodeData && electrodeData.type ? electrodeData.type : defaultType
+        );
+        
         const electrodeOverviewData = {
             'Adtech': [4, 6, 8, 10, 12],
             'DIXI': [5, 8, 10, 12, 15, 18]
         };
 
-        const [sliderMarks, setSliderMarks] = useState(electrodeOverviewData[selectedElectrodeType]);
-        const [sliderValue, setSliderValue] = useState(electrodeOverviewData[selectedElectrodeType][0]);
+        // Count the number of contacts for the electrode
+        const getContactCount = (electrode) => {
+            if (!electrode) {
+                return 0;
+            }
+            
+            // Check if we have a contacts object
+            if (electrode.contacts) {
+                // Get all contact keys from the contacts object
+                const contactKeys = Object.keys(electrode.contacts);
+                
+                if (contactKeys.length === 0) {
+                    return 0;
+                }
+                
+                // Find the highest contact number
+                const maxContact = Math.max(...contactKeys.map(key => parseInt(key)));
+                return maxContact;
+            }
+            
+            // Get all numeric keys (contact numbers)
+            const contactKeys = Object.keys(electrode).filter(key => !isNaN(parseInt(key)));
+            
+            if (contactKeys.length === 0) {
+                return 0;
+            }
+            
+            // Find the highest contact number
+            const maxContact = Math.max(...contactKeys.map(key => parseInt(key)));
+            
+            return maxContact;
+        };
 
-        const [labelInput, setLabelInput] = useState("");
-        const [descriptionInput, setDescriptionInput] = useState("");
+        // Ensure we have valid slider marks based on the selected type
+        const getSliderMarks = (type) => {
+            return electrodeOverviewData[type] || electrodeOverviewData[defaultType];
+        };
+
+        // Get the initial slider value based on whether we're editing or adding
+        const getInitialSliderValue = () => {
+            if (editMode && electrodeData) {
+                // When editing, get the contact count from the electrode data
+                const contactCount = getContactCount(electrodeData);
+                return contactCount;
+            } else {
+                // When adding, use the first value from the slider marks
+                const marks = getSliderMarks(selectedElectrodeType);
+                return marks[0];
+            }
+        };
+
+        const [sliderMarks, setSliderMarks] = useState(getSliderMarks(selectedElectrodeType));
+        const [sliderValue, setSliderValue] = useState(getInitialSliderValue());
+
+        const [labelInput, setLabelInput] = useState(editMode && electrodeData ? electrodeData.label || "" : "");
+        const [descriptionInput, setDescriptionInput] = useState(editMode && electrodeData ? electrodeData.description || "" : "");
         const [electrodeLabelDescriptions, setElectrodeLabelDescriptions] = useState([]);
         const [hemisphere, setHemisphere] = useState("Right");
         const [showSuggestions, setShowSuggestions] = useState(false);
@@ -588,11 +757,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const suggestions = electrodeLabelDescriptions.filter(item => item.label.toUpperCase() === letterPortion);
 
         useEffect(() => {
-            const marks = electrodeOverviewData[selectedElectrodeType];
+            const marks = getSliderMarks(selectedElectrodeType);
             setSliderMarks(marks);
-            if (!marks.includes(sliderValue)) {
-                setSliderValue(marks[0]);
-            }
         }, [selectedElectrodeType]);
 
         const handleSliderChange = (e) => {
@@ -614,9 +780,22 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             const formData = new FormData();
             formData.set("label", labelInput);
             formData.set("description", descriptionInput);
-            // Override the contacts field with the slider value and append electrode type.
             formData.set('contacts', sliderValue);
             formData.append('electrodeType', selectedElectrodeType);
+            
+            if (editMode && setElectrodes) {
+                // If editing, we need to handle the case where the label might have changed
+                const oldLabel = electrodeData.label;
+                if (oldLabel !== labelInput) {
+                    // If the label changed, we need to delete the old electrode and create a new one
+                    setElectrodes(prevElectrodes => {
+                        const newElectrodes = { ...prevElectrodes };
+                        delete newElectrodes[oldLabel];
+                        return newElectrodes;
+                    });
+                }
+            }
+            
             addElectrode(formData);
             setSubmitFlag(!submitFlag);
             close();
@@ -624,7 +803,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
         return (
             <div className="modal bg-white p-6 rounded-lg shadow-lg">
-                <h4 className="text-lg font-semibold mb-4">Add Electrode</h4>
+                <h4 className="text-lg font-semibold mb-4">{editMode ? 'Edit' : 'Add'} Electrode</h4>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -731,7 +910,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         </div>
                     </div>
                     <button type="submit" className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200">
-                        Add
+                        {editMode ? 'Update' : 'Add'}
                     </button>
                 </form>
             </div>
@@ -783,6 +962,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             addElectrode={addElectrode}
                             submitFlag={submitFlag}
                             setSubmitFlag={setSubmitFlag}
+                            setElectrodes={setElectrodes}
                         />
                     )}
                 </Popup>
