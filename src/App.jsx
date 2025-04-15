@@ -316,7 +316,8 @@ const FileUtils = {
                     fileName: file.filename,
                     creationDate: file.creation_date,
                     modifiedDate: file.modified_date,
-                    data: { data: {} }
+                    data: { data: {} },
+                    isSharedFile: file.isSharedFile
                 });
                 
                 return;
@@ -348,7 +349,8 @@ const FileUtils = {
                     fileName: file.filename,
                     creationDate: file.creation_date,
                     modifiedDate: file.modified_date,
-                    data: { data: {} }
+                    data: { data: {} },
+                    isSharedFile: file.isSharedFile
                 });
                 
                 return;
@@ -366,7 +368,8 @@ const FileUtils = {
                 fileName: file.filename,
                 creationDate: file.creation_date,
                 modifiedDate: file.modified_date,
-                data: { data: electrodes }
+                data: { data: electrodes },
+                isSharedFile: file.isSharedFile
             });
         } catch (error) {
             console.error('Error loading file:', error);
@@ -466,6 +469,22 @@ const HomePage = () => {
         };
     }, []);
 
+    // Add event listener for closing tabs
+    useEffect(() => {
+        const handleCloseTab = (event) => {
+            const { fileId } = event.detail;
+            const tabToClose = findTabWithFileId(fileId);
+            if (tabToClose) {
+                closeTab(tabToClose.id);
+            }
+        };
+
+        window.addEventListener('closeTab', handleCloseTab);
+        return () => {
+            window.removeEventListener('closeTab', handleCloseTab);
+        };
+    }, [tabs]);
+
     // Add function to find existing tab
     const findTabWithFileId = (fileId) => {
         return tabs.find(tab => tab.state?.fileId === fileId);
@@ -474,7 +493,7 @@ const HomePage = () => {
     // Modify the handleOpenSharedFile handler
     useEffect(() => {
         const handleOpenSharedFile = (event) => {
-            const { fileId, fileName, creationDate, modifiedDate } = event.detail;
+            const { fileId, fileName, creationDate, modifiedDate, isSharedFile } = event.detail;
             
             // Check if tab already exists
             const existingTab = findTabWithFileId(fileId);
@@ -489,7 +508,8 @@ const HomePage = () => {
                 file_id: fileId,
                 filename: fileName,
                 creation_date: creationDate,
-                modified_date: modifiedDate
+                modified_date: modifiedDate,
+                isSharedFile: isSharedFile
             }, openSavedFile);
         };
 
@@ -550,7 +570,8 @@ const HomePage = () => {
                 fileId: data?.fileId || Math.floor(Date.now() % 1000000000), // Use provided fileId or generate a new one
                 fileName: title,
                 creationDate: new Date().toISOString(),
-                modifiedDate: new Date().toISOString()
+                modifiedDate: new Date().toISOString(),
+                isSharedFile: false
             }
         };
         
@@ -659,7 +680,8 @@ const HomePage = () => {
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
-                    electrodes: fileData.data.data  // Preserve loaded electrode data
+                    electrodes: fileData.data.data,
+                    isSharedFile: fileData.isSharedFile
                 }
             };
             
@@ -682,7 +704,8 @@ const HomePage = () => {
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
                     electrodes: fileData.data,
-                    localizationData: fileData.originalData
+                    localizationData: fileData.originalData,
+                    isSharedFile: fileData.isSharedFile
                 }
             };
 
@@ -705,7 +728,8 @@ const HomePage = () => {
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
                     tests: fileData.data.tests,
-                    contacts: fileData.data.contacts
+                    contacts: fileData.data.contacts,
+                    isSharedFile: fileData.isSharedFile
                 }
             };
 
@@ -729,7 +753,8 @@ const HomePage = () => {
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
                     electrodes: fileData.data.data,
                     planOrder: fileData.data.planOrder,
-                    isFunctionalMapping: type === 'csv-functional-mapping'
+                    isFunctionalMapping: type === 'csv-functional-mapping',
+                    isSharedFile: fileData.isSharedFile
                 }
             };
 
@@ -780,6 +805,7 @@ const HomePage = () => {
                     initialData={{}}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
+                    isSharedFile={currentTab.state.isSharedFile}
                 />;
             case 'csv-localization':
                 return <Localization
@@ -787,6 +813,7 @@ const HomePage = () => {
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
+                    isSharedFile={currentTab.state.isSharedFile}
                 />;
             case 'designation':
                 return <ContactDesignation
@@ -794,6 +821,7 @@ const HomePage = () => {
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
+                    isSharedFile={currentTab.state.isSharedFile}
                 />;
             case 'csv-designation':
                 return <ContactDesignation
@@ -801,6 +829,7 @@ const HomePage = () => {
                     initialData={currentTab.data.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
+                    isSharedFile={currentTab.state.isSharedFile}
                 />;
             case 'stimulation':
                 return <PlanTypePage
@@ -817,6 +846,7 @@ const HomePage = () => {
                     initialData={{}}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
+                    isSharedFile={currentTab.state.isSharedFile}
                 />;
             case 'csv-stimulation':
                 return <ContactSelection
@@ -825,6 +855,7 @@ const HomePage = () => {
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
+                    isSharedFile={currentTab.state.isSharedFile}
                 />;
             case 'functional-mapping':
                 return <ContactSelection
@@ -834,6 +865,7 @@ const HomePage = () => {
                     initialData={{}}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
+                    isSharedFile={currentTab.state.isSharedFile}
                 />;
             case 'csv-functional-mapping':
                 return <ContactSelection
@@ -843,6 +875,7 @@ const HomePage = () => {
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
+                    isSharedFile={currentTab.state.isSharedFile}
                 />;
             case 'functional-test':
             case 'csv-functional-test':
@@ -851,6 +884,7 @@ const HomePage = () => {
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
+                    isSharedFile={currentTab.state.isSharedFile}
                 />;
             default:
                 return null;
@@ -1189,6 +1223,17 @@ const ToReview = () => {
         fetchSharedFiles();
     }, []);
 
+    useEffect(() => {
+        const handleRefresh = () => {
+            fetchSharedFiles();
+        };
+
+        window.addEventListener('refreshSharedFiles', handleRefresh);
+        return () => {
+            window.removeEventListener('refreshSharedFiles', handleRefresh);
+        };
+    }, []);
+
     return (
         <div className="mb-4">
             <div
@@ -1220,7 +1265,8 @@ const ToReview = () => {
                                                 fileId: share.file_id,
                                                 fileName: share.files.filename,
                                                 creationDate: share.files.creation_date,
-                                                modifiedDate: share.files.modified_date
+                                                modifiedDate: share.files.modified_date,
+                                                isSharedFile: true
                                             }
                                         });
                                         window.dispatchEvent(event);
@@ -1249,25 +1295,88 @@ const ToReview = () => {
 
 const Approved = () => {
     const [isApprovedOpen, setIsApprovedOpen] = useState(false);
+    const [approvedFiles, setApprovedFiles] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchApprovedFiles = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+
+                const { data: session } = await supabase
+                    .from('sessions')
+                    .select('user_id')
+                    .eq('token', token)
+                    .single();
+
+                if (!session) return;
+
+                // Get files that have been approved (where current user is the owner)
+                const { data: files, error } = await supabase
+                    .from('approved_files')
+                    .select(`
+                        file_id,
+                        approved_date,
+                        approved_by_user_id,
+                        files:file_id (
+                            filename,
+                            owner_user_id
+                        )
+                    `)
+                    .eq('files.owner_user_id', session.user_id);
+
+                if (error) throw error;
+
+                setApprovedFiles(files || []);
+            } catch (error) {
+                console.error('Error fetching approved files:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchApprovedFiles();
+    }, []);
 
     return (
-        <div
-            className="text-green-500 text-2xl font-semibold flex gap-x-2"
-            onClick={() => setIsApprovedOpen(!isApprovedOpen)}
-        >
-            {isApprovedOpen ? (
-                <>
-                    <div className="before:content-['▾']"></div>
-                    <div className="mb-5">
-                        <div>Approved</div>
-                    </div>
-                </>
-            ) : (
-                <>
-                    {/* Triangle */}
-                    <div className="before:content-['▸']"></div>
-                    <div>Approved</div>
-                </>
+        <div className="mb-4">
+            <div
+                className="text-green-500 text-2xl font-semibold flex gap-x-2 cursor-pointer"
+                onClick={() => setIsApprovedOpen(!isApprovedOpen)}
+            >
+                <div className={`transition-transform ${isApprovedOpen ? 'rotate-90' : ''}`}>
+                    ▸
+                </div>
+                <div>Approved</div>
+            </div>
+            
+            {isApprovedOpen && (
+                <div className="ml-6 mt-2">
+                    {isLoading ? (
+                        <div className="text-gray-500">Loading...</div>
+                    ) : approvedFiles.length === 0 ? (
+                        <div className="text-gray-500">No approved files</div>
+                    ) : (
+                        <div className="space-y-2">
+                            {approvedFiles.map((file) => (
+                                <div
+                                    key={file.file_id}
+                                    className="flex items-center justify-between py-1 px-2 rounded"
+                                >
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-gray-700">
+                                            {file.files.filename}
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                            Approved: {new Date(file.approved_date).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     );

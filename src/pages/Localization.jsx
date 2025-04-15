@@ -9,7 +9,7 @@ import ShareButton from '../components/ShareButton';
 
 const backendURL = config.backendURL;
 
-const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
+const Localization = ({ initialData = {}, onStateChange, savedState = {}, isSharedFile = false }) => {
     const [expandedElectrode, setExpandedElectrode] = useState(savedState.expandedElectrode || '');
     const [submitFlag, setSubmitFlag] = useState(savedState.submitFlag || false);
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || {});
@@ -17,6 +17,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const [fileName, setFileName] = useState(savedState.fileName || 'New Localization');
     const [creationDate, setCreationDate] = useState(savedState.creationDate || new Date().toISOString());
     const [modifiedDate, setModifiedDate] = useState(savedState.modifiedDate || new Date().toISOString());
+    const [showApprovalModal, setShowApprovalModal] = useState(false);
 
     useEffect(() => {
         if (initialData.data && !savedState.electrodes) {
@@ -236,6 +237,53 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             detail: { originalData: electrodes, data: designationData }
         });
         window.dispatchEvent(event);
+    };
+
+    const handleApproveFile = async () => {
+        try {
+            // Get current user's ID
+            const token = localStorage.getItem('token');
+            const { data: session } = await supabase
+                .from('sessions')
+                .select('user_id')
+                .eq('token', token)
+                .single();
+
+            if (!session) throw new Error('No active session');
+
+            // Remove from fileshares
+            const { error: deleteError } = await supabase
+                .from('fileshares')
+                .delete()
+                .eq('file_id', fileId)
+                .eq('shared_with_user_id', session.user_id);
+
+            if (deleteError) throw deleteError;
+
+            // Add to approved_files
+            const { error: approvedError } = await supabase
+                .from('approved_files')
+                .insert({
+                    file_id: fileId,
+                    approved_by_user_id: session.user_id,
+                    approved_date: new Date().toISOString()
+                });
+
+            if (approvedError) throw approvedError;
+
+            // Close the current tab
+            const event = new CustomEvent('closeTab', {
+                detail: { fileId }
+            });
+            window.dispatchEvent(event);
+
+            // Refresh the To Review list
+            window.dispatchEvent(new CustomEvent('refreshSharedFiles'));
+
+        } catch (error) {
+            console.error('Error approving file:', error);
+            alert('Failed to approve file. Please try again.');
+        }
     };
 
     const Contact = ({
@@ -483,7 +531,13 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 <div className="flex justify-between">
                     <div className="flex items-center gap-4">
                         <h1 className="text-2xl font-bold">Localization</h1>
-                        <ShareButton fileId={fileId} />
+                        {isSharedFile ? (
+                            <span className="px-3 py-1 bg-violet-100 text-violet-700 rounded-full text-sm font-medium">
+                                Shared File
+                            </span>
+                        ) : (
+                            <ShareButton fileId={fileId} />
+                        )}
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-sm text-gray-500">
@@ -550,14 +604,49 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 </Popup>
             </Container>
 
-            <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
+            <div className="fixed bottom-6 right-6 z-50 flex gap-4">
                 <button
                     className="py-2 px-4 bg-green-500 text-white font-bold rounded-md hover:bg-green-600 transition-colors duration-200 shadow-lg"
                     onClick={createDesignationTab}
                 >
                     Open in Designation
                 </button>
+
+                {isSharedFile && (
+                    <button
+                        onClick={() => setShowApprovalModal(true)}
+                        className="py-2 px-4 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition-colors duration-200 shadow-lg"
+                    >
+                        Approve File
+                    </button>
+                )}
             </div>
+
+            {showApprovalModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md">
+                        <h2 className="text-xl font-bold mb-4">Approve File</h2>
+                        <p className="mb-6 text-gray-600">
+                            Once you approve this file, you will not be able to view or suggest changes 
+                            unless the owner shares it with you again. Would you like to proceed?
+                        </p>
+                        <div className="flex justify-end gap-4">
+                            <button
+                                onClick={() => setShowApprovalModal(false)}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleApproveFile}
+                                className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                            >
+                                Approve
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
