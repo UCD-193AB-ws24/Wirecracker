@@ -71,7 +71,7 @@ const Tab = ({ title, isActive, onClick, onClose, onRename }) => {
                     onClick={(e) => e.stopPropagation()}
                 />
             ) : (
-                <span>{title}</span>
+            <span>{title}</span>
             )}
             {title !== 'Home' && (
                 <button 
@@ -799,7 +799,7 @@ const HomePage = () => {
                     <div className="h-screen flex justify-around items-baseline">
                         {token ? (
                             <>
-                                <Left />
+                                <Left openSavedFile={openSavedFile} />
                                 <Center 
                                     token={token} 
                                     onNewLocalization={() => addTab('localization')}
@@ -826,7 +826,7 @@ const HomePage = () => {
                     isSharedFile={currentTab.state.isSharedFile}
                 />;
             case 'csv-localization':
-                return <Localization
+                return <Localization 
                     key={currentTab.id}
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
@@ -913,24 +913,24 @@ const HomePage = () => {
         <div className="h-screen flex flex-col">
             {/* Only show tabs section when logged in */}
             {token && (
-                <div className="flex border-b">
-                    {tabs.map(tab => (
-                        <Tab
-                            key={tab.id}
-                            title={tab.title}
-                            isActive={activeTab === tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            onClose={() => closeTab(tab.id)}
+            <div className="flex border-b">
+                {tabs.map(tab => (
+                    <Tab
+                        key={tab.id}
+                        title={tab.title}
+                        isActive={activeTab === tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        onClose={() => closeTab(tab.id)}
                             onRename={(newTitle) => renameTab(tab.id, newTitle)}
-                        />
-                    ))}
-                    <button 
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                        onClick={() => addTab('localization')}
-                    >
-                        +
-                    </button>
-                </div>
+                    />
+                ))}
+                <button 
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                    onClick={() => addTab('localization')}
+                >
+                    +
+                </button>
+            </div>
             )}
             {token && <UserProfile onSignOut={handleSignOut} />}
 
@@ -967,28 +967,28 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                         Search the Database
                     </button>
                     
-                    <Dropdown 
-                        closedText="Create New"
-                        openText="Create New ▾"
-                        closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
-                        openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
+            <Dropdown 
+                closedText="Create New"
+                openText="Create New ▾"
+                closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
+                openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
                         options="Localization"
-                        optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
-                        onOptionClick={(option) => {
+                optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                onOptionClick={(option) => {
                             if (option === "Localization") {
-                                onNewLocalization();
-                            }
-                        }}
-                    />
+                            onNewLocalization();
+                    }
+                }}
+            />
                     
-                    <input
-                        type="file"
-                        accept=".csv"
-                        onChange={onFileUpload}
-                        style={{ display: 'none' }}
-                        id="fileInput"
-                    />
+            <input
+                type="file"
+                accept=".csv"
+                onChange={onFileUpload}
+                style={{ display: 'none' }}
+                id="fileInput"
+            />
                     
                     <Dropdown 
                         closedText="Open File"
@@ -1018,12 +1018,12 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                     <div className="bg-white p-6 rounded-lg shadow-xl w-4/5 max-w-3xl max-h-[80vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-2xl font-bold">Open File from Database</h2>
-                            <button 
+            <button 
                                 onClick={() => setShowDatabaseModal(false)}
                                 className="text-gray-500 hover:text-gray-700 text-xl"
-                            >
+            >
                                 ×
-                            </button>
+            </button>
                         </div>
                         
                         {isLoading ? (
@@ -1074,12 +1074,13 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     );
 };
 
-const Left = () => {
+const Left = ({ openSavedFile }) => {
     return (
         <div className="basis-80">
             <h2 className="text-6xl font-bold m-3">My Stuff</h2>
             <ToReview />
             <Approved />
+            <SuggestedChanges openSavedFile={openSavedFile} />
         </div>
     );
 };
@@ -1133,7 +1134,7 @@ const Right = ({ onOpenFile }) => {
                             >
                                 <div className="truncate max-w-[200px] filename">
                                     {file.filename || 'Unnamed Localization'}
-                                </div>
+            </div>
                                 <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
                                     {new Date(file.modified_date).toLocaleDateString()}
                                 </span>
@@ -1186,8 +1187,8 @@ const SignInButtons = () => {
             <div className="flex m-10 justify-center">
                 <div className="w-[335px]">
                     <GoogleSignInButton />
-                </div>
             </div>
+        </div>
         </div>
     );
 };
@@ -1203,7 +1204,6 @@ const ToReview = () => {
                 const token = localStorage.getItem('token');
                 if (!token) return;
 
-                // Get current user's ID
                 const { data: session } = await supabase
                     .from('sessions')
                     .select('user_id')
@@ -1212,7 +1212,7 @@ const ToReview = () => {
 
                 if (!session) return;
 
-                // Get files shared with the user
+                // Only get files where status is null (not yet approved or changes suggested)
                 const { data: shares, error } = await supabase
                     .from('fileshares')
                     .select(`
@@ -1226,10 +1226,10 @@ const ToReview = () => {
                             owner_user_id
                         )
                     `)
-                    .eq('shared_with_user_id', session.user_id);
+                    .eq('shared_with_user_id', session.user_id)
+                    .is('status', null);
 
                 if (error) throw error;
-
                 setSharedFiles(shares || []);
             } catch (error) {
                 console.error('Error fetching shared files:', error);
@@ -1254,15 +1254,15 @@ const ToReview = () => {
 
     return (
         <div className="mb-4">
-            <div
+        <div
                 className="text-violet-500 text-2xl font-semibold flex gap-x-2 cursor-pointer"
-                onClick={() => setIsReviewOpen(!isReviewOpen)}
-            >
+            onClick={() => setIsReviewOpen(!isReviewOpen)}
+        >
                 <div className={`transition-transform ${isReviewOpen ? 'rotate-90' : ''}`}>
                     ▸
                 </div>
-                <div>To Review</div>
-            </div>
+                        <div>To Review</div>
+                    </div>
             
             {isReviewOpen && (
                 <div className="ml-6 mt-2">
@@ -1361,15 +1361,15 @@ const Approved = () => {
 
     return (
         <div className="mb-4">
-            <div
+        <div
                 className="text-green-500 text-2xl font-semibold flex gap-x-2 cursor-pointer"
-                onClick={() => setIsApprovedOpen(!isApprovedOpen)}
-            >
+            onClick={() => setIsApprovedOpen(!isApprovedOpen)}
+        >
                 <div className={`transition-transform ${isApprovedOpen ? 'rotate-90' : ''}`}>
                     ▸
                 </div>
-                <div>Approved</div>
-            </div>
+                        <div>Approved</div>
+                    </div>
             
             {isApprovedOpen && (
                 <div className="ml-6 mt-2">
@@ -1396,6 +1396,127 @@ const Approved = () => {
                             ))}
                         </div>
                     )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Add a new SuggestedChanges component
+const SuggestedChanges = ({ openSavedFile }) => {
+    const [files, setFiles] = useState([]);
+    const [isExpanded, setIsExpanded] = useState(true);
+
+    const fetchSuggestedChanges = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const { data: session } = await supabase
+                .from('sessions')
+                .select('user_id')
+                .eq('token', token)
+                .single();
+
+            if (!session) return;
+
+            // Modified query to ensure we get valid files
+            const { data: suggestedFiles, error } = await supabase
+                .from('fileshares')
+                .select(`
+                    file_id,
+                    changed_data,
+                    shared_date,
+                    files!inner (
+                        filename,
+                        creation_date,
+                        modified_date,
+                        owner_user_id
+                    ),
+                    shared_with:shared_with_user_id (
+                        email
+                    )
+                `)
+                .eq('status', 'changes_suggested')
+                .eq('files.owner_user_id', session.user_id);
+
+            if (error) throw error;
+            setFiles(suggestedFiles || []);
+        } catch (error) {
+            console.error('Error fetching suggested changes:', error);
+        }
+    };
+
+    const handleFileClick = async (file) => {
+        if (!file?.files) return;
+        
+        try {
+            // Get the original file's localization data
+            const { data: localizationData, error: locError } = await supabase
+                .from('localization')
+                .select(`
+                    id, contact, tissue_type, file_id,
+                    electrode:electrode_id(id, label, description, contact_number),
+                    region:region_id(id, name)
+                `)
+                .eq('file_id', file.file_id);
+            
+            if (locError) throw locError;
+
+            // Transform the data into electrodes format
+            const electrodes = FileUtils.transformLocalizationData(localizationData);
+
+            // Use the passed openSavedFile function instead of window.openSavedFile
+            openSavedFile('localization', { 
+                name: file.files.filename,
+                fileId: file.file_id,
+                fileName: file.files.filename,
+                creationDate: file.files.creation_date,
+                modifiedDate: file.files.modified_date,
+                data: { data: electrodes }
+            });
+        } catch (error) {
+            console.error('Error loading original file:', error);
+            alert('Failed to load the original file');
+        }
+    };
+
+    useEffect(() => {
+        fetchSuggestedChanges();
+    }, []);
+
+    return (
+        <div className="mb-4">
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-red-500 text-2xl font-semibold flex gap-x-2 cursor-pointer"
+            >
+                <div className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
+                    ▸
+                </div>
+                <span className="ml-2 font-medium text-red-700">Suggested Changes</span>
+                <span className="ml-2 text-sm text-red-600">({files.length})</span>
+            </button>
+
+            {isExpanded && (
+                <div className="mt-2 ml-6 space-y-2">
+                    {files.map(file => (
+                        file.files && ( // Add null check here
+                            <div
+                                key={file.file_id}
+                                className="flex items-center justify-between p-2 bg-white rounded-md shadow-sm hover:bg-gray-50 cursor-pointer"
+                                onClick={() => handleFileClick(file)}
+                            >
+                                <div>
+                                    <div className="font-medium">{file.files.filename}</div>
+                                    <div className="text-sm text-gray-500">
+                                        Changes suggested by {file.shared_with?.email || 'Unknown User'}
+                                    </div>
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                    {new Date(file.shared_date).toLocaleDateString()}
+                                </div>
+                            </div>
+                        )
+                    ))}
                 </div>
             )}
         </div>

@@ -9,8 +9,272 @@ import ShareButton from '../components/ShareButton';
 
 const backendURL = config.backendURL;
 
-const Localization = ({ initialData = {}, onStateChange, savedState = {}, isSharedFile = false }) => {
-    const [expandedElectrode, setExpandedElectrode] = useState(savedState.expandedElectrode || '');
+const ViewLogsButton = ({ fileId, onHighlightChange }) => {
+    const [showLogs, setShowLogs] = useState(false);
+    const [logs, setLogs] = useState([]);
+    const [showChangesModal, setShowChangesModal] = useState(false);
+    const [selectedChange, setSelectedChange] = useState(null);
+    const [currentHighlight, setCurrentHighlight] = useState(null);
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                // Get approvals
+                const { data: approvals } = await supabase
+                    .from('approved_files')
+                    .select(`
+                        approved_date,
+                        approved_by:approved_by_user_id(name)
+                    `)
+                    .eq('file_id', fileId);
+
+                // Get suggested changes
+                const { data: suggestions } = await supabase
+                    .from('fileshares')
+                    .select(`
+                        shared_date,
+                        changed_data,
+                        current_snapshot,
+                        shared_with:shared_with_user_id(name),
+                        status
+                    `)
+                    .eq('file_id', fileId)
+                    .eq('status', 'changes_suggested');
+
+                const allLogs = [
+                    ...(approvals?.map(a => ({
+                        type: 'approval',
+                        date: a.approved_date,
+                        user: a.approved_by?.name,
+                        message: `File approved by: ${a.approved_by?.name}`
+                    })) || []),
+                    ...(suggestions?.map(s => ({
+                        type: 'changes',
+                        date: s.shared_date,
+                        user: s.shared_with?.name,
+                        message: `Changes suggested by: ${s.shared_with?.name}`,
+                        changes: s.changed_data,
+                        snapshot: s.current_snapshot
+                    })) || [])
+                ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                setLogs(allLogs);
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+            }
+        };
+
+        fetchLogs();
+    }, [fileId]);
+
+    const handleViewChanges = (log) => {
+        setSelectedChange(log);
+        setShowChangesModal(true);
+    };
+
+    const handleHighlight = (label, key) => {
+        setCurrentHighlight({ label, key });
+        onHighlightChange(label, key);
+    };
+
+    return (
+        <>
+            <button
+                onClick={() => setShowLogs(true)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+            >
+                View Logs
+            </button>
+
+            {/* Logs Modal */}
+            {showLogs && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold">File Logs</h2>
+                            <button
+                                onClick={() => setShowLogs(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            {logs.length === 0 ? (
+                                <p className="text-gray-500">No logs to show</p>
+                            ) : (
+                                logs.map((log, index) => (
+                                    <div 
+                                        key={index} 
+                                        className="flex justify-between items-center p-2 border rounded"
+                                    >
+                                        <div>
+                                            <p>{log.message}</p>
+                                            <p className="text-sm text-gray-500">
+                                                {new Date(log.date).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        {log.type === 'changes' && (
+                                            <button
+                                                onClick={() => handleViewChanges(log)}
+                                                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                            >
+                                                View
+                                            </button>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Changes View Modal */}
+            {showChangesModal && selectedChange && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-4xl w-full h-[80vh] overflow-y-auto relative">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold">Suggested Changes</h2>
+                            <div className="flex items-center gap-4">
+                                <Popup
+                                    trigger={
+                                        <button className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600">
+                                            View Changes
+                                        </button>
+                                    }
+                                    position="bottom right"
+                                    closeOnDocumentClick
+                                    contentStyle={{
+                                        width: '300px',
+                                        maxHeight: '400px',
+                                        overflowY: 'auto',
+                                        backgroundColor: 'white',
+                                        border: '1px solid #e2e8f0',
+                                        borderRadius: '0.5rem',
+                                        padding: '1rem',
+                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                    }}
+                                >
+                                    <div className="space-y-2">
+                                        <h3 className="font-bold text-lg mb-2">Changes Made</h3>
+                                        {Object.entries(selectedChange.changes).map(([label, change]) => {
+                                            // Check if this is a new electrode (no old/new structure)
+                                            const isNewElectrode = change.contacts && 
+                                                !Object.values(change.contacts)[0].hasOwnProperty('old');
+                                            
+                                            if (isNewElectrode) {
+                                                // Count the number of contacts (excluding the description field)
+                                                const contactCount = Object.keys(change.contacts).filter(key => key !== 'description').length;
+                                                return (
+                                                    <div key={label} className="border-b pb-2">
+                                                        <div 
+                                                            className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"
+                                                            onClick={() => handleHighlight(label, null)}
+                                                        >
+                                                            New Electrode {label} added with {contactCount} contacts
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle modified electrodes
+                                            return (
+                                                <div key={label} className="border-b pb-2">
+                                                    <h4 className="font-semibold">{label}</h4>
+                                                    {change.contacts && Object.entries(change.contacts).map(([key, value]) => {
+                                                        if (key === 'description') {
+                                                            return (
+                                                                <div 
+                                                                    key={`${label}-${key}`}
+                                                                    className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"
+                                                                    onClick={() => handleHighlight(label, key)}
+                                                                >
+                                                                    Description changed: {value.old} → {value.new}
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return (
+                                                            <div 
+                                                                key={`${label}-${key}`}
+                                                                className="text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"
+                                                                onClick={() => handleHighlight(label, key)}
+                                                            >
+                                                                Contact {key}: {value.old?.associatedLocation || 'None'} 
+                                                                {value.old?.contactDescription ? ` (${value.old.contactDescription})` : ''} → 
+                                                                {value.new?.associatedLocation}
+                                                                {value.new?.contactDescription ? ` (${value.new.contactDescription})` : ''}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </Popup>
+                                <button
+                                    onClick={() => {
+                                        setShowChangesModal(false);
+                                        onHighlightChange(null, null); // Clear highlight when closing modal
+                                    }}
+                                    className="text-gray-500 hover:text-gray-700"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <Localization 
+                                initialData={{ 
+                                    data: applyChangesToSnapshot(
+                                        selectedChange.snapshot, 
+                                        selectedChange.changes
+                                    )
+                                }}
+                                readOnly={true}
+                                onStateChange={() => {}}
+                                changesData={selectedChange.changes}
+                                highlightedChange={currentHighlight}
+                                expandedElectrode={currentHighlight?.label}
+                                initialExpandedElectrode={currentHighlight?.label}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
+
+// Add this utility function to apply changes to the snapshot
+const applyChangesToSnapshot = (snapshot, changes) => {
+    const modifiedSnapshot = { ...snapshot };
+    
+    Object.entries(changes).forEach(([label, change]) => {
+        if (change.contacts) {
+            // Handle new electrodes
+            if (!modifiedSnapshot[label]) {
+                modifiedSnapshot[label] = change.contacts;
+            } else {
+                // Handle modified contacts
+                Object.entries(change.contacts).forEach(([key, value]) => {
+                    if (key === 'description') {
+                        modifiedSnapshot[label].description = value.new;
+                    } else {
+                        modifiedSnapshot[label][key] = value.new;
+                    }
+                });
+            }
+        }
+    });
+    
+    return modifiedSnapshot;
+};
+
+const Localization = ({ initialData = {}, onStateChange, savedState = {}, isSharedFile = false, readOnly = false, changesData = null, highlightedChange = null, onHighlightChange = () => {}, expandedElectrode: initialExpandedElectrode = null }) => {
+    const [expandedElectrode, setExpandedElectrode] = useState(initialExpandedElectrode || '');
     const [submitFlag, setSubmitFlag] = useState(savedState.submitFlag || false);
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || {});
     const [fileId, setFileId] = useState(savedState.fileId || null);
@@ -37,15 +301,18 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
     }, [initialData, savedState]);
 
     useEffect(() => {
+        // Only call onStateChange if it exists and is a function
+        if (typeof onStateChange === 'function') {
         onStateChange({
             expandedElectrode,
             submitFlag,
-            electrodes,
-            fileId,
-            fileName,
-            creationDate,
-            modifiedDate
-        });
+                electrodes,
+                fileId,
+                fileName,
+                creationDate,
+                modifiedDate
+            });
+        }
     }, [expandedElectrode, submitFlag, electrodes, fileId, fileName, creationDate, modifiedDate]);
 
     // Generate a unique ID for the file - using integer only for database compatibility
@@ -383,7 +650,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
     const Contact = ({
         label,
-        number
+        number,
+        isHighlighted
     }) => {
         const contactData = electrodes[label][number];
         const associatedLocation = contactData.associatedLocation;
@@ -438,7 +706,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             }
             
             temp[label][number].associatedLocation = selectedValue;
-            setElectrodes(temp);
+                                setElectrodes(temp);
             setModifiedDate(new Date().toISOString());
             
             // Check for changes if this is a shared file
@@ -446,8 +714,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 checkForChanges(temp);
             }
             
-            setSubmitFlag(!submitFlag);
-            close();
+                                setSubmitFlag(!submitFlag);
+                                close();
         };
 
         // Filter region names based on input, case-insensitive
@@ -488,122 +756,22 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             }
         }, []);
 
+        const isHighlightedContact = highlightedChange && 
+            highlightedChange.label === label && 
+            (highlightedChange.key === number || highlightedChange.key === null);
+
         return (
-            <Popup
-                trigger={<button
-                    className="flex flex-col items-center justify-center p-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-200 min-w-[100px]"
-                    key={number}>
-                    <div className="text-sm font-medium text-gray-700 w-20 h-5">{number}</div>
-                    <div className="text-xs text-gray-500 w-20 h-15">{displayText}</div>
-                </button>}
-                contentStyle={{ width: "500px" }}
-                modal
-                nested
+            <button
+                className={`flex flex-col items-center justify-center p-2 border rounded-lg transition-colors duration-200 min-w-[100px] ${
+                    isHighlightedContact 
+                        ? 'border-blue-500 bg-blue-50 shadow-md' 
+                        : 'border-gray-300 hover:bg-gray-100'
+                }`}
+                key={number}
             >
-                {close => (
-                    <div className="modal bg-white p-6 rounded-lg shadow-lg">
-                        <h4 className="text-lg font-semibold mb-4">Add Contact</h4>
-                        <form onSubmit={handleSubmit}>
-                            <select
-                                className="w-full p-2 border border-gray-300 rounded-md mb-4"
-                                value={selectedValue}
-                                onChange={(e) => setSelectedValue(e.target.value)}
-                            >
-                                <option value="">Select tissue type</option>
-                                {contactTypes.map((option, i) => {
-                                    return (
-                                        <option key={i} value={option}>{option}</option>
-                                    );
-                                })}
-                            </select>
-
-                            {(selectedValue === 'GM' || selectedValue === 'GM/WM') && (
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Contact Description
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            className="w-full p-2 border border-gray-300 rounded-md"
-                                            value={desc1}
-                                            onChange={(e) => {
-                                                setDesc1(e.target.value);
-                                                setDesc1Filter(e.target.value);
-                                            }}
-                                            placeholder="Enter or select description"
-                                            list="regions1"
-                                        />
-                                        <datalist id="regions1">
-                                            {filteredRegions1.map((name, index) => (
-                                                <option key={index} value={name} />
-                                            ))}
-                                        </datalist>
-                                    </div>
-                                </div>
-                            )}
-
-                            {selectedValue === 'GM/GM' && (
-                                <>
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            First Description
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                className="w-full p-2 border border-gray-300 rounded-md"
-                                                value={desc1}
-                                                onChange={(e) => {
-                                                    setDesc1(e.target.value);
-                                                    setDesc1Filter(e.target.value);
-                                                }}
-                                                placeholder="Enter or select first description"
-                                                list="regions1"
-                                            />
-                                            <datalist id="regions1">
-                                                {filteredRegions1.map((name, index) => (
-                                                    <option key={index} value={name} />
-                                                ))}
-                                            </datalist>
-                                        </div>
-                                    </div>
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Second Description
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                className="w-full p-2 border border-gray-300 rounded-md"
-                                                value={desc2}
-                                                onChange={(e) => {
-                                                    setDesc2(e.target.value);
-                                                    setDesc2Filter(e.target.value);
-                                                }}
-                                                placeholder="Enter or select second description"
-                                                list="regions2"
-                                            />
-                                            <datalist id="regions2">
-                                                {filteredRegions2.map((name, index) => (
-                                                    <option key={index} value={name} />
-                                                ))}
-                                            </datalist>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            <button
-                                type="submit"
-                                className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200"
-                            >
-                                Done
-                            </button>
-                        </form>
-                    </div>
-                )}
-            </Popup>
+                <div className="text-sm font-medium text-gray-700 w-20 h-5">{number}</div>
+                <div className="text-xs text-gray-500 w-20 h-15">{displayText}</div>
+                        </button>
         );
     };
 
@@ -611,11 +779,20 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         name
     }) => {
         const [label, setLabel] = useState(name);
+        const isHighlighted = highlightedChange && 
+            highlightedChange.label === label && 
+            highlightedChange.key === null;
 
         return (
-            <div className="w-full bg-white rounded-lg shadow-md mb-5 overflow-hidden">
+            <div className={`w-full bg-white rounded-lg shadow-md mb-5 overflow-hidden ${
+                isHighlighted ? 'ring-2 ring-blue-500' : ''
+            }`}>
                 <button
-                    className="w-full flex justify-between items-center p-4 bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors duration-200"
+                    className={`w-full flex justify-between items-center p-4 ${
+                        isHighlighted 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-blue-500 text-white'
+                    } font-semibold hover:bg-blue-600 transition-colors duration-200`}
                     onClick={() => {
                         if (label === expandedElectrode) {
                             setExpandedElectrode('');
@@ -629,12 +806,25 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 </button>
                 {label === expandedElectrode &&
                     <div className="p-4 bg-gray-50">
-                        <div className="flex gap-1 flex-wrap overflow-x-auto"> {/* Delete flex-wrap to make it horizontal scroll */}
+                        <div className="flex gap-1 flex-wrap overflow-x-auto">
                             {Object.keys(electrodes[label]).map((key) => {
                                 const keyNum = parseInt(key);
-
                                 if (!isNaN(keyNum)) {
-                                    return (<Contact label={label} number={key} key={key + label} />);
+                                    return (
+                                        <Contact 
+                                            label={label} 
+                                            number={key} 
+                                            key={key + label} 
+                                            isHighlighted={
+                                                highlightedChange && 
+                                                highlightedChange.label === label && 
+                                                (
+                                                    highlightedChange.key === key || // highlight specific contact
+                                                    highlightedChange.key === null   // or highlight all contacts if whole electrode
+                                                )
+                                            } 
+                                        />
+                                    );
                                 }
                                 return null;
                             })}
@@ -655,16 +845,69 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         );
     };
 
-    // Add a handleSubmitChanges function
+    // Modify handleSubmitChanges function
     const handleSubmitChanges = async () => {
         try {
-            await handleSaveLocalization(false);
-            setShowApprovalModal(true);
+            // Get current user's ID
+            const token = localStorage.getItem('token');
+            const { data: session } = await supabase
+                .from('sessions')
+                .select('user_id')
+                .eq('token', token)
+                .single();
+
+            if (!session) throw new Error('No active session');
+
+            // Get the current share record
+            const { data: shareData, error: shareError } = await supabase
+                .from('fileshares')
+                .select('current_snapshot')
+                .eq('file_id', fileId)
+                .eq('shared_with_user_id', session.user_id)
+                .single();
+
+            if (shareError) throw shareError;
+
+            // Calculate changes by comparing current state with snapshot
+            const changes = calculateChanges(shareData.current_snapshot, electrodes);
+
+            // Update fileshares with changes and status
+            const { error: updateError } = await supabase
+                .from('fileshares')
+                .update({
+                    changed_data: changes,
+                    status: 'changes_suggested'
+                })
+                .eq('file_id', fileId)
+                .eq('shared_with_user_id', session.user_id);
+
+            if (updateError) throw updateError;
+
+            // Close the current tab
+            const event = new CustomEvent('closeTab', {
+                detail: { fileId }
+            });
+            window.dispatchEvent(event);
+
+            // Refresh the lists
+            window.dispatchEvent(new CustomEvent('refreshSharedFiles'));
+
+            // Show success message
+            alert('Changes submitted successfully!');
+
         } catch (error) {
             console.error('Error submitting changes:', error);
             alert('Failed to submit changes. Please try again.');
+            throw error;
         }
     };
+
+    // Add an effect to update expandedElectrode when initialExpandedElectrode changes
+    useEffect(() => {
+        if (initialExpandedElectrode) {
+            setExpandedElectrode(initialExpandedElectrode);
+        }
+    }, [initialExpandedElectrode]);
 
     return (
         <div className="flex flex-col h-screen p-4">
@@ -672,32 +915,44 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 <div className="flex justify-between">
                     <div className="flex items-center gap-4">
                         <h1 className="text-2xl font-bold">Localization</h1>
-                        {isSharedFile ? (
-                            <span className="px-3 py-1 bg-violet-100 text-violet-700 rounded-full text-sm font-medium">
-                                Shared File
-                            </span>
-                        ) : (
-                            <ShareButton fileId={fileId} />
+                        {!readOnly && (
+                            <>
+                                <ViewLogsButton 
+                                    fileId={fileId} 
+                                    onHighlightChange={(label, key) => {
+                                        setExpandedElectrode(label);
+                                    }}
+                                />
+                                {isSharedFile ? (
+                                    <span className="px-3 py-1 bg-violet-100 text-violet-700 rounded-full text-sm font-medium">
+                                        Shared File
+                                    </span>
+                                ) : (
+                                    <ShareButton fileId={fileId} />
+                                )}
+                            </>
                         )}
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="text-sm text-gray-500">
-                            <div>Created: {new Date(creationDate).toLocaleString()}</div>
-                            <div>Modified: {new Date(modifiedDate).toLocaleString()}</div>
+                    {!readOnly && (
+                        <div className="flex items-center gap-4">
+                            <div className="text-sm text-gray-500">
+                                <div>Created: {new Date(creationDate).toLocaleString()}</div>
+                                <div>Modified: {new Date(modifiedDate).toLocaleString()}</div>
+                            </div>
+                            <button
+                                className="w-40 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded p-2"
+                                onClick={() => handleSaveLocalization(false)}
+                            >
+                                Save
+                            </button>
+                    <button
+                                className="w-40 bg-green-500 hover:bg-green-600 text-white font-semibold rounded p-2"
+                                onClick={() => handleSaveLocalization(true)}
+                    >
+                                Export
+                    </button>
                         </div>
-                        <button
-                            className="w-40 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded p-2"
-                            onClick={() => handleSaveLocalization(false)}
-                        >
-                            Save
-                        </button>
-                        <button
-                            className="w-40 bg-green-500 hover:bg-green-600 text-white font-semibold rounded p-2"
-                            onClick={() => handleSaveLocalization(true)}
-                        >
-                            Export
-                        </button>
-                    </div>
+                    )}
                 </div>
                 {submitFlag ? <Electrodes /> : <Electrodes />}
             </div>
@@ -755,7 +1010,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
                 {isSharedFile && (
                     <button
-                        onClick={hasChanges ? handleSubmitChanges : () => setShowApprovalModal(true)}
+                        onClick={() => setShowApprovalModal(true)}
                         className={`py-2 px-4 font-bold rounded-md transition-colors duration-200 shadow-lg ${
                             hasChanges 
                                 ? "bg-violet-600 hover:bg-violet-700 text-white"
@@ -770,10 +1025,13 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             {showApprovalModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
                     <div className="bg-white p-6 rounded-lg shadow-xl max-w-md">
-                        <h2 className="text-xl font-bold mb-4">Send File</h2>
+                        <h2 className="text-xl font-bold mb-4">
+                            {hasChanges ? 'Submit Changes' : 'Approve File'}
+                        </h2>
                         <p className="mb-6 text-gray-600">
-                            Once you send this file, you will not be able to view or suggest changes 
-                            unless the owner shares it with you again. Would you like to proceed?
+                            {hasChanges 
+                                ? 'Are you done suggesting changes to this file? The owner will be notified of your suggestions.'
+                                : 'Once you approve this file, you will not be able to view or suggest changes unless the owner shares it with you again.'}
                         </p>
                         <div className="flex justify-end gap-4">
                             <button
@@ -783,10 +1041,17 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                                 Cancel
                             </button>
                             <button
-                                onClick={handleApproveFile}
+                                onClick={async () => {
+                                    setShowApprovalModal(false);
+                                    if (hasChanges) {
+                                        await handleSubmitChanges();
+                                    } else {
+                                        await handleApproveFile();
+                                    }
+                                }}
                                 className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                             >
-                                Approve
+                                {hasChanges ? 'Submit' : 'Approve'}
                             </button>
                         </div>
                     </div>
