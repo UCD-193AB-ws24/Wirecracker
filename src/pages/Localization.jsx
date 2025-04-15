@@ -155,56 +155,56 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 alert('User not authenticated. Please log in to save localizations.');
                 return;
             }
-            
-            console.log('File ID (integer):', fileId);
-            console.log('Electrodes data to save:', electrodes);
-            
-            // Make sure we have valid data before sending to backend
-            if (Object.keys(electrodes).length === 0) {
-                alert('No electrode data to save. Please add at least one electrode.');
-                return;
-            }
-            
-            try {
-                // Save file metadata first
-                await saveFileMetadata(userId);
-                console.log('File metadata saved successfully');
-            } catch (metadataError) {
-                console.error('Error saving file metadata:', metadataError);
-                alert(`File metadata error: ${metadataError.message}`);
-                return;
-            }
-            
-            // Prepare data for sending to backend
-            const dataToSend = {
-                electrodes: electrodes,
-                fileId: fileId
-            };
-            
-            console.log('Sending data to backend:', dataToSend);
-            
-            // Save localization data with file ID
-            const response = await fetch(`${backendURL}/api/save-localization`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(dataToSend),
-            });
-        
-            // Get detailed error from response if possible
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server response:', response.status, errorText);
-                throw new Error(`Failed to save localization: ${response.status} ${errorText}`);
-            }
-        
-            const result = await response.json();
-            console.log('Save successful:', result);
+            // If this is a shared file, update the changed_data in fileshares
+            if (isSharedFile) {
+                try {
+                    // Get the current share record to preserve current_snapshot
+                    const { data: shareData, error: shareError } = await supabase
+                        .from('fileshares')
+                        .select('current_snapshot')
+                        .eq('file_id', fileId)
+                        .eq('shared_with_user_id', userId)
+                        .single();
 
-            // Save to CSV
-            saveCSVFile(Identifiers.LOCALIZATION, electrodes, download);
+                    if (shareError) throw shareError;
+
+                    // Calculate changes by comparing current state with snapshot
+                    const changes = calculateChanges(shareData.current_snapshot, electrodes);
+
+                    if (Object.keys(changes).length > 0) {
+                        // Update fileshares with changes
+                        const { error: updateError } = await supabase
+                            .from('fileshares')
+                            .update({
+                                changed_data: changes
+                            })
+                            .eq('file_id', fileId)
+                            .eq('shared_with_user_id', userId);
+
+                        if (updateError) throw updateError;
+                    }
+                } catch (error) {
+                    console.error('Error updating shared file changes:', error);
+                    alert('Failed to save changes to shared file');
+                    return;
+                }
+            } else {
+                // Regular save for non-shared files
+                try {
+                    await saveFileMetadata(userId);
+                    console.log('File metadata saved successfully');
+                } catch (metadataError) {
+                    console.error('Error saving file metadata:', metadataError);
+                    alert(`File metadata error: ${metadataError.message}`);
+                    return;
+                }
+            }
+
+            // Save to CSV if requested
+            if (download) {
+                saveCSVFile(Identifiers.LOCALIZATION, electrodes, true);
+            }
             
             // Update tab with latest data
             onStateChange({
@@ -217,13 +217,78 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 modifiedDate
             });
             
-            // Show success message
             alert('Localization saved successfully!');
-        }
-        catch (error) {
+        } catch (error) {
             console.error('Error saving localization:', error);
             alert(`Failed to save localization. ${error.message}`);
         }
+    };
+
+    // Add this function to calculate changes between snapshot and current state
+    const calculateChanges = (snapshot, current) => {
+        const changes = {};
+
+        // Compare each electrode in current state with snapshot
+        Object.keys(current).forEach(label => {
+            const currentElectrode = current[label];
+            const snapshotElectrode = snapshot[label];
+
+            // If electrode doesn't exist in snapshot, it's a new addition
+            if (!snapshotElectrode) {
+                changes[label] = {
+                    type: 'added',
+                    data: currentElectrode
+                };
+                return;
+            }
+
+            // Compare contacts
+            Object.keys(currentElectrode).forEach(key => {
+                // Skip description key as it's not a contact
+                if (key === 'description') {
+                    if (currentElectrode.description !== snapshotElectrode.description) {
+                        if (!changes[label]) changes[label] = { contacts: {} };
+                        changes[label].description = {
+                            old: snapshotElectrode.description,
+                            new: currentElectrode.description
+                        };
+                    }
+                    return;
+                }
+
+                const currentContact = currentElectrode[key];
+                const snapshotContact = snapshotElectrode[key];
+
+                // If contact doesn't exist in snapshot or has different values
+                if (!snapshotContact || 
+                    currentContact.associatedLocation !== snapshotContact.associatedLocation ||
+                    currentContact.contactDescription !== snapshotContact.contactDescription) {
+                    
+                    if (!changes[label]) changes[label] = { contacts: {} };
+                    changes[label].contacts[key] = {
+                        old: snapshotContact || null,
+                        new: currentContact
+                    };
+                }
+            });
+
+            // If no changes were found for this electrode, don't include it
+            if (changes[label] && Object.keys(changes[label]).length === 0) {
+                delete changes[label];
+            }
+        });
+
+        // Check for deleted electrodes
+        Object.keys(snapshot).forEach(label => {
+            if (!current[label]) {
+                changes[label] = {
+                    type: 'deleted',
+                    data: snapshot[label]
+                };
+            }
+        });
+
+        return changes;
     };
 
     const createDesignationTab = () => {
