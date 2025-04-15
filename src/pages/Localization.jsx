@@ -18,6 +18,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
     const [creationDate, setCreationDate] = useState(savedState.creationDate || new Date().toISOString());
     const [modifiedDate, setModifiedDate] = useState(savedState.modifiedDate || new Date().toISOString());
     const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [hasChanges, setHasChanges] = useState(false);
 
     useEffect(() => {
         if (initialData.data && !savedState.electrodes) {
@@ -70,6 +71,11 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     associatedLocation: ''
                 };
             }
+            
+            if (isSharedFile) {
+                checkForChanges(tempElectrodes);
+            }
+            
             return tempElectrodes;
         });
 
@@ -410,6 +416,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             temp[label][number].associatedLocation = selectedValue;
             setElectrodes(temp);
             setModifiedDate(new Date().toISOString());
+            
+            // Check for changes if this is a shared file
+            if (isSharedFile) {
+                checkForChanges(temp);
+            }
+            
             setSubmitFlag(!submitFlag);
             close();
         };
@@ -422,6 +434,35 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         const filteredRegions2 = desc2Filter
             ? regionNames.filter(name => name.toLowerCase().includes(desc2Filter.toLowerCase()))
             : regionNames;
+
+        // Add a function to check for changes
+        const checkForChanges = async (currentElectrodes) => {
+            try {
+                const userId = await getUserId();
+                if (!userId) return;
+
+                const { data: shareData } = await supabase
+                    .from('fileshares')
+                    .select('current_snapshot')
+                    .eq('file_id', fileId)
+                    .eq('shared_with_user_id', userId)
+                    .single();
+
+                if (shareData) {
+                    const changes = calculateChanges(shareData.current_snapshot, currentElectrodes);
+                    setHasChanges(Object.keys(changes).length > 0);
+                }
+            } catch (error) {
+                console.error('Error checking for changes:', error);
+            }
+        };
+
+        // Add effect to check for changes when component mounts
+        useEffect(() => {
+            if (isSharedFile) {
+                checkForChanges(electrodes);
+            }
+        }, []);
 
         return (
             <Popup
@@ -590,6 +631,17 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         );
     };
 
+    // Add a handleSubmitChanges function
+    const handleSubmitChanges = async () => {
+        try {
+            await handleSaveLocalization(false);
+            setShowApprovalModal(true);
+        } catch (error) {
+            console.error('Error submitting changes:', error);
+            alert('Failed to submit changes. Please try again.');
+        }
+    };
+
     return (
         <div className="flex flex-col h-screen p-4">
             <div className="p-4">
@@ -679,10 +731,14 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
                 {isSharedFile && (
                     <button
-                        onClick={() => setShowApprovalModal(true)}
-                        className="py-2 px-4 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition-colors duration-200 shadow-lg"
+                        onClick={hasChanges ? handleSubmitChanges : () => setShowApprovalModal(true)}
+                        className={`py-2 px-4 font-bold rounded-md transition-colors duration-200 shadow-lg ${
+                            hasChanges 
+                                ? "bg-violet-600 hover:bg-violet-700 text-white"
+                                : "bg-green-600 hover:bg-green-700 text-white"
+                        }`}
                     >
-                        Approve File
+                        {hasChanges ? 'Submit Changes' : 'Approve File'}
                     </button>
                 )}
             </div>
@@ -690,9 +746,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             {showApprovalModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
                     <div className="bg-white p-6 rounded-lg shadow-xl max-w-md">
-                        <h2 className="text-xl font-bold mb-4">Approve File</h2>
+                        <h2 className="text-xl font-bold mb-4">Send File</h2>
                         <p className="mb-6 text-gray-600">
-                            Once you approve this file, you will not be able to view or suggest changes 
+                            Once you send this file, you will not be able to view or suggest changes 
                             unless the owner shares it with you again. Would you like to proceed?
                         </p>
                         <div className="flex justify-end gap-4">
