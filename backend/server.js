@@ -4,17 +4,29 @@ import cors from 'cors';
 import { Resend } from 'resend';
 import apiRoutes from './apiRoutes.js';
 import oauthRoutes from './oauth.js';
+import config from "../config.json" with { type: 'json' };
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = config.PORT || 5000;
+
+const frontendURL = config.frontendURL;
+const backendURL = config.backendURL;
+
+// Configure CORS with specific options
+app.use(cors({
+    origin: frontendURL, // Your frontend URL
+    credentials: true, // Allow credentials
+    methods: ['GET', 'POST'], // Allowed methods
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['set-cookie']
+}));
+
+app.use(express.json()); // Parse JSON request body
 
 app.use('/', oauthRoutes);
 app.use("/api", apiRoutes);
-
-app.use(cors()); // Allow requests from frontend
-app.use(express.json()); // Parse JSON request body
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -38,6 +50,8 @@ app.post('/send-verification-email', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+// app.listen(PORT, () => {
+//     console.log(`Server running on ${backendURL}:${PORT}`);
+// });
+// Vercel's server-less things
+export default app;

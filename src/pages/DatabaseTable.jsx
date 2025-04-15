@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import config from "../../config.json" with { type: 'json' };
+
+const backendURL = config.backendURL;
 
 const DatabaseTable = () => {
     const { table } = useParams();
@@ -7,7 +10,7 @@ const DatabaseTable = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`http://localhost:5000/api/tables/${table}`)
+        fetch(`${backendURL}:5000/api/tables/${table}`)
             .then(response => response.json())
             .then(data => {
                 setData(data);
@@ -25,9 +28,9 @@ const DatabaseTable = () => {
 
     const getTableURLFromKey = (key) => {
         if (key == "cort_id")
-            return "/database/cortical_subcortical";
+            return "/database/cort";
         if (key == "gm_id")
-            return "/database/gm_area";
+            return "/database/gm";
 
         return `/database/${key.replace("_id", "")}`;
     };
