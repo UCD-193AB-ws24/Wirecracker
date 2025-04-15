@@ -620,20 +620,17 @@ const HomePage = () => {
 
     // Modify closeTab function
     const closeTab = (tabId) => {
-        setTabs(prevTabs => {
-            const newTabs = prevTabs.filter(tab => tab.id !== tabId);
-            // Clear localStorage if closing all non-home tabs
-            if (newTabs.length === 1 && newTabs[0].id === 'home') {
-                localStorage.removeItem('tabs');
-            }
-            return newTabs;
-        });
-        
+        // If we're closing the active tab, switch to home first
         if (activeTab === tabId) {
-            const newActiveTab = tabs[tabs.length - 2]?.id || 'home';
-            setActiveTab(newActiveTab);
-            localStorage.setItem('activeTab', newActiveTab);
+            setActiveTab('home');
         }
+        
+        // Remove the tab from localStorage
+        const savedTabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+        localStorage.setItem('tabs', JSON.stringify(savedTabs.filter(tab => tab.id !== tabId)));
+        
+        // Then remove the tab from state
+        setTabs(prevTabs => prevTabs.filter(tab => tab.id !== tabId));
     };
 
     const handleFileUpload = async (event) => {
