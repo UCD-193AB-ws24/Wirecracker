@@ -61,19 +61,40 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         const label = formData.get('label').replace(/[,;]/g, '');
         const description = formData.get('description').replace(/[,;]/g, '');
         const numContacts = formData.get('contacts');
-
+        
         setElectrodes(prevElectrodes => {
             const tempElectrodes = { ...prevElectrodes };
             tempElectrodes[label] = { description: description };
             for (let i = 1; i <= numContacts; i++) {
-                tempElectrodes[label][i] = {
-                    contactDescription: description,
-                    associatedLocation: ''
+                tempElectrodes[label][i] = { 
+                    contactDescription: description, 
+                    associatedLocation: '' 
                 };
             }
             
+            // If this is a shared file, check for changes immediately
             if (isSharedFile) {
-                checkForChanges(tempElectrodes);
+                // We need to use the new state (tempElectrodes) here
+                (async () => {
+                    try {
+                        const userId = await getUserId();
+                        if (!userId) return;
+
+                        const { data: shareData } = await supabase
+                            .from('fileshares')
+                            .select('current_snapshot')
+                            .eq('file_id', fileId)
+                            .eq('shared_with_user_id', userId)
+                            .single();
+
+                        if (shareData) {
+                            const changes = calculateChanges(shareData.current_snapshot, tempElectrodes);
+                            setHasChanges(Object.keys(changes).length > 0);
+                        }
+                    } catch (error) {
+                        console.error('Error checking for changes:', error);
+                    }
+                })();
             }
             
             return tempElectrodes;
@@ -230,7 +251,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         }
     };
 
-    // Add this function to calculate changes between snapshot and current state
+    // Modify the calculateChanges function to be more consistent
     const calculateChanges = (snapshot, current) => {
         const changes = {};
 
@@ -242,25 +263,27 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             // If electrode doesn't exist in snapshot, it's a new addition
             if (!snapshotElectrode) {
                 changes[label] = {
-                    type: 'added',
-                    data: currentElectrode
+                    contacts: currentElectrode  // Changed from 'data' to 'contacts' for consistency
                 };
                 return;
             }
 
-            // Compare contacts
+            // Compare contacts and description
+            let hasChanges = false;
+            const contactChanges = {};
+
+            // Check description
+            if (currentElectrode.description !== snapshotElectrode.description) {
+                contactChanges.description = {
+                    old: snapshotElectrode.description,
+                    new: currentElectrode.description
+                };
+                hasChanges = true;
+            }
+
+            // Check each contact
             Object.keys(currentElectrode).forEach(key => {
-                // Skip description key as it's not a contact
-                if (key === 'description') {
-                    if (currentElectrode.description !== snapshotElectrode.description) {
-                        if (!changes[label]) changes[label] = { contacts: {} };
-                        changes[label].description = {
-                            old: snapshotElectrode.description,
-                            new: currentElectrode.description
-                        };
-                    }
-                    return;
-                }
+                if (key === 'description') return; // Skip description as it's handled above
 
                 const currentContact = currentElectrode[key];
                 const snapshotContact = snapshotElectrode[key];
@@ -270,17 +293,19 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     currentContact.associatedLocation !== snapshotContact.associatedLocation ||
                     currentContact.contactDescription !== snapshotContact.contactDescription) {
                     
-                    if (!changes[label]) changes[label] = { contacts: {} };
-                    changes[label].contacts[key] = {
+                    contactChanges[key] = {
                         old: snapshotContact || null,
                         new: currentContact
                     };
+                    hasChanges = true;
                 }
             });
 
-            // If no changes were found for this electrode, don't include it
-            if (changes[label] && Object.keys(changes[label]).length === 0) {
-                delete changes[label];
+            // Only add to changes if there were actual changes
+            if (hasChanges) {
+                changes[label] = {
+                    contacts: contactChanges
+                };
             }
         });
 
@@ -288,8 +313,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         Object.keys(snapshot).forEach(label => {
             if (!current[label]) {
                 changes[label] = {
-                    type: 'deleted',
-                    data: snapshot[label]
+                    contacts: snapshot[label]  // Changed from 'data' to 'contacts' for consistency
                 };
             }
         });
