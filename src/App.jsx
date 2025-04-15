@@ -1328,7 +1328,9 @@ const Approved = () => {
 
                 if (error) throw error;
 
-                setApprovedFiles(files || []);
+                // Filter out any entries where files is null
+                const validFiles = files?.filter(file => file.files !== null) || [];
+                setApprovedFiles(validFiles);
             } catch (error) {
                 console.error('Error fetching approved files:', error);
             } finally {
@@ -1366,7 +1368,7 @@ const Approved = () => {
                                 >
                                     <div className="flex flex-col">
                                         <span className="text-sm font-medium text-gray-700">
-                                            {file.files.filename}
+                                            {file.files?.filename || 'Unnamed File'}
                                         </span>
                                         <span className="text-xs text-gray-500">
                                             Approved: {new Date(file.approved_date).toLocaleDateString()}
