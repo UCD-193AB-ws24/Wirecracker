@@ -466,13 +466,30 @@ const HomePage = () => {
         };
     }, []);
 
-    // Add new event listener for shared files
+    // Add function to find existing tab
+    const findTabWithFileId = (fileId) => {
+        return tabs.find(tab => tab.state?.fileId === fileId);
+    };
+
+    // Modify the handleOpenSharedFile handler
     useEffect(() => {
         const handleOpenSharedFile = (event) => {
-            const { fileId, fileName, type, data } = event.detail;
+            const { fileId, fileName, creationDate, modifiedDate } = event.detail;
+            
+            // Check if tab already exists
+            const existingTab = findTabWithFileId(fileId);
+            if (existingTab) {
+                // Switch to existing tab instead of creating new one
+                setActiveTab(existingTab.id);
+                return;
+            }
+
+            // Open new tab without clearing existing ones
             FileUtils.handleFileOpen({
                 file_id: fileId,
-                filename: fileName
+                filename: fileName,
+                creation_date: creationDate,
+                modified_date: modifiedDate
             }, openSavedFile);
         };
 
@@ -480,7 +497,7 @@ const HomePage = () => {
         return () => {
             window.removeEventListener('openSharedFile', handleOpenSharedFile);
         };
-    }, []);
+    }, [tabs, activeTab]);
 
     useEffect(() => {
         // Find the highest localization number to initialize the counter
@@ -500,11 +517,16 @@ const HomePage = () => {
         }
     }, []);
 
+    // Modify addTab function to check for existing tabs
     const addTab = (type, data = null) => {
-        const generateUniqueId = () => {
-            // Generate an integer ID based on current timestamp
-            return Math.floor(Date.now() % 1000000000); // Last 9 digits as integer
-        };
+        // If data includes a fileId, check if tab already exists
+        if (data?.fileId) {
+            const existingTab = findTabWithFileId(data.fileId);
+            if (existingTab) {
+                setActiveTab(existingTab.id);
+                return;
+            }
+        }
 
         let title = 'New Tab';
         switch (type) {
@@ -525,7 +547,7 @@ const HomePage = () => {
             content: type,
             data: data,
             state: {
-                fileId: generateUniqueId(),
+                fileId: data?.fileId || Math.floor(Date.now() % 1000000000), // Use provided fileId or generate a new one
                 fileName: title,
                 creationDate: new Date().toISOString(),
                 modifiedDate: new Date().toISOString()
@@ -575,11 +597,21 @@ const HomePage = () => {
         );
     };
 
+    // Modify closeTab function
     const closeTab = (tabId) => {
-        const newTabs = tabs.filter(tab => tab.id !== tabId);
-        setTabs(newTabs);
+        setTabs(prevTabs => {
+            const newTabs = prevTabs.filter(tab => tab.id !== tabId);
+            // Clear localStorage if closing all non-home tabs
+            if (newTabs.length === 1 && newTabs[0].id === 'home') {
+                localStorage.removeItem('tabs');
+            }
+            return newTabs;
+        });
+        
         if (activeTab === tabId) {
-            setActiveTab(newTabs[newTabs.length - 1].id);
+            const newActiveTab = tabs[tabs.length - 2]?.id || 'home';
+            setActiveTab(newActiveTab);
+            localStorage.setItem('activeTab', newActiveTab);
         }
     };
 
@@ -1186,7 +1218,9 @@ const ToReview = () => {
                                         const event = new CustomEvent('openSharedFile', {
                                             detail: {
                                                 fileId: share.file_id,
-                                                fileName: share.files.filename
+                                                fileName: share.files.filename,
+                                                creationDate: share.files.creation_date,
+                                                modifiedDate: share.files.modified_date
                                             }
                                         });
                                         window.dispatchEvent(event);
