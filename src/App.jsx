@@ -704,7 +704,7 @@ const HomePage = () => {
         switch (currentTab.content) {
             case 'home':
                 return (
-                    <div className="h-full px-2 flex justify-around items-baseline
+                    <div className="bg-sky-50 h-full px-2 flex justify-around items-baseline
                                     md:px-5
                                     lg:px-10
                                     xl:px-15">
@@ -867,7 +867,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                         Search the Database
                     </button>
                     <button
-                        className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-34 h-12 mt-3 text-xs hover:bg-sky-700 hover:text-white
+                        className="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle hover:bg-sky-700 hover:text-white
                                    md:w-40 md:text-sm
                                    lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                    xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
@@ -884,14 +884,14 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                     <Dropdown 
                         closedText="Open File"
                         openText="Open File ▾"
-                        closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-34 h-12 mt-3 text-xs transition-colors duration-200 hover:bg-sky-700 hover:text-white
+                        closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-34 mt-3 py-1 text-xs transition-colors duration-200 hover:bg-sky-700 hover:text-white
                                          md:w-40 md:text-sm
-                                         lg:w-48 lg:mt-4 lg:text-md
-                                         xl:w-64 xl:mt-5 xl:text-lg"
-                        openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-3 text-xs
+                                         lg:w-48 lg:mt-4 lg:py-2 lg:text-md
+                                         xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
+                        openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 mt-3 py-1 text-xs
                                        md:w-40 md:text-sm
-                                       lg:w-48 lg:mt-4 lg:text-md
-                                       xl:w-64 xl:mt-5 xl:text-lg"
+                                       lg:w-48 lg:mt-4 lg:py-2 lg:text-md
+                                       xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
                         options="Open-Local Open-Database"
                         optionClassName="block w-34 py-1 text-xs text-gray-700 hover:bg-gray-100
                                          md:w-40
@@ -1034,7 +1034,7 @@ const Right = ({ onOpenFile }) => {
                            xl:text-5xl">
                 Recent Files
             </h3>
-            <div className="mb-5">
+            <div className="bg-sky-200 rounded-xl p-2 mt-2">
                 {isLoading ? (
                     <div className="text-gray-500">Loading...</div>
                 ) : recentLocalizations.length > 0 ? (
@@ -1043,11 +1043,10 @@ const Right = ({ onOpenFile }) => {
                             <div 
                                 id={`file-${file.file_id}`}
                                 key={file.file_id} 
-                                className="hover:bg-sky-50 hover:text-sky-600 cursor-pointer rounded pt-1 transition-colors duration-150 flex justify-between items-center
-                                           lg:pt-2"
+                                className="hover:bg-sky-50 hover:text-sky-600 rounded cursor-pointer py-1 pr-1 transition-colors duration-150 flex justify-between items-center"
                                 onClick={() => handleFileClick(file)}
                             >
-                                <div className="text-xs truncate max-w-34 filename px-1
+                                <div className="text-xs truncate max-w-30 filename px-1
                                                 md:max-w-42
                                                 lg:max-w-50 lg:text-sm lg:px-2
                                                 xl:max-w-64">
@@ -1151,7 +1150,7 @@ const ToReview = () => {
             {isReviewOpen ? (
                 <>
                     <div className="before:content-['▾']"></div>
-                    <div className="mb-5">
+                    <div className="mb-5 whitespace-nowrap">
                         <div>To Review</div>
                     </div>
                 </>
