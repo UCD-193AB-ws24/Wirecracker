@@ -92,7 +92,22 @@ router.post('/validate-email', async (req, res) => {
     }
 });
 
-// Create share record and send notification
+// Add this function to get current localization data
+const getLocalizationSnapshot = async (fileId) => {
+    const { data, error } = await supabase
+        .from('localization')
+        .select(`
+            id, contact, tissue_type,
+            electrode:electrode_id(id, label, description, contact_number),
+            region:region_id(id, name)
+        `)
+        .eq('file_id', fileId);
+
+    if (error) throw error;
+    return data;
+};
+
+// Modify the create-share endpoint
 router.post('/create-share', async (req, res) => {
     try {
         const { email, fileId, permissionLevel } = req.body;
@@ -129,24 +144,51 @@ router.post('/create-share', async (req, res) => {
             });
         }
 
-        // Create share record
+        // Get current localization data
+        const localizationData = await getLocalizationSnapshot(fileId);
+        
+        // Transform the data into the electrode format
+        const electrodes = {};
+        localizationData.forEach(record => {
+            const label = record.electrode.label;
+            const description = record.electrode.description;
+            const contact = record.contact;
+            const regionName = record.region?.name || '';
+            const tissueType = record.tissue_type;
+
+            if (!electrodes[label]) {
+                electrodes[label] = {
+                    description: description
+                };
+            }
+
+            if (!electrodes[label][contact]) {
+                electrodes[label][contact] = {
+                    associatedLocation: tissueType,
+                    contactDescription: regionName
+                };
+            } else if (tissueType === 'GM' && electrodes[label][contact].associatedLocation === 'GM') {
+                const existingDesc = electrodes[label][contact].contactDescription;
+                electrodes[label][contact].associatedLocation = 'GM/GM';
+                electrodes[label][contact].contactDescription = `${existingDesc}+${regionName}`;
+            }
+        });
+
+        // Create share record with snapshot
         const { data: shareData, error: shareError } = await supabase
             .from('fileshares')
             .insert({
                 file_id: fileId,
                 shared_with_user_id: targetUser.id,
                 permission_level: permissionLevel,
-                shared_date: new Date().toISOString()
+                shared_date: new Date().toISOString(),
+                current_snapshot: electrodes,
+                changed_data: null
             })
             .select()
             .single();
 
-        if (shareError) {
-            console.error('Share error:', shareError);
-            return res.status(500).json({ 
-                error: 'Failed to create share record' 
-            });
-        }
+        if (shareError) throw shareError;
 
         // Generate a file access URL using frontendURL from config
         const fileUrl = `${frontendURL}/shared/${fileId}`;
@@ -179,9 +221,7 @@ router.post('/create-share', async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating share:', error);
-        res.status(500).json({ 
-            error: 'Failed to create share' 
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 

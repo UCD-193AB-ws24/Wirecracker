@@ -493,7 +493,7 @@ const HomePage = () => {
     // Modify the handleOpenSharedFile handler
     useEffect(() => {
         const handleOpenSharedFile = (event) => {
-            const { fileId, fileName, creationDate, modifiedDate, isSharedFile } = event.detail;
+            const { fileId, fileName, creationDate, modifiedDate, isSharedFile, data } = event.detail;
             
             // Check if tab already exists
             const existingTab = findTabWithFileId(fileId);
@@ -503,7 +503,28 @@ const HomePage = () => {
                 return;
             }
 
-            // Open new tab without clearing existing ones
+            // If data is provided (from snapshot), use it directly
+            if (data) {
+                const newTab = {
+                    id: Date.now().toString(),
+                    title: fileName,
+                    content: 'csv-localization',
+                    data: data,
+                    state: {
+                        fileId: fileId,
+                        fileName: fileName,
+                        creationDate: creationDate,
+                        modifiedDate: modifiedDate,
+                        electrodes: data.data,
+                        isSharedFile: isSharedFile
+                    }
+                };
+                setTabs(prevTabs => [...prevTabs, newTab]);
+                setActiveTab(newTab.id);
+                return;
+            }
+
+            // Otherwise, load file data (this case shouldn't happen for shared files anymore)
             FileUtils.handleFileOpen({
                 file_id: fileId,
                 filename: fileName,

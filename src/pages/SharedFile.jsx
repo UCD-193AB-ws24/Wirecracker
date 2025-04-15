@@ -81,10 +81,17 @@ const SharedFile = () => {
                     throw new Error('Invalid session');
                 }
 
-                // Check if user has access to this file
+                // Check if user has access to this file and get the snapshot
                 const { data: shareData, error: shareError } = await supabase
                     .from('fileshares')
-                    .select('*')
+                    .select(`
+                        *,
+                        files:file_id (
+                            filename,
+                            creation_date,
+                            modified_date
+                        )
+                    `)
                     .eq('file_id', fileId)
                     .eq('shared_with_user_id', session.user_id)
                     .single();
@@ -93,30 +100,25 @@ const SharedFile = () => {
                     throw new Error('You do not have access to this file');
                 }
 
-                // Get file data
-                const { data: fileData } = await supabase
-                    .from('files')
-                    .select('*')
-                    .eq('file_id', fileId)
-                    .single();
-
-                if (!fileData) {
+                if (!shareData.files) {
                     throw new Error('File not found');
                 }
 
-                // Dispatch event to open the file with isSharedFile flag
+                // Use the snapshot data instead of loading from localization table
                 const event = new CustomEvent('openSharedFile', {
                     detail: {
                         fileId: fileId,
-                        fileName: fileData.filename,
-                        creationDate: fileData.creation_date,
-                        modifiedDate: fileData.modified_date,
-                        isSharedFile: true
+                        fileName: shareData.files.filename,
+                        creationDate: shareData.files.creation_date,
+                        modifiedDate: shareData.files.modified_date,
+                        isSharedFile: true,
+                        data: {
+                            data: shareData.current_snapshot || {} // Use the snapshot from fileshares
+                        }
                     }
                 });
                 window.dispatchEvent(event);
 
-                // Navigate to home after dispatching the event
                 navigate('/');
 
             } catch (error) {
