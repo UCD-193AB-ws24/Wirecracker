@@ -223,8 +223,8 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
             const threshold = 1
             switch (dir) {
                 case 1:
-                    dist = Math.abs(x - slice);
-                    if (dist < threshold) {
+                    dist = x - slice;
+                    if (Math.abs(dist) < threshold) {
                         canvasX = (y * scale) + offsetX;
                         canvasY = maxDim - (z * scale) - offsetY;
                         originalCoord[0] = y;
@@ -233,8 +233,8 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     }
                     break;
                 case 2:
-                    dist = Math.abs(y - slice);
-                    if (dist < threshold) {
+                    dist = y - slice;
+                    if (Math.abs(dist) < threshold) {
                         canvasX = (x * scale) + offsetX;
                         canvasY = maxDim - (z * scale) - offsetY;
                         originalCoord[0] = x;
@@ -243,8 +243,8 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     }
                     break;
                 case 3:
-                    dist = Math.abs(z - slice);
-                    if (dist < threshold) {
+                    dist = z - slice;
+                    if (Math.abs(dist) < threshold) {
                         canvasX = (x * scale) + offsetX;
                         canvasY = maxDim - (y * scale) - offsetY;
                         originalCoord[0] = x;
@@ -268,7 +268,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                 }
 
                 ctx.beginPath();
-                let markSize = viewSize / 100 - 1 - dist * 2;
+                let markSize = viewSize / 100 - 1 + dist * 2;
                 if (selectedContacts.includes(targetContact.id)) {
                     markSize += 2;
                 }
@@ -279,19 +279,23 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
                 switch (targetContact.mark) {
                     case 0:
+                        ctx.globalAlpha = 1 - Math.abs(dist);
                         ctx.fillStyle = "rgb(249 249 249)"; break;
                     case 1:
+                        ctx.globalAlpha = 1 - Math.abs(dist);
                         ctx.fillStyle = "rgb(255 58 68)"; break;
                     case 2:
+                        ctx.globalAlpha = 1 - Math.abs(dist);
                         ctx.fillStyle = "rgb(237 255 68)"; break;
                     case 3:
-                        ctx.fillStyle = "rgb(139 139 139)"; break;
+                        ctx.globalAlpha = 1 - Math.abs(dist);
+                        ctx.fillStyle = "rgba(139 139 139)"; break;
                 }
-                ctx.fill();
-
                 ctx.strokeStyle = targetContact.surgeonMark ? 'black' : ctx.fillStyle;
 
+                ctx.fill();
                 ctx.stroke();
+                ctx.globalAlpha = 1;
 
                 // Store the marker position
                 newMarkers.push({ x: canvasX, y: canvasY, contact: targetContact, originalCoord: originalCoord });
@@ -498,10 +502,10 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                                 };
                             });
                         }
-                        onContactClick(focus.id, (contact) => {
+                        onContactClick(marker.contact.id, (contact) => {
                             return {
                                 ...contact,
-                                focus: false
+                                focus: true
                             };
                         });
                         setFocus(marker.contact);
