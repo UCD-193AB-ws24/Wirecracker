@@ -460,6 +460,133 @@ router.post('/save-test-selection', async (req, res) => {
   }
 });
 
+router.post("/search", async (req, res) => {
+  try {
+    const { query, hemisphere, lobe } = req.body;
+
+    let supabaseQuery = supabase
+      .from("cort")
+      .select("*");
+
+    // Apply text search if query exists
+    if (query && query.trim() !== "") {
+      supabaseQuery = supabaseQuery
+        .or(`name.ilike.%${query}%,lobe.ilike.%${query}%`);
+    }
+
+    // Apply hemisphere filter (convert to 'r'/'l')
+    if (hemisphere && hemisphere.length > 0) {
+      const hemisphereCodes = hemisphere.map(h =>
+        h === "left" ? "l" : h === "right" ? "r" : h
+      );
+      supabaseQuery = supabaseQuery.in("hemisphere", hemisphereCodes);
+    }
+
+    // Apply lobe filter
+    if (lobe && lobe.length > 0) {
+      supabaseQuery = supabaseQuery.or(
+        lobe.map(l => `lobe.ilike.%${l}%`).join(',')
+      );
+    }
+
+    const { data, error } = await supabaseQuery;
+
+    if (error) throw error;
+
+    console.log(data)
+
+    res.json(data || []);
+  } catch (error) {
+    console.error("Search Error:", error);
+    res.status(500).json({ error: "Error performing search" });
+  }
+});
+
+router.post('/suggest', async (req, res) => {
+    try {
+        const {query} = req.body;
+
+        if (!query) {
+            return res.status(400).json({ error: 'Query parameters are required' });
+        }
+
+        let { data, error } = await supabase
+            .from('cort')
+            .select()
+            .ilike('lobe', `%${query}%`)
+            .limit(5);
+        if (error) throw error;
+
+        let suggestions = new Set(data.map(item => item['lobe']));
+
+        ({ data, error } = await supabase
+            .from('cort')
+            .select()
+            .ilike('name', `%${query}%`)
+            .limit(5));
+
+        if (error) throw error;
+        suggestions.add(...data.map(item => item['name']));
+
+        ({ data, error } = await supabase
+            .from('cort')
+            .select()
+            .ilike('acronym', `%${query}%`)
+            .limit(5));
+
+        if (error) throw error;
+        suggestions.add(...data.map(item => item['acronym']));
+
+
+        ({ data, error } = await supabase
+            .from('gm')
+            .select()
+            .ilike('name', `%${query}%`)
+            .limit(5));
+
+        if (error) throw error;
+        suggestions.add(...data.map(item => item['name']));
+
+        ({ data, error } = await supabase
+            .from('gm')
+            .select()
+            .ilike('acronym', `%${query}%`)
+            .limit(5));
+
+        if (error) throw error;
+        suggestions.add(...data.map(item => item['acronym']));
+
+        const suggestionArray = [...suggestions].filter(x => x !== undefined);
+
+        console.log(suggestionArray)
+
+        res.json({ suggestions: suggestionArray });
+    } catch (err) {
+        console.error("Suggestion error:", err);
+        res.status(500).json({ error: 'Failed to fetch suggestions' });
+    }
+});
+
+router.get("/lobe-options", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("cort")
+      .select("lobe")
+      .not("lobe", "is", null)
+      .not("lobe", "eq", "")
+      .order("lobe", { ascending: true });
+
+    if (error) throw error;
+
+    const uniqueLobes = [...new Set(data.map(item => item.lobe))].filter(Boolean);
+
+    res.json({ lobes: uniqueLobes });
+  } catch (error) {
+    console.error("Server Error:", error);
+    res.status(500).json({ error: "Error fetching lobe options" });
+  }
+});
+
 /**
  * Generates an acronym from a description.
  * @param {string} description - The description to generate an acronym from.

@@ -465,6 +465,18 @@ const HomePage = () => {
         };
     }, []);
 
+    // Add event listener for db lookup tab creation
+    useEffect(() => {
+        const handleAddFunctionalTestTab = (event) => {
+            addTab('database-lookup', event.detail);
+        };
+
+        window.addEventListener('addDatabaseLookupTab', handleAddFunctionalTestTab);
+        return () => {
+            window.removeEventListener('addDatabaseLookupTab', handleAddFunctionalTestTab);
+        };
+    }, []);
+
     useEffect(() => {
         // Find the highest localization number to initialize the counter
         if (tabs.length > 1) {
@@ -500,6 +512,7 @@ const HomePage = () => {
             case 'stimulation':         title = 'New Stimulation Plan'; break;
             case 'designation':         title = 'New Designation'; break;
             case 'functional-test':     title = 'New Functional Mapping'; break;
+            case 'database-lookup':     title = 'Lookup'; break;
         }
 
         const newTab = {
@@ -803,6 +816,13 @@ const HomePage = () => {
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
+            case 'database-lookup':
+                return <DBLookup
+                    key={currentTab.id}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
             default:
                 return null;
         }
@@ -853,7 +873,8 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
         <div className="h-screen basis-150 flex flex-col justify-center items-center">
             {token && 
                 <>
-                    <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3">
+                    <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3"
+                            onClick={() => window.dispatchEvent(new CustomEvent('addDatabaseLookupTab'))}>
                         Search the Database
                     </button>
                 </>
