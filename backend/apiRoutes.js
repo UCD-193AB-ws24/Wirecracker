@@ -541,7 +541,7 @@ router.post("/search", async (req, res) => {
       });
     }
 
-    // 3. Get all related data
+    // Get all related data
     const allGmIds = [
       ...new Set([
         ...results.cort.flatMap(c => c.cort_gm?.map(cg => cg.gm?.id)),

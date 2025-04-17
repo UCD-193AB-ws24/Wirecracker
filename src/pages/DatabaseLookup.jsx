@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
-import config from "../../config.json" with { type: 'json' };
+import config from "../../config.json" with { type: "json" };
 
 const backendURL = config.backendURL;
 
 const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
-    const [query, setQuery] = useState(savedState.query || initialData.query || "");
+    const [query, setQuery] = useState(
+        savedState.query || initialData.query || "",
+    );
     const [parameters, setParameters] = useState(
-        savedState.parameters || initialData.parameters || {
-            hemisphere: [],
-            lobe: []
-        }
+        savedState.parameters ||
+            initialData.parameters || {
+                hemisphere: [],
+                lobe: [],
+            },
     );
     const [searchResult, setSearchResult] = useState(savedState.results || []);
     const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +40,12 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
     useEffect(() => {
         if (onStateChange) {
-            onStateChange({ parameters, results: searchResult, filter: showFilters, query: query });
+            onStateChange({
+                parameters,
+                results: searchResult,
+                filter: showFilters,
+                query: query,
+            });
         }
     }, [parameters, searchResult, showFilters, query]);
 
@@ -49,9 +57,10 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
             const queryParams = {
                 query,
                 ...Object.fromEntries(
-                    Object.entries(parameters)
-                        .filter(([_, v]) => v !== "" && v.length !== 0)
-                )
+                    Object.entries(parameters).filter(
+                        ([_, v]) => v !== "" && v.length !== 0,
+                    ),
+                ),
             };
 
             const res = await fetch(`${backendURL}/api/search`, {
@@ -94,94 +103,101 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     };
 
-const transformSearchResults = (data) => {
-  const results = [];
+    const transformSearchResults = (data) => {
+        const results = [];
 
-  // Helper function to add item if it doesn't exist
-  const addItem = (item, type) => {
-    if (!item || !item.id) return;
-    const exists = results.some(r => r.type === type && r.id === item.id);
-    if (!exists) {
-      let relatedItems = [];
-      switch (type) {
-        case 'cort':
-          for (let relatedGM in item.cort_gm) {
-            relatedItems.push({
-              type: "Gray Matter",
-              name: item.cort_gm[relatedGM].gm.name
-            })
-          }
-          break;
-        case 'gm':
-          for (let relatedCort in item.cort_gm) {
-            relatedItems.push({
-              type: "Cortical/Subcortical",
-              name: item.cort_gm[relatedCort].cort.name
-            })
-          }
-          for (let relatedFunc in item.gm_function) {
-            relatedItems.push({
-              type: "Function",
-              name: item.gm_function[relatedFunc].function.name
-            })
-          }
-          break;
-        case 'function':
-          for (let relatedTest in item.test) {
-            relatedItems.push({
-              type: "Test",
-              name: item.test[relatedTest].name
-            })
-          }
-          break;
-        case 'test':
-          for (let relatedFunc in item.function) {
-            relatedItems.push({
-              type: "Function",
-              name: item.function[relatedFunc].name
-            })
-          }
-          break;
-      }
-      results.push({
-        type,
-        id: item.id,
-        name: item.name || item.title || item.acronym || `Reference ${item.isbn_issn_doi}`,
-        details: getItemDetails(item, type),
-        related: relatedItems
-      });
-    }
-  };
-
-  // Helper to get display details for each item type
-  const getItemDetails = (item, type) => {
-    switch (type) {
-      case 'cort':
-        return {
-          hemisphere: item.hemisphere,
-          lobe: item.lobe,
-          electrode_label: item.electrode_label,
-          acronym: item.acronym
+        // Helper function to add item if it doesn't exist
+        const addItem = (item, type) => {
+            if (!item || !item.id) return;
+            const exists = results.some(
+                (r) => r.type === type && r.id === item.id,
+            );
+            if (!exists) {
+                let relatedItems = [];
+                switch (type) {
+                    case "cort":
+                        for (let relatedGM in item.cort_gm) {
+                            relatedItems.push({
+                                type: "Gray Matter",
+                                name: item.cort_gm[relatedGM].gm.name,
+                            });
+                        }
+                        break;
+                    case "gm":
+                        for (let relatedCort in item.cort_gm) {
+                            relatedItems.push({
+                                type: "Cortical/Subcortical",
+                                name: item.cort_gm[relatedCort].cort.name,
+                            });
+                        }
+                        for (let relatedFunc in item.gm_function) {
+                            relatedItems.push({
+                                type: "Function",
+                                name: item.gm_function[relatedFunc].function
+                                    .name,
+                            });
+                        }
+                        break;
+                    case "function":
+                        for (let relatedTest in item.test) {
+                            relatedItems.push({
+                                type: "Test",
+                                name: item.test[relatedTest].name,
+                            });
+                        }
+                        break;
+                    case "test":
+                        for (let relatedFunc in item.function) {
+                            relatedItems.push({
+                                type: "Function",
+                                name: item.function[relatedFunc].name,
+                            });
+                        }
+                        break;
+                }
+                results.push({
+                    type,
+                    id: item.id,
+                    name:
+                        item.name ||
+                        item.title ||
+                        item.acronym ||
+                        `Reference ${item.isbn_issn_doi}`,
+                    details: getItemDetails(item, type),
+                    related: relatedItems,
+                });
+            }
         };
-      case 'gm':
-        return { acronym: item.acronym };
-      case 'function':
-        return { description: item.description };
-      case 'test':
-        return { description: item.description };
-      default:
-        return {};
-    }
-  };
 
-  // Process all data and collect items
-  data.cort?.forEach(cort => addItem(cort, 'cort'));
-  data.gm?.forEach(gm => addItem(gm, 'gm'));
-  data.functions?.forEach(func => addItem(func, 'function'));
-  data.tests?.forEach(test => addItem(test, 'test'));
+        // Helper to get display details for each item type
+        const getItemDetails = (item, type) => {
+            switch (type) {
+                case "cort":
+                    return {
+                        hemisphere: item.hemisphere,
+                        lobe: item.lobe,
+                        electrode_label: item.electrode_label,
+                        acronym: item.acronym,
+                    };
+                case "gm":
+                    return { acronym: item.acronym };
+                case "function":
+                    return { description: item.description };
+                case "test":
+                    return { description: item.description };
+                default:
+                    return {};
+            }
+        };
 
-  return results;
-};
+        // Process all data and collect items
+        data.cort?.forEach((cort) => addItem(cort, "cort"));
+        data.gm?.forEach((gm) => addItem(gm, "gm"));
+        data.functions?.forEach((func) => addItem(func, "function"));
+        data.tests?.forEach((test) => addItem(test, "test"));
+
+        return results;
+    };
 
     const handleReset = () => {
         setQuery("");
@@ -192,88 +208,151 @@ const transformSearchResults = (data) => {
     };
 
     const handleHemisphereChange = (side) => {
-        setParameters(prev => {
+        setParameters((prev) => {
             const newHemisphere = prev.hemisphere.includes(side)
-                ? prev.hemisphere.filter(h => h !== side)
+                ? prev.hemisphere.filter((h) => h !== side)
                 : [...prev.hemisphere, side];
             return { ...prev, hemisphere: newHemisphere };
         });
     };
 
     const handleLobeChange = (lobe) => {
-        setParameters(prev => {
+        setParameters((prev) => {
             const newLobe = prev.lobe.includes(lobe)
-                ? prev.lobe.filter(l => l !== lobe)
+                ? prev.lobe.filter((l) => l !== lobe)
                 : [...prev.lobe, lobe];
             return { ...prev, lobe: newLobe };
         });
     };
 
-const renderResultsTable = () => {
-  if (searchResult.length === 0) {
-    return <p>No results to display. Perform a search to see results.</p>;
-  }
+    const renderResultsTable = () => {
+        if (searchResult.length === 0) {
+            return (
+                <p>No results to display. Perform a search to see results.</p>
+            );
+        }
 
-  return (
-    <div>
-      <h3 className="text-lg font-semibold mb-2">
-        Results ({searchResult.length})
-      </h3>
-      <div className="overflow-auto border rounded">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-2 text-left font-medium text-gray-700">Type</th>
-              <th className="px-4 py-2 text-left font-medium text-gray-700">Name</th>
-              <th className="px-4 py-2 text-left font-medium text-gray-700">Details</th>
-              <th className="px-4 py-2 text-left font-medium text-gray-700">Related Result</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {searchResult.map((item) => (
-              <tr key={`${item.type}-${item.id}`} className="hover:bg-gray-50">
-                <td className="px-4 py-2 capitalize">{item.type}</td>
-                <td className="px-4 py-2 font-medium">{item.name}</td>
-                <td className="px-4 py-2">
-                  {item.type === 'cort' && (
-                    <div className="space-y-1">
-                      <div><span className="text-gray-500">Hemisphere:</span> {item.details.hemisphere}</div>
-                      <div><span className="text-gray-500">Lobe:</span> {item.details.lobe}</div>
-                      <div><span className="text-gray-500">Electrode:</span> {item.details.electrode_label}</div>
-                      <div><span className="text-gray-500">Acronym:</span> {item.details.acronym}</div>
-                    </div>
-                  )}
-                  {item.type === 'gm' && (
-                    <div><span className="text-gray-500">Acronym:</span> {item.details.acronym}</div>
-                  )}
-                  {item.type === 'function' && (
-                    <div><span className="text-gray-500">Description:</span> {item.details.description}</div>
-                  )}
-                  {item.type === 'test' && (
-                    <div><span className="text-gray-500">Description:</span> {item.details.description}</div>
-                  )}
-                </td>
-                <td className="px-4 py-2">
-                  {item.related?.length > 0 ? (
-                    <div className="space-y-1">
-                      {item.related.map((rel, i) => (
-                        <div key={i} className="text-xs bg-gray-100 rounded px-2 py-1">
-                          <span className="font-medium capitalize">{rel.type}:</span> {rel.name}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-gray-400">None</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
+        return (
+            <div>
+                <h3 className="text-lg font-semibold mb-2">
+                    Results ({searchResult.length})
+                </h3>
+                <div className="overflow-auto border rounded">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead className="bg-gray-100">
+                            <tr>
+                                <th className="px-4 py-2 text-left font-medium text-gray-700">
+                                    Type
+                                </th>
+                                <th className="px-4 py-2 text-left font-medium text-gray-700">
+                                    Name
+                                </th>
+                                <th className="px-4 py-2 text-left font-medium text-gray-700">
+                                    Details
+                                </th>
+                                <th className="px-4 py-2 text-left font-medium text-gray-700">
+                                    Related Result
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {searchResult.map((item) => (
+                                <tr
+                                    key={`${item.type}-${item.id}`}
+                                    className="hover:bg-gray-50"
+                                >
+                                    <td className="px-4 py-2 capitalize">
+                                        {item.type}
+                                    </td>
+                                    <td className="px-4 py-2 font-medium">
+                                        {item.name}
+                                    </td>
+                                    <td className="px-4 py-2">
+                                        {item.type === "cort" && (
+                                            <div className="space-y-1">
+                                                <div>
+                                                    <span className="text-gray-500">
+                                                        Hemisphere:
+                                                    </span>{" "}
+                                                    {item.details.hemisphere}
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-500">
+                                                        Lobe:
+                                                    </span>{" "}
+                                                    {item.details.lobe}
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-500">
+                                                        Electrode:
+                                                    </span>{" "}
+                                                    {
+                                                        item.details
+                                                            .electrode_label
+                                                    }
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-500">
+                                                        Acronym:
+                                                    </span>{" "}
+                                                    {item.details.acronym}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {item.type === "gm" && (
+                                            <div>
+                                                <span className="text-gray-500">
+                                                    Acronym:
+                                                </span>{" "}
+                                                {item.details.acronym}
+                                            </div>
+                                        )}
+                                        {item.type === "function" && (
+                                            <div>
+                                                <span className="text-gray-500">
+                                                    Description:
+                                                </span>{" "}
+                                                {item.details.description}
+                                            </div>
+                                        )}
+                                        {item.type === "test" && (
+                                            <div>
+                                                <span className="text-gray-500">
+                                                    Description:
+                                                </span>{" "}
+                                                {item.details.description}
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-2">
+                                        {item.related?.length > 0 ? (
+                                            <div className="space-y-1">
+                                                {item.related.map((rel, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="text-xs bg-gray-100 rounded px-2 py-1"
+                                                    >
+                                                        <span className="font-medium capitalize">
+                                                            {rel.type}:
+                                                        </span>{" "}
+                                                        {rel.name}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400">
+                                                None
+                                            </span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="flex flex-col p-4 space-y-4 relative">
@@ -293,7 +372,9 @@ const renderResultsTable = () => {
                             setActiveSuggestions(true);
                         }}
                         onFocus={() => setActiveSuggestions(true)}
-                        onBlur={() => setTimeout(() => setActiveSuggestions(false), 200)}
+                        onBlur={() =>
+                            setTimeout(() => setActiveSuggestions(false), 200)
+                        }
                     />
                     <button
                         type="submit"
@@ -316,7 +397,9 @@ const renderResultsTable = () => {
                         {showFilters ? "Hide Filters" : "Show Filters"}
                     </button>
                     {isLoading && (
-                        <div className="absolute right-0 -bottom-6 text-sm text-gray-500">Loading...</div>
+                        <div className="absolute right-0 -bottom-6 text-sm text-gray-500">
+                            Loading...
+                        </div>
                     )}
                 </div>
 
@@ -346,17 +429,27 @@ const renderResultsTable = () => {
 
                         {/* Hemisphere Checkboxes */}
                         <div>
-                            <label className="block text-sm font-medium mb-1">Hemisphere</label>
+                            <label className="block text-sm font-medium mb-1">
+                                Hemisphere
+                            </label>
                             <div className="flex gap-2">
                                 {["left", "right"].map((side) => (
-                                    <label key={side} className="inline-flex items-center gap-2">
+                                    <label
+                                        key={side}
+                                        className="inline-flex items-center gap-2"
+                                    >
                                         <input
                                             type="checkbox"
-                                            checked={parameters.hemisphere.includes(side)}
-                                            onChange={() => handleHemisphereChange(side)}
+                                            checked={parameters.hemisphere.includes(
+                                                side,
+                                            )}
+                                            onChange={() =>
+                                                handleHemisphereChange(side)
+                                            }
                                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         />
-                                        {side.charAt(0).toUpperCase() + side.slice(1)}
+                                        {side.charAt(0).toUpperCase() +
+                                            side.slice(1)}
                                     </label>
                                 ))}
                             </div>
@@ -364,14 +457,23 @@ const renderResultsTable = () => {
 
                         {/* Lobe Checkboxes */}
                         <div>
-                            <label className="block text-sm font-medium mb-1">Lobe</label>
+                            <label className="block text-sm font-medium mb-1">
+                                Lobe
+                            </label>
                             <div className="space-y-2">
                                 {lobeOptions.map((lobe) => (
-                                    <label key={lobe} className="flex items-center gap-2">
+                                    <label
+                                        key={lobe}
+                                        className="flex items-center gap-2"
+                                    >
                                         <input
                                             type="checkbox"
-                                            checked={parameters.lobe.includes(lobe)}
-                                            onChange={() => handleLobeChange(lobe)}
+                                            checked={parameters.lobe.includes(
+                                                lobe,
+                                            )}
+                                            onChange={() =>
+                                                handleLobeChange(lobe)
+                                            }
                                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         />
                                         {lobe}
