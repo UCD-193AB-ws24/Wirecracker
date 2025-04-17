@@ -74,7 +74,7 @@ const Tab = ({ title, isActive, onClick, onClose, onRename }) => {
             )}
             {title !== 'Home' && (
                 <button 
-                    className="ml-2 text-gray-500 hover:text-gray-700"
+                    className="ml-2 text-gray-500 cursor-pointer hover:text-gray-700"
                     onClick={(e) => {
                         e.stopPropagation();
                         onClose();
@@ -136,7 +136,7 @@ const UserProfile = ({ onSignOut }) => {
             <span className="text-sky-700 font-semibold">{userName}</span>
             <button 
                 onClick={handleSignOut}
-                className="px-4 py-2 text-sm text-red-600 hover:text-red-800 font-medium"
+                className="px-4 py-2 text-sm text-red-600 cursor-pointer hover:text-red-800 font-medium"
             >
                 Sign Out
             </button>
@@ -704,17 +704,26 @@ const HomePage = () => {
         switch (currentTab.content) {
             case 'home':
                 return (
-                    <div className="h-screen flex justify-around items-baseline">
+                    <div className="bg-sky-50 h-full px-2 flex flex-col-reverse items-center
+                                    md:px-5
+                                    lg:px-10 lg:flex-row lg:items-baseline
+                                    xl:px-15">
                         {token ? (
                             <>
-                                <Left />
+                                <div className="lg:basis-6 lg:flex-auto mt-15 flex flex-col">
+                                    <Activity />
+                                    <RecentFiles
+                                        onOpenFile={openSavedFile}
+                                        className="mt-2 lg:mt-5"
+                                    />
+                                </div>
                                 <Center 
                                     token={token} 
                                     onNewLocalization={() => addTab('localization')}
                                     onFileUpload={handleFileUpload}
                                     error={error}
                                 />
-                                <Right onOpenFile={openSavedFile} />
+                                <div className="lg:basis-6 lg:flex-auto"></div>
                             </>
                         ) : (
                             <Center 
@@ -809,7 +818,7 @@ const HomePage = () => {
     };
 
     return (
-        <div className="h-screen flex flex-col">
+        <div className="h-dvh flex flex-col">
             <div className="flex border-b">
                 {tabs.map(tab => (
                     <Tab
@@ -822,7 +831,7 @@ const HomePage = () => {
                     />
                 ))}
                 <button 
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                    className="px-4 py-2 text-gray-600 cursor-pointer hover:text-gray-800"
                     onClick={() => addTab('localization')}
                 >
                     +
@@ -830,7 +839,7 @@ const HomePage = () => {
             </div>
             {token && <UserProfile onSignOut={handleSignOut} />}
 
-            <div className="flex-1">
+            <div className="grow">
                 {renderTabContent()}
             </div>
         </div>
@@ -850,134 +859,150 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     };
     
     return (
-        <div className="h-screen basis-150 flex flex-col justify-center items-center">
-            {token && 
+        <div className="px-2 self-center flex flex-col justify-center items-center m-auto
+                        md:px-7
+                        lg:px-12 lg:basis-7 lg:flex-auto
+                        xl:px-15">
+            <Logo />
+            {token ? (
                 <>
-                    <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3">
+                    <button className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                                   md:w-40 md:text-sm
+                                   lg:w-48 lg:mt-4 lg:py-2 lg:text-md
+                                   xl:w-64 xl:mt-5 xl:py-3 xl:text-lg">
                         Search the Database
                     </button>
-                </>
-            }
-            <Logo />
-            {!token && <SignInButtons />}
-            <Dropdown 
-                closedText="Create New"
-                openText="Create New ▾"
-                closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 mt-5"
-                openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 mt-5"
-                options="Localization"
-                optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
-                onOptionClick={(option) => {
-                    switch(option) {
-                        case "Localization":
-                            onNewLocalization();
-                            break;
-                    }
-                }}
-            />
-            <input
-                type="file"
-                accept=".csv"
-                onChange={onFileUpload}
-                style={{ display: 'none' }}
-                id="fileInput"
-            />
-            <Dropdown 
-                closedText="Open File"
-                openText="Open File ▾"
-                closedClassName="border-solid border-1 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 my-5 transition-colors duration-200 hover:bg-sky-700 hover:text-white"
-                openClassName="bg-sky-700 text-white font-semibold rounded-xl w-64 h-12 my-5"
-                options="Open-Local Open-Database"
-                optionClassName="block w-64 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                menuClassName="w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
-                onOptionClick={(option) => {
-                    switch(option) {
-                        case "Open-Local":
-                            document.getElementById('fileInput').click();
-                            break;
-                        case "Open-Database":
-                            loadDatabaseFiles();
-                            setShowDatabaseModal(true);
-                            break;
-                    }
-                }}
-            />
-            {error && <p className="text-red-500 mt-2">{error}</p>}
+                    <button
+                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                                   md:w-40 md:text-sm
+                                   lg:w-48 lg:mt-4 lg:py-2 lg:text-md
+                                   xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
+                        onClick={onNewLocalization}>
+                        Create New Localization
+                    </button>
+                    <input
+                        type="file"
+                        accept=".csv"
+                        onChange={onFileUpload}
+                        style={{ display: 'none' }}
+                        id="fileInput"
+                    />
+                    <Dropdown 
+                        closedText="Open File"
+                        openText="Open File ▾"
+                        closedClassName="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                                         md:w-40 md:text-sm
+                                         lg:w-48 lg:mt-4 lg:py-2 lg:text-md
+                                         xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
+                        openClassName="border-solid border-1 border-sky-700 bg-sky-100 text-sky-700 font-semibold rounded-xl w-64 mt-3 py-1 text-xs cursor-pointer
+                                       md:w-40 md:text-sm
+                                       lg:w-48 lg:mt-4 lg:py-2 lg:text-md
+                                       xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
+                        options="Open-Local Open-Database"
+                        optionClassName="block w-34 py-1 text-xs text-gray-700 hover:bg-gray-100
+                                         md:w-40
+                                         lg:w-48 lg:py-2 lg:text-sm
+                                         xl:w-64"
+                        menuClassName="w-34 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none
+                                       md:w-40
+                                       lg:w-48
+                                       xl:w-64"
+                        onOptionClick={(option) => {
+                            switch(option) {
+                                case "Open-Local":
+                                    document.getElementById('fileInput').click();
+                                    break;
+                                case "Open-Database":
+                                    loadDatabaseFiles();
+                                    setShowDatabaseModal(true);
+                                    break;
+                            }
+                        }}
+                    />
+                    {error && <p className="text-red-500 mt-2">{error}</p>}
 
-            {/* Database Files Modal */}
-            {showDatabaseModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-xl w-4/5 max-w-3xl max-h-[80vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-2xl font-bold">Open File from Database</h2>
-                            <button 
-                                onClick={() => setShowDatabaseModal(false)}
-                                className="text-gray-500 hover:text-gray-700 text-xl"
-                            >
-                                ×
-                            </button>
-                        </div>
-                        
-                        {isLoading ? (
-                            <div className="text-center py-8">
-                                <p className="text-gray-600">Loading your files...</p>
-                            </div>
-                        ) : databaseFiles.length === 0 ? (
-                            <div className="text-center py-8">
-                                <p className="text-gray-600">No files found. Create a new file to get started.</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y">
-                                {databaseFiles.map(file => (
-                                    <div 
-                                        key={file.file_id}
-                                        className="py-3 px-4 hover:bg-sky-50 cursor-pointer flex justify-between items-center"
-                                        onClick={() => {
-                                            window.handleFileClick(file);
-                                            setShowDatabaseModal(false);
-                                        }}
+                    {/* Database Files Modal */}
+                    {showDatabaseModal && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                            <div className="bg-white p-6 rounded-lg shadow-xl w-4/5 max-w-3xl max-h-[80vh] overflow-y-auto">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-2xl font-bold">Open File from Database</h2>
+                                    <button 
+                                        onClick={() => setShowDatabaseModal(false)}
+                                        className="text-gray-500 transition-colors duration-200 cursor-pointer hover:text-gray-700 text-xl"
                                     >
-                                        <div className="flex-1">
-                                            <div className="font-medium">{file.filename || 'Unnamed File'}</div>
-                                            <div className="text-sm text-gray-500">
-                                                Created: {new Date(file.creation_date).toLocaleDateString()}
-                                            </div>
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            Modified: {new Date(file.modified_date).toLocaleDateString()}
-                                        </div>
+                                        ×
+                                    </button>
+                                </div>
+                                
+                                {isLoading ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-600">Loading your files...</p>
                                     </div>
-                                ))}
+                                ) : databaseFiles.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-600">No files found. Create a new file to get started.</p>
+                                    </div>
+                                ) : (
+                                    <div className="divide-y">
+                                        {databaseFiles.map(file => (
+                                            <div 
+                                                key={file.file_id}
+                                                className="py-3 px-4 transition-colors duration-200 hover:bg-sky-50 cursor-pointer flex justify-between items-center"
+                                                onClick={() => {
+                                                    window.handleFileClick(file);
+                                                    setShowDatabaseModal(false);
+                                                }}
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="font-medium">{file.filename || 'Unnamed File'}</div>
+                                                    <div className="text-sm text-gray-500">
+                                                        Created: {new Date(file.creation_date).toLocaleDateString()}
+                                                    </div>
+                                                </div>
+                                                <div className="text-sm text-gray-500">
+                                                    Modified: {new Date(file.modified_date).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="mt-6 flex justify-end">
+                                    <button
+                                        onClick={() => setShowDatabaseModal(false)}
+                                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded  transition-colors duration-200 cursor-pointer hover:bg-gray-300"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
                             </div>
-                        )}
-
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                onClick={() => setShowDatabaseModal(false)}
-                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-                            >
-                                Cancel
-                            </button>
                         </div>
-                    </div>
-                </div>
-            )}
+                    )}
+                </>
+            ) : <SignInButtons />}
         </div>
     );
 };
 
-const Left = () => {
+const Activity = () => {
     return (
-        <div className="basis-80">
-            <h2 className="text-6xl font-bold m-3">My Stuff</h2>
-            <ToReview />
-            <Approved />
+        <div>
+            <h2 className="text-xl font-bold my-1 whitespace-nowrap
+                           md:text-2xl
+                           lg:text-3xl lg:my-2
+                           xl:text-4xl xl:my-3">
+                My Files
+            </h2>
+            <div className="mx-2">
+                <ToReview />
+                <Approved />
+            </div>
         </div>
     );
 };
 
-const Right = ({ onOpenFile }) => {
+const RecentFiles = ({ onOpenFile, className }) => {
     const [recentLocalizations, setRecentLocalizations] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     
@@ -1010,9 +1035,14 @@ const Right = ({ onOpenFile }) => {
     };
     
     return (
-        <div className="basis-80 justify-center">
-            <h3 className="text-4xl font-bold">Recent Files</h3>
-            <div className="mb-5">
+        <div className={`justify-center ${className}`}>
+            <h3 className="text-xl font-bold
+                           md:text-2xl
+                           lg:text-3xl
+                           xl:text-4xl">
+                Recent Files
+            </h3>
+            <div className="bg-sky-200 rounded-xl p-2 mt-2">
                 {isLoading ? (
                     <div className="text-gray-500">Loading...</div>
                 ) : recentLocalizations.length > 0 ? (
@@ -1021,10 +1051,13 @@ const Right = ({ onOpenFile }) => {
                             <div 
                                 id={`file-${file.file_id}`}
                                 key={file.file_id} 
-                                className="py-1 hover:bg-sky-50 hover:text-sky-600 cursor-pointer rounded px-2 transition-colors duration-150 flex justify-between items-center"
+                                className="hover:bg-sky-50 hover:text-sky-600 rounded cursor-pointer py-1 pr-1 transition-colors duration-150 flex justify-between items-center"
                                 onClick={() => handleFileClick(file)}
                             >
-                                <div className="truncate max-w-[200px] filename">
+                                <div className="text-xs truncate max-w-30 filename px-1
+                                                md:max-w-42
+                                                lg:max-w-50 lg:text-sm lg:px-2
+                                                xl:max-w-64">
                                     {file.filename || 'Unnamed Localization'}
                                 </div>
                                 <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
@@ -1043,8 +1076,12 @@ const Right = ({ onOpenFile }) => {
 
 const Logo = () => {
     return (
-        <div className="flex flex-col items-center m-5">
-            <h1 className="text-8xl font-bold mt-5">Wirecracker</h1>
+        <div className="flex flex-col items-center m-5 mt-20 lg:mb-10">
+            <h1 className="text-3xl font-bold
+                           lg:text-5xl
+                           xl:text-8xl">
+                Wirecracker
+            </h1>
         </div>
     );
 };
@@ -1057,7 +1094,8 @@ export const GoogleSignInButton = () => {
     return (
         <button
             onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50
+                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
             <FcGoogle className="h-5 w-5 mr-2" />
             Sign in with Google
@@ -1068,18 +1106,30 @@ export const GoogleSignInButton = () => {
 const SignInButtons = () => {
     return (
         <div>
-            <div className="flex m-10">
+            <div className="flex justify-center m-5
+                            md:m-6
+                            lg:m-8
+                            xl:m-10">
                 <Link to="/signup">
-                    <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3 mr-5">Sign Up</button>
+                    <button
+                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 mr-2 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                                   md:w-28 md:mr-3 md:text-sm
+                                   lg:w-32 lg:py-2 lg:mr-4 lg:text-md
+                                   xl:w-40 xl:py-3 xl:mr-5 xl:text-xl"
+                    >
+                        Sign Up
+                    </button>
                 </Link>
                 <Link to="/login">
-                    <button className="bg-slate-300 font-semibold rounded-xl w-40 py-3">Log In</button>
+                    <button
+                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                                   md:w-28 md:text-sm
+                                   lg:w-32 lg:py-2 lg:text-md
+                                   xl:w-40 xl:py-3 xl:text-xl"
+                    >
+                        Log In
+                    </button>
                 </Link>
-            </div>
-            <div className="flex m-10 justify-center">
-                <div className="w-[335px]">
-                    <GoogleSignInButton />
-                </div>
             </div>
         </div>
     );
@@ -1090,19 +1140,21 @@ const ToReview = () => {
 
     return (
         <div
-            className="text-violet-500 text-2xl font-semibold flex gap-x-2"
+            className="text-violet-500 text-base font-semibold flex gap-x-2 cursor-pointer
+                       md:text-lg
+                       lg:text-xl
+                       xl:text-2xl"
             onClick={() => setIsReviewOpen(!isReviewOpen)}
         >
             {isReviewOpen ? (
                 <>
                     <div className="before:content-['▾']"></div>
-                    <div className="mb-5">
+                    <div className="mb-5 whitespace-nowrap">
                         <div>To Review</div>
                     </div>
                 </>
             ) : (
                 <>
-                    {/* Triangle */}
                     <div className="before:content-['▸']"></div>
                     <div>To Review</div>
                 </>
@@ -1117,7 +1169,10 @@ const Approved = () => {
 
     return (
         <div
-            className="text-green-500 text-2xl font-semibold flex gap-x-2"
+            className="text-green-500 text-base font-semibold flex gap-x-2 cursor-pointer
+                       md:text-lg
+                       lg:text-xl
+                       xl:text-2xl"
             onClick={() => setIsApprovedOpen(!isApprovedOpen)}
         >
             {isApprovedOpen ? (
@@ -1129,7 +1184,6 @@ const Approved = () => {
                 </>
             ) : (
                 <>
-                    {/* Triangle */}
                     <div className="before:content-['▸']"></div>
                     <div>Approved</div>
                 </>
