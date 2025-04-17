@@ -736,7 +736,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             .then(res => res.json())
             .then(data => {
                 if (data && data.electrodeLabelDescriptions) {
-                setElectrodeLabelDescriptions(data.electrodeLabelDescriptions);
+                    setElectrodeLabelDescriptions(data.electrodeLabelDescriptions);
                 }
             })
             .catch(error => console.error("Error fetching electrode label descriptions:", error));
@@ -747,7 +747,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             if (labelInput.endsWith("'")) {
             setHemisphere("Left");
             } else {
-            setHemisphere("Right");
+                setHemisphere("Right");
             }
         }, [labelInput]);
     
