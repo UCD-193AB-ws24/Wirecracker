@@ -4,6 +4,14 @@ import config from "../../config.json" with { type: "json" };
 const backendURL = config.backendURL;
 
 const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
+
+    const ItemTypes = Object.freeze({
+        CORT:       "Cortical/Subcortical",
+        GM:         "Gray Matter",
+        FUNCTION:   "Function",
+        TEST:       "Test"
+    });
+
     const [query, setQuery] = useState(
         savedState.query || initialData.query || "",
     );
@@ -115,41 +123,41 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
             if (!exists) {
                 let relatedItems = [];
                 switch (type) {
-                    case "cort":
+                    case ItemTypes.CORT:
                         for (let relatedGM in item.cort_gm) {
                             relatedItems.push({
-                                type: "Gray Matter",
+                                type: ItemTypes.GM,
                                 name: item.cort_gm[relatedGM].gm.name,
                             });
                         }
                         break;
-                    case "gm":
+                    case ItemTypes.GM:
                         for (let relatedCort in item.cort_gm) {
                             relatedItems.push({
-                                type: "Cortical/Subcortical",
+                                type: ItemTypes.CORT,
                                 name: item.cort_gm[relatedCort].cort.name,
                             });
                         }
                         for (let relatedFunc in item.gm_function) {
                             relatedItems.push({
-                                type: "Function",
+                                type: ItemTypes.FUNCTION,
                                 name: item.gm_function[relatedFunc].function
                                     .name,
                             });
                         }
                         break;
-                    case "function":
+                    case ItemTypes.FUNCTION:
                         for (let relatedTest in item.test) {
                             relatedItems.push({
-                                type: "Test",
+                                type: ItemTypes.TEST,
                                 name: item.test[relatedTest].name,
                             });
                         }
                         break;
-                    case "test":
+                    case ItemTypes.TEST:
                         for (let relatedFunc in item.function) {
                             relatedItems.push({
-                                type: "Function",
+                                type: ItemTypes.FUNCTION,
                                 name: item.function[relatedFunc].name,
                             });
                         }
@@ -172,18 +180,18 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         // Helper to get display details for each item type
         const getItemDetails = (item, type) => {
             switch (type) {
-                case "cort":
+                case ItemTypes.CORT:
                     return {
                         hemisphere: item.hemisphere,
                         lobe: item.lobe,
                         electrode_label: item.electrode_label,
                         acronym: item.acronym,
                     };
-                case "gm":
+                case ItemTypes.GM:
                     return { acronym: item.acronym };
-                case "function":
+                case ItemTypes.FUNCTION:
                     return { description: item.description };
-                case "test":
+                case ItemTypes.TEST:
                     return { description: item.description };
                 default:
                     return {};
@@ -191,10 +199,10 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         };
 
         // Process all data and collect items
-        data.cort?.forEach((cort) => addItem(cort, "cort"));
-        data.gm?.forEach((gm) => addItem(gm, "gm"));
-        data.functions?.forEach((func) => addItem(func, "function"));
-        data.tests?.forEach((test) => addItem(test, "test"));
+        data.cort?.forEach((cort) => addItem(cort, ItemTypes.CORT));
+        data.gm?.forEach((gm) => addItem(gm, ItemTypes.GM));
+        data.functions?.forEach((func) => addItem(func, ItemTypes.FUNCTION));
+        data.tests?.forEach((test) => addItem(test, ItemTypes.TEST));
 
         return results;
     };
@@ -268,7 +276,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                         {item.name}
                                     </td>
                                     <td className="px-4 py-2">
-                                        {item.type === "cort" && (
+                                        {item.type === ItemTypes.CORT && (
                                             <div className="space-y-1">
                                                 <div>
                                                     <span className="text-gray-500">
@@ -299,7 +307,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                                 </div>
                                             </div>
                                         )}
-                                        {item.type === "gm" && (
+                                        {item.type === ItemTypes.GM && (
                                             <div>
                                                 <span className="text-gray-500">
                                                     Acronym:
@@ -307,7 +315,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                                 {item.details.acronym}
                                             </div>
                                         )}
-                                        {item.type === "function" && (
+                                        {item.type === ItemTypes.FUNCTION && (
                                             <div>
                                                 <span className="text-gray-500">
                                                     Description:
@@ -315,7 +323,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                                 {item.details.description}
                                             </div>
                                         )}
-                                        {item.type === "test" && (
+                                        {item.type === ItemTypes.TEST && (
                                             <div>
                                                 <span className="text-gray-500">
                                                     Description:
