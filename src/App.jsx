@@ -15,6 +15,7 @@ import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
 import { supabase } from './utils/supabaseClient';
 import { FcGoogle } from 'react-icons/fc';
 import config from '../config.json' with { type: 'json' };
+import DBLookup from './pages/DatabaseLookup';
 
 const backendURL = config.backendURL;
 

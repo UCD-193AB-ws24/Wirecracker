@@ -464,38 +464,132 @@ router.post("/search", async (req, res) => {
   try {
     const { query, hemisphere, lobe } = req.body;
 
-    let supabaseQuery = supabase
-      .from("cort")
-      .select("*");
+    // Initialize result structure
+    const results = {
+      cort: [],
+      gm: [],
+      functions: [],
+      tests: []
+    };
 
-    // Apply text search if query exists
-    if (query && query.trim() !== "") {
-      supabaseQuery = supabaseQuery
-        .or(`name.ilike.%${query}%,lobe.ilike.%${query}%`);
+    // Search cort table with filters
+    let cortQuery = supabase
+      .from('cort')
+      .select(`
+        *,
+        cort_gm(
+          gm(*)
+        )
+      `);
+
+    if (query) {
+      cortQuery = cortQuery.or(`name.ilike.%${query}%,acronym.ilike.%${query}%`);
+    }
+    if (hemisphere?.length) {
+      cortQuery = cortQuery.in('hemisphere', hemisphere.map(h => h === 'left' ? 'l' : 'r'));
+    }
+    if (lobe?.length) {
+      cortQuery = cortQuery.or(lobe.map(l => `lobe.ilike.%${l}%`).join(','));
     }
 
-    // Apply hemisphere filter (convert to 'r'/'l')
-    if (hemisphere && hemisphere.length > 0) {
-      const hemisphereCodes = hemisphere.map(h =>
-        h === "left" ? "l" : h === "right" ? "r" : h
-      );
-      supabaseQuery = supabaseQuery.in("hemisphere", hemisphereCodes);
+    const { data: cortData, error: cortError } = await cortQuery;
+    if (cortError) throw cortError;
+    results.cort = cortData || [];
+
+    // Search gm table (only by query)
+    if (query) {
+      const { data: gmData, error: gmError } = await supabase
+        .from('gm')
+        .select(`
+          *,
+          cort_gm(
+            cort(*)
+          ),
+          gm_function(
+            function(*)
+          )
+        `)
+        .or(`name.ilike.%${query}%,acronym.ilike.%${query}%`);
+
+      if (gmError) throw gmError;
+      results.gm = gmData || [];
     }
 
-    // Apply lobe filter
-    if (lobe && lobe.length > 0) {
-      supabaseQuery = supabaseQuery.or(
-        lobe.map(l => `lobe.ilike.%${l}%`).join(',')
-      );
+    // 3. Get all related data
+    const allGmIds = [
+      ...new Set([
+        ...results.cort.flatMap(c => c.cort_gm?.map(cg => cg.gm?.id)),
+        ...results.gm.map(g => g.id)
+      ].filter(Boolean))
+    ];
+
+    if (allGmIds.length > 0) {
+      // Get functions through gm_function
+      const { data: gmFunctions, error: gfError } = await supabase
+        .from('gm_function')
+        .select(`
+          *,
+          function(*)
+        `)
+        .in('gm_id', allGmIds);
+
+      if (gfError) throw gfError;
+
+      // Process gm_function relationships
+      gmFunctions?.forEach(gf => {
+        if (gf.function && !results.functions.some(f => f.id === gf.function.id)) {
+          results.functions.push({
+            ...gf.function,
+            test: []
+          });
+        }
+      });
+
+      // Get function_test relationships
+      const functionIds = results.functions.map(f => f.id);
+      if (functionIds.length > 0) {
+        const { data: functionTests, error: ftError } = await supabase
+          .from('function_test')
+          .select(`
+            *,
+            test(*)
+          `)
+          .in('function_id', functionIds);
+
+        if (ftError) throw ftError;
+
+        functionTests?.forEach(ft => {
+          if (ft.test) {
+            // Find the function that this test belongs to
+            const functionIndex = results.functions.findIndex(f => f.id === ft.function_id);
+
+            if (functionIndex !== -1) {
+              // Add test to function's tests array if not already present
+              if (!results.functions[functionIndex].test.some(t => t.id === ft.test.id)) {
+                results.functions[functionIndex].test.push(ft.test);
+              }
+            }
+
+            // Add test to main tests array if not already present
+            if (!results.tests.some(t => t.id === ft.test.id)) {
+              results.tests.push({
+                ...ft.test,
+                function: [
+                  // Add reference to the parent function
+                  ...(results.functions.find(f => f.id === ft.function_id) ? [{
+                    id: ft.function_id,
+                    name: results.functions.find(f => f.id === ft.function_id).name
+                  }] : [])
+                ]
+              });
+            }
+          }
+
+        });
+      }
     }
 
-    const { data, error } = await supabaseQuery;
-
-    if (error) throw error;
-
-    console.log(data)
-
-    res.json(data || []);
+    res.json(results);
   } catch (error) {
     console.error("Search Error:", error);
     res.status(500).json({ error: "Error performing search" });
@@ -557,8 +651,6 @@ router.post('/suggest', async (req, res) => {
         suggestions.add(...data.map(item => item['acronym']));
 
         const suggestionArray = [...suggestions].filter(x => x !== undefined);
-
-        console.log(suggestionArray)
 
         res.json({ suggestions: suggestionArray });
     } catch (err) {
