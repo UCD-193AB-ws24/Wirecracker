@@ -483,7 +483,7 @@ router.post("/search", async (req, res) => {
       `);
 
     if (query) {
-      cortQuery = cortQuery.or(`name.ilike.%${query}%,acronym.ilike.%${query}%`);
+      cortQuery = cortQuery.or(`name.ilike.%${query}%,acronym.ilike.%${query}%,lobe.ilike.%${query}%`);
     }
     if (hemisphere?.length) {
       cortQuery = cortQuery.in('hemisphere', hemisphere.map(h => h === 'left' ? 'l' : 'r'));
@@ -495,6 +495,20 @@ router.post("/search", async (req, res) => {
     const { data: cortData, error: cortError } = await cortQuery;
     if (cortError) throw cortError;
     results.cort = cortData || [];
+
+    results.cort.forEach(cort => {
+      cort.cort_gm?.forEach(cg => {
+        if (cg.gm && !results.gm.some(g => g.id === cg.gm.id)) {
+          // Add GM with reference back to the cort
+          results.gm.push({
+            ...cg.gm,
+            cort_gm: [{
+              cort: cort
+            }]
+          });
+        }
+      });
+    });
 
     // Search gm table (only by query)
     if (query) {
@@ -512,7 +526,19 @@ router.post("/search", async (req, res) => {
         .or(`name.ilike.%${query}%,acronym.ilike.%${query}%`);
 
       if (gmError) throw gmError;
-      results.gm = gmData || [];
+      gmData?.forEach(gm => {
+        const existingGmIndex = results.gm.findIndex(g => g.id === gm.id);
+        if (existingGmIndex === -1) {
+          results.gm.push(gm);
+        } else {
+          // Merge cort_gm relationships if GM already exists
+          const existingCortGms = results.gm[existingGmIndex].cort_gm || [];
+          const newCortGms = gm.cort_gm?.filter(newCg =>
+            !existingCortGms.some(existingCg => existingCg.cort?.id === newCg.cort?.id)
+          ) || [];
+          results.gm[existingGmIndex].cort_gm = [...existingCortGms, ...newCortGms];
+        }
+      });
     }
 
     // 3. Get all related data
