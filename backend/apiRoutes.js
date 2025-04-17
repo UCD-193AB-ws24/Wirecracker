@@ -598,61 +598,40 @@ router.post("/search", async (req, res) => {
 
 router.post('/suggest', async (req, res) => {
     try {
-        const {query} = req.body;
+        const { query } = req.body;
 
         if (!query) {
             return res.status(400).json({ error: 'Query parameters are required' });
         }
 
-        let { data, error } = await supabase
+        const { data: cortData, error: cortError } = await supabase
             .from('cort')
-            .select()
-            .ilike('lobe', `%${query}%`)
-            .limit(5);
-        if (error) throw error;
+            .select('lobe, name, acronym')
+            .or(`lobe.ilike.%${query}%,name.ilike.%${query}%,acronym.ilike.%${query}%`)
+            .limit(15);
 
-        let suggestions = new Set(data.map(item => item['lobe']));
+        if (cortError) throw cortError;
 
-        ({ data, error } = await supabase
-            .from('cort')
-            .select()
-            .ilike('name', `%${query}%`)
-            .limit(5));
-
-        if (error) throw error;
-        suggestions.add(...data.map(item => item['name']));
-
-        ({ data, error } = await supabase
-            .from('cort')
-            .select()
-            .ilike('acronym', `%${query}%`)
-            .limit(5));
-
-        if (error) throw error;
-        suggestions.add(...data.map(item => item['acronym']));
-
-
-        ({ data, error } = await supabase
+        const { data: gmData, error: gmError } = await supabase
             .from('gm')
-            .select()
-            .ilike('name', `%${query}%`)
-            .limit(5));
+            .select('name, acronym')
+            .or(`name.ilike.%${query}%,acronym.ilike.%${query}%`)
+            .limit(10);
 
-        if (error) throw error;
-        suggestions.add(...data.map(item => item['name']));
+        if (gmError) throw gmError;
 
-        ({ data, error } = await supabase
-            .from('gm')
-            .select()
-            .ilike('acronym', `%${query}%`)
-            .limit(5));
+        const suggestions = new Set();
+        cortData.forEach(item => {
+            if (item.lobe?.includes(query)) suggestions.add(item.lobe);
+            if (item.name?.includes(query)) suggestions.add(item.name);
+            if (item.acronym?.includes(query)) suggestions.add(item.acronym);
+        });
+        gmData.forEach(item => {
+            if (item.name?.includes(query)) suggestions.add(item.name);
+            if (item.acronym?.includes(query)) suggestions.add(item.acronym);
+        });
 
-        if (error) throw error;
-        suggestions.add(...data.map(item => item['acronym']));
-
-        const suggestionArray = [...suggestions].filter(x => x !== undefined);
-
-        res.json({ suggestions: suggestionArray });
+        res.json({ suggestions: [...suggestions].slice(0, 25) });
     } catch (err) {
         console.error("Suggestion error:", err);
         res.status(500).json({ error: 'Failed to fetch suggestions' });
