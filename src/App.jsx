@@ -859,21 +859,21 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     };
     
     return (
-        <div className="px-2 self-center flex flex-col justify-center items-center
+        <div className="px-2 self-center flex flex-col justify-center items-center m-auto
                         md:px-7
-                        lg:px-12 lg:basis-7 lg:flex-auto lg:self-center
+                        lg:px-12 lg:basis-7 lg:flex-auto
                         xl:px-15">
             <Logo />
             {token ? (
                 <>
-                    <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-34 py-1 text-xs cursor-pointer
-                                       md:w-40 md:text-sm
-                                       lg:w-48 lg:py-2 lg:text-md
-                                       xl:w-64 xl:py-3 xl:text-lg">
+                    <button className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                                   md:w-40 md:text-sm
+                                   lg:w-48 lg:mt-4 lg:py-2 lg:text-md
+                                   xl:w-64 xl:mt-5 xl:py-3 xl:text-lg">
                         Search the Database
                     </button>
                     <button
-                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
                                    md:w-40 md:text-sm
                                    lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                    xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
@@ -992,7 +992,7 @@ const Activity = () => {
                            md:text-2xl
                            lg:text-3xl lg:my-2
                            xl:text-4xl xl:my-3">
-                My Stuff
+                My Files
             </h2>
             <div className="mx-2">
                 <ToReview />
@@ -1112,20 +1112,20 @@ const SignInButtons = () => {
                             xl:m-10">
                 <Link to="/signup">
                     <button
-                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 mr-2 text-xs transition-colors duration-200 cursor-pointer hover:border-sky-100 hover:text-sky-700
-                                   md:w-28 md:mr-3
-                                   lg:w-32 lg:py-2 lg:mr-4 lg:text-sm
-                                   xl:w-40 xl:py-3 xl:mr-5"
+                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 mr-2 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                                   md:w-28 md:mr-3 md:text-sm
+                                   lg:w-32 lg:py-2 lg:mr-4 lg:text-md
+                                   xl:w-40 xl:py-3 xl:mr-5 xl:text-xl"
                     >
                         Sign Up
                     </button>
                 </Link>
                 <Link to="/login">
                     <button
-                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 text-xs transition-colors duration-200 cursor-pointer hover:border-sky-100 hover:text-sky-700
-                                   md:w-28
-                                   lg:w-32 lg:py-2 lg:text-sm
-                                   xl:w-40 xl:py-3"
+                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                                   md:w-28 md:text-sm
+                                   lg:w-32 lg:py-2 lg:text-md
+                                   xl:w-40 xl:py-3 xl:text-xl"
                     >
                         Log In
                     </button>
