@@ -368,7 +368,6 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             setElectrodes(temp);
             setModifiedDate(new Date().toISOString());
             setSubmitFlag(!submitFlag);
-            close();
         };
 
         // Filter region names based on input, case-insensitive
