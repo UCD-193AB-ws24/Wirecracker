@@ -176,9 +176,10 @@ const FileUtils = {
             // Initialize electrode if not exists
             if (!electrodes[label]) {
                 electrodes[label] = {
-                    description: description
+                    description: description,
+                    type: electrode.type || 'DIXI' // Include the electrode type, default to DIXI if not specified
                 };
-                console.log(`Created new electrode: ${label}`);
+                console.log(`Created new electrode: ${label} with type: ${electrode.type || 'DIXI'}`);
             }
             
             // Handle contacts based on tissue type
@@ -326,7 +327,7 @@ const FileUtils = {
                 .from('localization')
                 .select(`
                     id, contact, tissue_type, file_id,
-                    electrode:electrode_id(id, label, description, contact_number),
+                    electrode:electrode_id(id, label, description, contact_number, type),
                     region:region_id(id, name)
                 `)
                 .eq('file_id', file.file_id);
@@ -610,7 +611,7 @@ const HomePage = () => {
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
-                    electrodes: fileData.data.data  // Preserve loaded electrode data
+                    electrodes: fileData.data.data  // Preserve loaded electrode data including type
                 }
             };
             
@@ -633,7 +634,7 @@ const HomePage = () => {
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
                     electrodes: fileData.data,
-                    localizationData: fileData.originalData
+                    localizationData: fileData.originalData  // This should include the electrode type
                 }
             };
 

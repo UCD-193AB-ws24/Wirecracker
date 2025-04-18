@@ -125,9 +125,13 @@ function parseLocalization(csvData) {
         const electrodeDescription = row.ElectrodeDescription.trim();
         const contactDescription = row.ContactDescription.trim();
         const associatedLocation = row.AssociatedLocation.trim();
+        const electrodeType = row.Type ? row.Type.trim() : 'DIXI'; // Default to DIXI if not specified
         
         if (!parsedData[label]) {
-            parsedData[label] = { 'description' : electrodeDescription };
+            parsedData[label] = { 
+                'description': electrodeDescription,
+                'type': electrodeType // Store the electrode type
+            };
         }
         parsedData[label][contactNumber] = {
             contactDescription,
@@ -157,6 +161,7 @@ function parseDesignation(csvData) {
         const electrodeDescription = row.ElectrodeDescription.trim();
         const mark = parseInt(row.Mark) || 0; // Default to 0 if not specified
         const surgeonMark = parseInt(row.SurgeonMark) === 1; // Convert to boolean from int (0 or 1)
+        const electrodeType = row.Type ? row.Type.trim() : 'DIXI'; // Default to DIXI if not specified
         
         // Process associated location based on GM presence
         if (associatedLocation === 'GM') {
@@ -172,7 +177,8 @@ function parseDesignation(csvData) {
         if (!parsedData[label]) {
             parsedData[label] = {
                 label: label,
-                contacts: []
+                contacts: [],
+                type: electrodeType // Store the electrode type
             };
         }
         
@@ -194,7 +200,8 @@ function parseDesignation(csvData) {
     // Convert to array format matching demo data
     return Object.values(parsedData).map(electrode => ({
         label: electrode.label,
-        contacts: electrode.contacts.filter(contact => contact !== null) // Remove any null entries
+        contacts: electrode.contacts.filter(contact => contact !== null), // Remove any null entries
+        type: electrode.type // Include the electrode type in the output
     }));
 }
 
@@ -357,21 +364,22 @@ export function saveCSVFile(identifier, data, download = true) {
     let returnData = [];
     
     if (identifier === Identifiers.LOCALIZATION) {
-        const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark"];
+        const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Type"];
         csvContent += headers.join(",") + "\n";
         
         Object.entries(data).forEach(([label, contacts]) => {
             const electrodeDescription = contacts.description;
+            const electrodeType = contacts.type || 'DIXI'; // Default to DIXI if not specified
             Object.entries(contacts).forEach(([contactNumber, contactData]) => {
-                // Skip the 'description' key, as it's not a contact
-                if (contactNumber === 'description') return;
+                // Skip the 'description' and 'type' keys, as they're not contacts
+                if (contactNumber === 'description' || contactNumber === 'type') return;
 
                 const {
                     contactDescription,
                     associatedLocation
                 } = contactData;
 
-                const row = [label, contactNumber, electrodeDescription, contactDescription, associatedLocation, 0, 0];
+                const row = [label, contactNumber, electrodeDescription, contactDescription, associatedLocation, 0, 0, electrodeType];
                 csvContent += row.join(",") + "\n";
                 
                 if (!download) {
@@ -382,7 +390,8 @@ export function saveCSVFile(identifier, data, download = true) {
                         AssociatedLocation: associatedLocation,
                         ContactDescription: contactDescription,
                         Mark: 0,
-                        SurgeonMark: 0
+                        SurgeonMark: 0,
+                        Type: electrodeType
                     });
                 }
             });
@@ -416,7 +425,7 @@ export function saveCSVFile(identifier, data, download = true) {
  */
 export function saveDesignationCSVFile(designationData, localizationData, download = true) {
     let csvContent = `${Identifiers.DESIGNATION}\n${IDENTIFIER_LINE_2}\n`;
-    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark"];
+    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Type"];
     csvContent += headers.join(",") + "\n";
 
     // Create a map of electrode contacts for quick lookup
@@ -428,11 +437,12 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
     // Use localization data structure but include marks from designation
     Object.entries(localizationData).forEach(([label, contacts]) => {
         const electrodeDescription = contacts.description;
+        const electrodeType = contacts.type || 'DIXI'; // Default to DIXI if not specified
         const designationContacts = contactMap[label] || [];
 
         Object.entries(contacts).forEach(([contactNumber, contactData]) => {
-            // Skip the 'description' key
-            if (contactNumber === 'description') return;
+            // Skip the 'description' and 'type' keys
+            if (contactNumber === 'description' || contactNumber === 'type') return;
 
             const {
                 contactDescription,
@@ -451,7 +461,8 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
                 contactDescription,
                 associatedLocation,
                 mark,
-                surgeonMark
+                surgeonMark,
+                electrodeType
             ];
             csvContent += row.join(",") + "\n";
         });
