@@ -75,7 +75,6 @@ const Debug = () => {
         }
         try {
             await saveCSVFile(identifier, csvData);
-            alert("CSV file saved successfully!");
         } catch (err) {
             setError("Failed to save CSV file.");
         }
