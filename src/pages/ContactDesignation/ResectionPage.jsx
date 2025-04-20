@@ -2,6 +2,7 @@ import { parseCSVFile } from '../../utils/CSVParser';
 import load_untouch_nii from '../../utils/Nifti_viewer/load_untouch_nifti.js'
 import nifti_anatomical_conversion from '../../utils/Nifti_viewer/nifti_anatomical_conversion.js'
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useError } from '../../context/ErrorContext';
 
 const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
     const [imageLoaded, setImageLoaded] = useState(savedState.isLoaded || false);
@@ -50,12 +51,14 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
 };
 
 const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChange, savedState = {} }) => {
+    const { showError } = useError();
     const fixedMainViewSize = 700;
     const fixedSubViewSize = 520;
 
     const [niiData, setNiiData] = useState(null);
 //     const [niiData, setNiiData] = useState(savedState.nii || null);
     const [coordinates, setCoordinates] = useState(savedState.coordinate || []);
+    const [successMessage, setSuccessMessage] = useState('');
     const [markers, setMarkers] = useState([]);
     const [sliceIndex, setSliceIndex] = useState(savedState.canvas_main_slice || 0);
     const [maxSlices, setMaxSlices] = useState(savedState.canvas_main_maxSlice || 0);
@@ -678,7 +681,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         if (!file) return;
 
         try {
-            const { identifier, data } = await parseCSVFile(file, true);
+            const { identifier, data } = await parseCSVFile(file, true, showError);
             if (identifier === "coordinates") {
                 // Check for columns
                 if (Array.isArray(data)
@@ -689,14 +692,16 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     && data[0].y
                     && data[0].z) {
                     setCoordinates(data); // Store CSV coordinates in state
+                    setSuccessMessage('Coordinates loaded successfully');
+                    setTimeout(() => setSuccessMessage(''), 3000); // Clear message after 3 seconds
                 } else {
-                    alert("Please check the column name of the CSV data. Required: [Electrode,Contact,x,y,z]");
+                    showError("Please check the column name of the CSV data. Required: [Electrode,Contact,x,y,z]");
                 }
             } else {
-                alert("Unknown CSV file format");
+                showError("Unknown CSV file format");
             }
-        } catch (err) {
-            console.error('Error parsing CSV file:', err);
+        } catch (error) {
+            showError("Error parsing CSV file: " + error.message);
         }
         setHoveredMarker(null);
     };
@@ -797,12 +802,19 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     style={{ display: 'none' }}
                     id="coorInput"
                 />
-                <button
-                    className="border-solid border-2 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 hover:bg-sky-700 hover:text-white transition-colors duration-200"
-                    onClick={() => document.getElementById('coorInput').click()}
-                >
-                    Open Coordinate File
-                </button>
+                <div className="flex flex-col items-center gap-2">
+                    <button
+                        className="border-solid border-2 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 hover:bg-sky-700 hover:text-white transition-colors duration-200"
+                        onClick={() => document.getElementById('coorInput').click()}
+                    >
+                        Open Coordinate File
+                    </button>
+                    {successMessage && (
+                        <div className="text-green-600 text-sm">
+                            {successMessage}
+                        </div>
+                    )}
+                </div>
                 <input
                     type="file"
                     accept=".nii"

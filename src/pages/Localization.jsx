@@ -6,10 +6,12 @@ import { saveCSVFile, Identifiers } from '../utils/CSVParser.js';
 import { supabase } from '../utils/supabaseClient';
 import config from "../../config.json" with { type: 'json' };
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useError } from '../context/ErrorContext';
 
 const backendURL = config.backendURL;
 
 const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
+    const { showError } = useError();
     const [expandedElectrode, setExpandedElectrode] = useState(savedState.expandedElectrode || '');
     const [submitFlag, setSubmitFlag] = useState(savedState.submitFlag || false);
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || {});
@@ -17,6 +19,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const [fileName, setFileName] = useState(savedState.fileName || 'New Localization');
     const [creationDate, setCreationDate] = useState(savedState.creationDate || new Date().toISOString());
     const [modifiedDate, setModifiedDate] = useState(savedState.modifiedDate || new Date().toISOString());
+    const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
     useEffect(() => {
         if (initialData.data && !savedState.electrodes) {
@@ -221,7 +224,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             // Get user ID from session
             const userId = await getUserId();
             if (!userId) {
-                alert('User not authenticated. Please log in to save localizations.');
+                showError('User not authenticated. Please log in to save localizations.');
                 return;
             }
             
@@ -230,7 +233,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             
             // Make sure we have valid data before sending to backend
             if (Object.keys(electrodes).length === 0) {
-                alert('No electrode data to save. Please add at least one electrode.');
+                showError('No electrode data to save. Please add at least one electrode.');
                 return;
             }
             
@@ -240,7 +243,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 console.log('File metadata saved successfully');
             } catch (metadataError) {
                 console.error('Error saving file metadata:', metadataError);
-                alert(`File metadata error: ${metadataError.message}`);
+                showError(`File metadata error: ${metadataError.message}`);
                 return;
             }
             
@@ -287,11 +290,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             });
             
             // Show success message
-            alert('Localization saved successfully!');
+            setShowSaveSuccess(true);
+            setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
         }
         catch (error) {
             console.error('Error saving localization:', error);
-            alert(`Failed to save localization. ${error.message}`);
+            showError(`Failed to save localization. ${error.message}`);
         }
     };
 
@@ -928,6 +932,11 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             <div>Created: {new Date(creationDate).toLocaleString()}</div>
                             <div>Modified: {new Date(modifiedDate).toLocaleString()}</div>
                         </div>
+                        {showSaveSuccess && (
+                            <div className="text-green-500 font-medium">
+                                Save successful!
+                            </div>
+                        )}
                         <button
                             className="w-40 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded p-2"
                             onClick={() => handleSaveLocalization(false)}

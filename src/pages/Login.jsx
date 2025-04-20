@@ -2,21 +2,26 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login } from '../auth';
 import { GoogleSignInButton } from '../App';
+import { useError } from '../context/ErrorContext';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
     const navigate = useNavigate();
+    const { showError } = useError();
 
     const handleLogin = async () => {
         try {
             const { token } = await login(email, password, rememberMe);
             localStorage.setItem('token', token);
-            alert('Login successful');
-            navigate('/');
+            setSuccessMessage('Login successful');
+            setTimeout(() => {
+                navigate('/');
+            }, 1000);
         } catch (error) {
-            alert(error.message);
+            showError(error.message);
         }
     };
 
@@ -73,6 +78,9 @@ const Login = () => {
                         >
                             Sign in
                         </button>
+                        {successMessage && (
+                            <p className="mt-2 text-center text-sm font-medium text-green-600">{successMessage}</p>
+                        )}
                     </div>
 
                     <div className="mt-6">

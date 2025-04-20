@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { demoContactsData, demoTestData } from "./demoContactsData";
 import { saveTestCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
+import { useError } from '../../context/ErrorContext';
 
 const FunctionalTestSelection = ({
     initialData = {},
     onStateChange,
     savedState = {},
 }) => {
+    const { showError } = useError();
     const allAvailableTests = demoTestData;
 
     const [contacts, setContacts] = useState(
@@ -171,7 +173,7 @@ const FunctionalTestSelection = ({
                 // Get user ID from session
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    alert('User not authenticated. Please log in to save test selections.');
+                    showError('User not authenticated. Please log in to save test selections.');
                     return;
                 }
 
@@ -196,7 +198,7 @@ const FunctionalTestSelection = ({
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save test selection:', result.error);
-                        alert(`Failed to save test selection: ${result.error}`);
+                        showError(`Failed to save test selection: ${result.error}`);
                         return;
                     }
 
@@ -215,7 +217,7 @@ const FunctionalTestSelection = ({
                     console.log('Test selection saved successfully');
                 } catch (error) {
                     console.error('Error saving test selection:', error);
-                    alert(`Error saving test selection: ${error.message}`);
+                    showError(`Error saving test selection: ${error.message}`);
                     return;
                 }
             }
@@ -226,7 +228,7 @@ const FunctionalTestSelection = ({
             }
         } catch (error) {
             console.error("Error exporting contacts:", error);
-            alert(`Error exporting contacts: ${error.message}`);
+            showError(`Error exporting contacts: ${error.message}`);
         }
     };
 

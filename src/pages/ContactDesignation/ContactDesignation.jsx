@@ -4,12 +4,14 @@ import Resection from "./ResectionPage";
 import Designation from "./DesignationPage";
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
+import { useError } from '../../context/ErrorContext';
 
 const PAGE_NAME = ["designation", "resection"];
 
 const backendURL = config.backendURL;
 
 const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }) => {
+    const { showError } = useError();
     const [state, setState] = useState(savedState);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
@@ -106,7 +108,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         try {
             exportContacts(modifiedElectrodes, false);
         } catch (error) {
-            alert('Error saving data on database. Changes are not saved');
+            showError('Error saving data on database. Changes are not saved');
         }
 
         let stimulationData = modifiedElectrodes.map(electrode => ({
@@ -140,7 +142,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 // Get user ID from session
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    alert('User not authenticated. Please log in to save designations.');
+                    showError('User not authenticated. Please log in to save designations.');
                     return;
                 }
                 
@@ -165,7 +167,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save designation:', result.error);
-                        alert(`Failed to save designation: ${result.error}`);
+                        showError(`Failed to save designation: ${result.error}`);
                         return;
                     }
                     
@@ -184,7 +186,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     console.log('Designation saved successfully');
                 } catch (error) {
                     console.error('Error saving designation:', error);
-                    alert(`Error saving designation: ${error.message}`);
+                    showError(`Error saving designation: ${error.message}`);
                     return;
                 }
             }
@@ -203,7 +205,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             }
         } catch (error) {
             console.error('Error exporting contacts:', error);
-            alert(`Error exporting contacts: ${error.message}`);
+            showError(`Error exporting contacts: ${error.message}`);
         }
     };
 

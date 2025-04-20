@@ -15,6 +15,7 @@ import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
 import { supabase } from './utils/supabaseClient';
 import { FcGoogle } from 'react-icons/fc';
 import config from '../config.json' with { type: 'json' };
+import { ErrorProvider, useError } from './context/ErrorContext';
 
 const backendURL = config.backendURL;
 
@@ -203,7 +204,7 @@ const FileUtils = {
     },
     
     // Handle opening a file from the database
-    handleFileOpen: async (file, openSavedFile) => {
+    handleFileOpen: async (file, openSavedFile, showError) => {
         try {
             console.log(`Attempting to load file ID: ${file.file_id} (${file.filename})`);
             
@@ -216,7 +217,7 @@ const FileUtils = {
                 
             if (checkError) {
                 console.error('Error checking localization data:', checkError);
-                alert(`Database error: ${checkError.message}`);
+                showError(`Database error: ${checkError.message}`);
                 return;
             }
             
@@ -334,7 +335,7 @@ const FileUtils = {
                 
             if (locError) {
                 console.error('Error fetching localization data:', locError);
-                alert(`Failed to load file data: ${locError.message}`);
+                showError(`Failed to load file data: ${locError.message}`);
                 return;
             }
             
@@ -370,7 +371,7 @@ const FileUtils = {
             });
         } catch (error) {
             console.error('Error loading file:', error);
-            alert(`Failed to load file data: ${error.message}`);
+            showError(`Failed to load file data: ${error.message}`);
         }
     },
     
@@ -574,7 +575,7 @@ const HomePage = () => {
         setError("");
 
         try {
-            const { identifier, data } = await parseCSVFile(file);
+            const { identifier, data } = await parseCSVFile(file, false, (msg) => setError(msg));
             if (identifier === Identifiers.LOCALIZATION) {
                 addTab('csv-localization', { name: file.name, data });
             } else if (identifier === Identifiers.DESIGNATION) {
@@ -697,7 +698,9 @@ const HomePage = () => {
 
     // Make handleFileClick available globally for the database modal
     window.handleFileClick = (file) => {
-        FileUtils.handleFileOpen(file, openSavedFile);
+        FileUtils.handleFileOpen(file, openSavedFile, (message) => {
+            console.error('Error loading file:', message);
+        });
     };
 
     const renderTabContent = () => {
@@ -851,6 +854,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     const [showDatabaseModal, setShowDatabaseModal] = useState(false);
     const [databaseFiles, setDatabaseFiles] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const { showError } = useError();
 
     const loadDatabaseFiles = async () => {
         setIsLoading(true);
@@ -1006,6 +1010,7 @@ const Activity = () => {
 const RecentFiles = ({ onOpenFile, className }) => {
     const [recentLocalizations, setRecentLocalizations] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { showError } = useError();
     
     useEffect(() => {
         const fetchRecentFiles = async () => {
@@ -1026,7 +1031,7 @@ const RecentFiles = ({ onOpenFile, className }) => {
             fileElement.querySelector('.filename').innerText = "Loading...";
         }
         
-        FileUtils.handleFileOpen(file, onOpenFile)
+        FileUtils.handleFileOpen(file, onOpenFile, showError)
             .finally(() => {
                 // Reset the loading state if needed
                 if (fileElement && fileElement.querySelector('.filename')) {
@@ -1195,20 +1200,22 @@ const Approved = () => {
 
 const App = () => {
     return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/login" element={<Login />} />
-{/*                <Route path="/localization" element={<Localization />} />
-                <Route path="/stimulation" element={<PlanTypePage />} />
-                <Route path="/stimulation/contacts" element={<ContactSelection />} />
-                <Route path="/stimulation/functional-tests" element={<FunctionalTestSelection />} />*/}
-                <Route path="/debug" element={<Debug />} />
-                <Route path="/database/:table" element={<DatabaseTable />} />
-                <Route path="/auth-success" element={<GoogleAuthSuccess />} />
-            </Routes>
-        </Router>
+        <ErrorProvider>
+            <Router>
+                <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/login" element={<Login />} />
+{/*                    <Route path="/localization" element={<Localization />} />
+                    <Route path="/stimulation" element={<PlanTypePage />} />
+                    <Route path="/stimulation/contacts" element={<ContactSelection />} />
+                    <Route path="/stimulation/functional-tests" element={<FunctionalTestSelection />} />*/}
+                    <Route path="/debug" element={<Debug />} />
+                    <Route path="/database/:table" element={<DatabaseTable />} />
+                    <Route path="/auth-success" element={<GoogleAuthSuccess />} />
+                </Routes>
+            </Router>
+        </ErrorProvider>
     );
 };
 

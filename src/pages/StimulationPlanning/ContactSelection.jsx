@@ -6,8 +6,10 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import { saveStimulationCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
+import { useError } from '../../context/ErrorContext';
 
 const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, isFunctionalMapping = false }) => {
+    const { showError } = useError();
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || demoContactData)
     const [planningContacts, setPlanningContacts] = useState(() => {
         if (savedState.planningContacts) return savedState.planningContacts;
@@ -303,6 +305,7 @@ const Contact = ({ contact, onClick }) => {
 
 // Planning pane on the right
 const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitFlag, setSubmitFlag, setElectrodes, onStateChange, savedState, isFunctionalMapping = false }) => {
+    const { showError } = useError();
     const [hoverIndex, setHoverIndex] = useState(null);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
@@ -341,7 +344,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
         try {
             exportState(state, electrodes, isFunctionalMapping, false);
         } catch (error) {
-            alert('Error saving data on database. Changes are not saved');
+            showError('Error saving data on database. Changes are not saved');
         }
 
         // Clean up the contacts
@@ -384,6 +387,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
             setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
         } catch (error) {
             console.error('Error saving:', error);
+            showError(error.message);
         }
     };
 
@@ -437,8 +441,8 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
 
                 <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
                         contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                        }`} onClick={() => exportState(state, electrodes, isFunctionalMapping)}>
-                    export
+                        }`} onClick={() => exportState(state, electrodes, isFunctionalMapping, true)}>
+                    Export
                 </button>
             </div>
         </div>
@@ -585,8 +589,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
             // Get user ID from session
             const token = localStorage.getItem('token');
             if (!token) {
-                alert('User not authenticated. Please log in to save designations.');
-                return;
+                throw new Error('User not authenticated. Please log in to save designations.');
             }
             
             try {
@@ -611,15 +614,13 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
                 const result = await response.json();
                 if (!result.success) {
                     console.error('Failed to save stimulation:', result.error);
-                    alert(`Failed to save stimulation: ${result.error}`);
-                    return;
+                    throw new Error(`Failed to save stimulation: ${result.error}`);
                 }
 
                 console.log('Stimulation saved successfully');
             } catch (error) {
                 console.error('Error saving stimulation:', error);
-                alert(`Error saving stimulation: ${error.message}`);
-                return;
+                throw new Error(`Error saving stimulation: ${error.message}`);
             }
         }
 
@@ -627,7 +628,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
         saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
     } catch (error) {
         console.error('Error exporting contacts:', error);
-        alert(`Error exporting contacts: ${error.message}`);
+        throw new Error(`Error exporting contacts: ${error.message}`);
     }
 };
 
