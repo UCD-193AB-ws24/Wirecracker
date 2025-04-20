@@ -478,7 +478,15 @@ router.post("/search", async (req, res) => {
       .select(`
         *,
         cort_gm(
-          gm(*)
+          gm(
+            *,
+            cort_gm(
+              cort(*)
+            ),
+            gm_function(
+              function(*)
+            )
+          )
         )
       `);
 
