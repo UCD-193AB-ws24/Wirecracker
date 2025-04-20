@@ -490,6 +490,7 @@ router.post("/search", async (req, res) => {
         )
       `);
 
+    // filtering
     if (query) {
       cortQuery = cortQuery.or(`name.ilike.%${query}%,acronym.ilike.%${query}%,lobe.ilike.%${query}%`);
     }
@@ -515,6 +516,10 @@ router.post("/search", async (req, res) => {
             }]
           });
         }
+        if (cg.gm) {
+          delete cg.gm.cort_gm
+          delete cg.gm.gm_function
+        }
       });
     });
 
@@ -536,26 +541,16 @@ router.post("/search", async (req, res) => {
       if (gmError) throw gmError;
       gmData?.forEach(gm => {
         const existingGmIndex = results.gm.findIndex(g => g.id === gm.id);
-        if (existingGmIndex === -1) {
+        if (existingGmIndex === -1) { // Make sure that it is not in the list already
           results.gm.push(gm);
-        } else {
-          // Merge cort_gm relationships if GM already exists
-          const existingCortGms = results.gm[existingGmIndex].cort_gm || [];
-          const newCortGms = gm.cort_gm?.filter(newCg =>
-            !existingCortGms.some(existingCg => existingCg.cort?.id === newCg.cort?.id)
-          ) || [];
-          results.gm[existingGmIndex].cort_gm = [...existingCortGms, ...newCortGms];
         }
+        // Returned gms from the database should be the same if there are duplicate ones.
+        // Ignore the duplicated ones
       });
     }
 
-    // Get all related data
-    const allGmIds = [
-      ...new Set([
-        ...results.cort.flatMap(c => c.cort_gm?.map(cg => cg.gm?.id)),
-        ...results.gm.map(g => g.id)
-      ].filter(Boolean))
-    ];
+    // Get all gm ids
+    const allGmIds = results.gm.map(g => g.id);
 
     if (allGmIds.length > 0) {
       // Get functions through gm_function
@@ -563,7 +558,15 @@ router.post("/search", async (req, res) => {
         .from('gm_function')
         .select(`
           *,
-          function(*)
+          function(
+            *,
+            gm_function(
+              gm(*)
+            ),
+            function_test(
+              test(*)
+            )
+          )
         `)
         .in('gm_id', allGmIds);
 
@@ -572,56 +575,71 @@ router.post("/search", async (req, res) => {
       // Process gm_function relationships
       gmFunctions?.forEach(gf => {
         if (gf.function && !results.functions.some(f => f.id === gf.function.id)) {
-          results.functions.push({
-            ...gf.function,
-            test: []
-          });
+          results.functions.push(gf.function);
         }
       });
 
       // Get function_test relationships
       const functionIds = results.functions.map(f => f.id);
+
       if (functionIds.length > 0) {
         const { data: functionTests, error: ftError } = await supabase
           .from('function_test')
           .select(`
             *,
-            test(*)
+            test(
+              *,
+              function_test(
+                function(*)
+              )
+            )
           `)
           .in('function_id', functionIds);
 
         if (ftError) throw ftError;
 
         functionTests?.forEach(ft => {
-          if (ft.test) {
-            // Find the function that this test belongs to
-            const functionIndex = results.functions.findIndex(f => f.id === ft.function_id);
-
-            if (functionIndex !== -1) {
-              // Add test to function's tests array if not already present
-              if (!results.functions[functionIndex].test.some(t => t.id === ft.test.id)) {
-                results.functions[functionIndex].test.push(ft.test);
-              }
-            }
-
-            // Add test to main tests array if not already present
-            if (!results.tests.some(t => t.id === ft.test.id)) {
-              results.tests.push({
-                ...ft.test,
-                function: [
-                  // Add reference to the parent function
-                  ...(results.functions.find(f => f.id === ft.function_id) ? [{
-                    id: ft.function_id,
-                    name: results.functions.find(f => f.id === ft.function_id).name
-                  }] : [])
-                ]
-              });
-            }
+          // Add test to main tests array if not already present
+          if (ft.test && !results.tests.some(t => t.id === ft.test.id)) {
+            results.tests.push(ft.test);
           }
-
         });
       }
     }
+
+    results.gm.forEach(gm => {
+        if (gm.cort_gm) {
+            gm.cort_gm = gm.cort_gm.filter(cg =>
+                results.cort.some(c => c.id === cg.cort.id)
+            );
+        }
+        if (gm.gm_function) {
+            gm.gm_function = gm.gm_function.filter(gf =>
+                results.functions.some(f => f.id === gf.function.id)
+            );
+        }
+    });
+
+    results.functions.forEach(func => {
+        if (func.gm_function) {
+            func.gm_function = func.gm_function.filter(gf =>
+                results.gm.some(g => g.id === gf.gm.id)
+            );
+        }
+        if (func.function_test) {
+            func.function_test = func.function_test.filter(ft =>
+                results.tests.some(t => t.id === ft.test.id)
+            );
+        }
+    });
+
+    results.tests.forEach(test => {
+        if (test.function_test) {
+            test.function_test = test.function_test.filter(ft =>
+                results.functions.some(f => f.id === ft.function.id)
+            );
+        }
+    });
 
     res.json(results);
   } catch (error) {

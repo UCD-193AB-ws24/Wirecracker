@@ -160,20 +160,27 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         }
                         break;
                     case ItemTypes.FUNCTION:
-                        for (let relatedTest in item.test) {
+                        for (let relatedGM in item.gm_function) {
                             relatedItems.push({
-                                id: item.test[relatedTest].id,
+                                id: item.gm_function[relatedGM].gm.id,
+                                type: ItemTypes.GM,
+                                name: item.gm_function[relatedGM].gm.name,
+                            });
+                        }
+                        for (let relatedTest in item.function_test) {
+                            relatedItems.push({
+                                id: item.function_test[relatedTest].test.id,
                                 type: ItemTypes.TEST,
-                                name: item.test[relatedTest].name,
+                                name: item.function_test[relatedTest].test.name,
                             });
                         }
                         break;
                     case ItemTypes.TEST:
-                        for (let relatedFunc in item.function) {
+                        for (let relatedFunc in item.function_test) {
                             relatedItems.push({
-                                id: item.function[relatedFunc].id,
+                                id: item.function_test[relatedFunc].function.id,
                                 type: ItemTypes.FUNCTION,
-                                name: item.function[relatedFunc].name,
+                                name: item.function_test[relatedFunc].function.name,
                             });
                         }
                         break;
