@@ -123,14 +123,39 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
     const transformSearchResults = (data) => {
         const results = [];
+        const searchString = query.toLowerCase();
+
+        // Helper function to check if text contains the search string
+        const containsString = (text) => {
+            if (!text) return false;
+            return text.toString().toLowerCase().includes(searchString);
+        };
+
+        // Helper function to determine relevance level
+        const getRelevanceLevel = (item, type) => {
+            // Level 1: Name matches
+            if (containsString(item.name || item.title)) return 1;
+
+            // Level 2: Acronym or description matches
+            if (containsString(item.acronym) ||
+                containsString(item.description) ||
+                containsString(item.lobe)) return 2;
+
+            // Default to level 4 (will be upgraded if direct relationships found)
+            return 4;
+        };
 
         // Helper function to add item if it doesn't exist
-        const addItem = (item, type) => {
+        const addItem = (item, type, relevance = null) => {
             if (!item || !item.id) return;
-            const exists = results.some(
-                (r) => r.type === type && r.id === item.id,
+
+            const existsIndex = results.findIndex(
+                (r) => r.type === type && r.id === item.id
             );
-            if (!exists) {
+
+            const relevanceLevel = relevance !== null ? relevance : getRelevanceLevel(item, type);
+
+            if (existsIndex === -1) {
                 let relatedItems = [];
                 switch (type) {
                     case ItemTypes.CORT:
@@ -154,8 +179,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             relatedItems.push({
                                 id: item.gm_function[relatedFunc].function.id,
                                 type: ItemTypes.FUNCTION,
-                                name: item.gm_function[relatedFunc].function
-                                    .name,
+                                name: item.gm_function[relatedFunc].function.name,
                             });
                         }
                         break;
@@ -185,17 +209,18 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         }
                         break;
                 }
+
                 results.push({
                     type,
                     id: item.id,
-                    name:
-                        item.name ||
-                        item.title ||
-                        item.acronym ||
-                        `Reference ${item.isbn_issn_doi}`,
+                    name: item.name,
                     details: getItemDetails(item, type),
                     related: relatedItems,
+                    relevance: relevanceLevel
                 });
+            } else if (relevanceLevel < results[existsIndex].relevance) {
+                // Update with better relevance if found
+                results[existsIndex].relevance = relevanceLevel;
             }
         };
 
@@ -216,15 +241,36 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 case ItemTypes.TEST:
                     return { description: item.description };
                 default:
-                    return {};
+                return {};
             }
         };
 
-        // Process all data and collect items
+        // add all items with their direct relevance
         data.cort?.forEach((cort) => addItem(cort, ItemTypes.CORT));
         data.gm?.forEach((gm) => addItem(gm, ItemTypes.GM));
         data.functions?.forEach((func) => addItem(func, ItemTypes.FUNCTION));
         data.tests?.forEach((test) => addItem(test, ItemTypes.TEST));
+
+        // find direct relationships (level 3)
+        const directlyRelated = new Set();
+        results.forEach(item => {
+            if (item.relevance <= 2) { // If item is level 1 or 2
+                item.related?.forEach(rel => {
+                    directlyRelated.add(`${rel.type}-${rel.id}`);
+                });
+            }
+        });
+
+        // Update relevance for directly related items
+        results.forEach(item => {
+            const itemKey = `${item.type}-${item.id}`;
+            if (directlyRelated.has(itemKey) && item.relevance > 3) {
+                item.relevance = 3;
+            }
+        });
+
+        // Sort results by relevance (lower numbers first)
+        results.sort((a, b) => a.relevance - b.relevance);
 
         return results;
     };
