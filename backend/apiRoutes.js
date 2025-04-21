@@ -505,56 +505,166 @@ router.post("/search", async (req, res) => {
     if (cortError) throw cortError;
     results.cort = cortData || [];
 
+    // Process cort data and collect GM ids
     results.cort.forEach(cort => {
       cort.cort_gm?.forEach(cg => {
         if (cg.gm && !results.gm.some(g => g.id === cg.gm.id)) {
-          // Add GM with reference back to the cort
           results.gm.push({
             ...cg.gm,
-            cort_gm: [{
-              cort: cort
-            }]
+            cort_gm: [{ cort: cort }]
           });
-        }
-        if (cg.gm) {
-          delete cg.gm.cort_gm
-          delete cg.gm.gm_function
         }
       });
     });
 
-    // Search gm table (only by query)
+    // Combined search for GM, functions, and tests when query exists
     if (query) {
-      const { data: gmData, error: gmError } = await supabase
-        .from('gm')
-        .select(`
-          *,
-          cort_gm(
-            cort(*)
-          ),
-          gm_function(
-            function(*)
-          )
-        `)
-        .or(`name.ilike.%${query}%,acronym.ilike.%${query}%`);
+      // Search GM, functions, and tests in parallel
+      const [gmData, funcData, testData] = await Promise.all([
+        supabase
+          .from('gm')
+          .select(`
+            *,
+            cort_gm(
+              cort(*)
+            ),
+            gm_function(
+              function(*)
+            )
+          `)
+          .or(`name.ilike.%${query}%,acronym.ilike.%${query}%`),
 
-      if (gmError) throw gmError;
-      gmData?.forEach(gm => {
-        const existingGmIndex = results.gm.findIndex(g => g.id === gm.id);
-        if (existingGmIndex === -1) { // Make sure that it is not in the list already
-          results.gm.push(gm);
+        supabase
+          .from('function')
+          .select(`
+            *,
+            gm_function(
+              gm(*)
+            ),
+            function_test(
+              test(*)
+            )
+          `)
+          .or(`name.ilike.%${query}%,description.ilike.%${query}%`),
+
+        supabase
+          .from('test')
+          .select(`
+            *,
+            function_test(
+              function(*)
+            )
+          `)
+          .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+      ]);
+
+      // Process test results
+      const relatedFuncIds = new Set();
+      if (!testData.error) {
+        testData.data?.forEach(test => {
+          if (!results.tests.some(t => t.id === test.id)) {
+            results.tests.push(test);
+            // Collect Function ids from function_test
+            test.function_test?.forEach(ft => {
+              if (ft.function?.id) relatedFuncIds.add(ft.function.id);
+            })
+          }
+        });
+      }
+
+      // Process function results and collect related GM ids
+      const relatedGmIds = new Set();
+      if (!funcData.error) {
+        funcData.data?.forEach(func => {
+          if (!results.functions.some(f => f.id === func.id)) {
+            results.functions.push(func);
+            // Collect GM ids from function relationships
+            func.gm_function?.forEach(gf => {
+              if (gf.gm?.id) relatedGmIds.add(gf.gm.id);
+            });
+          }
+        });
+      }
+
+      // Process GM results
+      if (!gmData.error) {
+        gmData.data?.forEach(gm => {
+          if (!results.gm.some(g => g.id === gm.id)) {
+            results.gm.push(gm);
+          }
+        });
+      }
+
+      // Fetch any missing Functions that are related to found tests
+      if (relatedFuncIds.size > 0) {
+        const funcIdsToFetch = Array.from(relatedFuncIds).filter(id =>
+          !results.gm.some(g => g.id === id)
+        );
+
+        if (funcIdsToFetch.length > 0) {
+          const { data: missingFuncs, error: missingFuncError } = await supabase
+            .from('function')
+            .select(`
+              *,
+              function_test(
+                test(*)
+              ),
+              gm_function(
+                function(*)
+              )
+            `)
+            .in('id', funcIdsToFetch);
+
+          if (!missingFuncError) {
+            missingFuncs?.forEach(func => {
+              if (!results.functions.some(f => f.id === func.id)) {
+                results.functions.push(func);
+              }
+            });
+          }
         }
-        // Returned gms from the database should be the same if there are duplicate ones.
-        // Ignore the duplicated ones
-      });
+      }
+
+      // Fetch any missing GMs that are related to found functions
+      if (relatedGmIds.size > 0) {
+        const gmIdsToFetch = Array.from(relatedGmIds).filter(id =>
+          !results.gm.some(g => g.id === id)
+        );
+
+        if (gmIdsToFetch.length > 0) {
+          const { data: missingGms, error: missingGmError } = await supabase
+            .from('gm')
+            .select(`
+              *,
+              cort_gm(
+                cort(*)
+              ),
+              gm_function(
+                function(*)
+              )
+            `)
+            .in('id', gmIdsToFetch);
+
+          if (!missingGmError) {
+            missingGms?.forEach(gm => {
+              if (!results.gm.some(g => g.id === gm.id)) {
+                results.gm.push(gm);
+              }
+            });
+          }
+        }
+      }
     }
 
-    // Get all gm ids
-    const allGmIds = results.gm.map(g => g.id);
+    // Get all unique GM ids now (from cort, direct search, and function relationships)
+    const allGmIds = [...new Set(results.gm.map(g => g.id))];
 
-    if (allGmIds.length > 0) {
-      // Get functions through gm_function
-      const { data: gmFunctions, error: gfError } = await supabase
+
+
+    // Fetch all relationships in parallel
+    // cort from GM and function from GM
+    const [gmFunctions, cortGM] = await Promise.all([
+      allGmIds.length > 0 ? supabase
         .from('gm_function')
         .select(`
           *,
@@ -568,77 +678,101 @@ router.post("/search", async (req, res) => {
             )
           )
         `)
-        .in('gm_id', allGmIds);
+        .in('gm_id', allGmIds) : { data: null, error: null },
 
-      if (gfError) throw gfError;
+      allGmIds.length > 0 ? supabase
+        .from('cort_gm')
+        .select(`
+          *,
+          cort(
+            *,
+            cort_gm(
+              gm(*)
+            )
+          )
+        `)
+        .in('gm_id', allGmIds) : { data: null, error: null },
+    ]);
 
-      // Process gm_function relationships
-      gmFunctions?.forEach(gf => {
+    // Process gm_function relationships
+    if (!gmFunctions.error && gmFunctions.data) {
+      gmFunctions.data.forEach(gf => {
         if (gf.function && !results.functions.some(f => f.id === gf.function.id)) {
           results.functions.push(gf.function);
         }
       });
-
-      // Get function_test relationships
-      const functionIds = results.functions.map(f => f.id);
-
-      if (functionIds.length > 0) {
-        const { data: functionTests, error: ftError } = await supabase
-          .from('function_test')
-          .select(`
-            *,
-            test(
-              *,
-              function_test(
-                function(*)
-              )
-            )
-          `)
-          .in('function_id', functionIds);
-
-        if (ftError) throw ftError;
-
-        functionTests?.forEach(ft => {
-          // Add test to main tests array if not already present
-          if (ft.test && !results.tests.some(t => t.id === ft.test.id)) {
-            results.tests.push(ft.test);
-          }
-        });
-      }
     }
 
+    // Process cort_gm relationships
+    if (!cortGM.error && cortGM.data) {
+      cortGM.data.forEach(cg => {
+        if (cg.cort && !results.cort.some(c => c.id === cg.cort.id)) {
+          results.cort.push(cg.cort);
+        }
+      });
+    }
+
+    // Get all unique function ids
+    const allFunctionIds = [...new Set(results.functions.map(f => f.id))];
+
+    // test from function
+    const [functionTests] = await Promise.all([
+      allFunctionIds.length > 0 ? supabase
+        .from('function_test')
+        .select(`
+          *,
+          test(
+            *,
+            function_test(
+              function(*)
+            )
+          )
+        `)
+        .in('function_id', allFunctionIds) : { data: null, error: null },
+    ])
+
+    // Process function_test relationships
+    if (!functionTests.error && functionTests.data) {
+      functionTests.data.forEach(ft => {
+        if (ft.test && !results.tests.some(t => t.id === ft.test.id)) {
+          results.tests.push(ft.test);
+        }
+      });
+    }
+
+    // Filter relationships to only include items that exist in results
     results.gm.forEach(gm => {
-        if (gm.cort_gm) {
-            gm.cort_gm = gm.cort_gm.filter(cg =>
-                results.cort.some(c => c.id === cg.cort.id)
-            );
-        }
-        if (gm.gm_function) {
-            gm.gm_function = gm.gm_function.filter(gf =>
-                results.functions.some(f => f.id === gf.function.id)
-            );
-        }
+      if (gm.cort_gm) {
+        gm.cort_gm = gm.cort_gm.filter(cg =>
+          results.cort.some(c => c.id === cg.cort?.id)
+        );
+      }
+      if (gm.gm_function) {
+        gm.gm_function = gm.gm_function.filter(gf =>
+          results.functions.some(f => f.id === gf.function?.id)
+        );
+      }
     });
 
     results.functions.forEach(func => {
-        if (func.gm_function) {
-            func.gm_function = func.gm_function.filter(gf =>
-                results.gm.some(g => g.id === gf.gm.id)
-            );
-        }
-        if (func.function_test) {
-            func.function_test = func.function_test.filter(ft =>
-                results.tests.some(t => t.id === ft.test.id)
-            );
-        }
+      if (func.gm_function) {
+        func.gm_function = func.gm_function.filter(gf =>
+          results.gm.some(g => g.id === gf.gm?.id)
+        );
+      }
+      if (func.function_test) {
+        func.function_test = func.function_test.filter(ft =>
+          results.tests.some(t => t.id === ft.test?.id)
+        );
+      }
     });
 
     results.tests.forEach(test => {
-        if (test.function_test) {
-            test.function_test = test.function_test.filter(ft =>
-                results.functions.some(f => f.id === ft.function.id)
-            );
-        }
+      if (test.function_test) {
+        test.function_test = test.function_test.filter(ft =>
+          results.functions.some(f => f.id === ft.function?.id)
+        );
+      }
     });
 
     res.json(results);
