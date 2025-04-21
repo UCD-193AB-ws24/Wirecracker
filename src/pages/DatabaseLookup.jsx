@@ -5,12 +5,11 @@ import config from "../../config.json" with { type: "json" };
 const backendURL = config.backendURL;
 
 const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
-
     const ItemTypes = Object.freeze({
-        CORT:       "Cortical/Subcortical",
-        GM:         "Gray Matter",
-        FUNCTION:   "Function",
-        TEST:       "Test"
+        CORT: "Cortical/Subcortical",
+        GM: "Gray Matter",
+        FUNCTION: "Function",
+        TEST: "Test",
     });
 
     const [query, setQuery] = useState(
@@ -32,12 +31,21 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const [showFilters, setShowFilters] = useState(savedState.filter || false);
 
     const graphRef = useRef(null);
-    const [graphDimensions, setGraphDimensions] = useState({ width: 800, height: 600 });
+    const [graphDimensions, setGraphDimensions] = useState({
+        width: 800,
+        height: 600,
+    });
     const [graphView, setGraphView] = useState(false); // Toggle between table and graph view
 
     // Color scale for different node types
-    const colorScale = d3.scaleOrdinal()
-        .domain([ItemTypes.CORT, ItemTypes.GM, ItemTypes.FUNCTION, ItemTypes.TEST])
+    const colorScale = d3
+        .scaleOrdinal()
+        .domain([
+            ItemTypes.CORT,
+            ItemTypes.GM,
+            ItemTypes.FUNCTION,
+            ItemTypes.TEST,
+        ])
         .range(["#4e79a7", "#f28e2b", "#e15759", "#76b7b2"]);
 
     useEffect(() => {
@@ -137,9 +145,12 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
             if (containsString(item.name || item.title)) return 1;
 
             // Level 2: Acronym or description matches
-            if (containsString(item.acronym) ||
+            if (
+                containsString(item.acronym) ||
                 containsString(item.description) ||
-                containsString(item.lobe)) return 2;
+                containsString(item.lobe)
+            )
+                return 2;
 
             // Default to level 4 (will be upgraded if direct relationships found)
             return 4;
@@ -150,10 +161,11 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
             if (!item || !item.id) return;
 
             const existsIndex = results.findIndex(
-                (r) => r.type === type && r.id === item.id
+                (r) => r.type === type && r.id === item.id,
             );
 
-            const relevanceLevel = relevance !== null ? relevance : getRelevanceLevel(item, type);
+            const relevanceLevel =
+                relevance !== null ? relevance : getRelevanceLevel(item, type);
 
             if (existsIndex === -1) {
                 let relatedItems = [];
@@ -179,7 +191,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             relatedItems.push({
                                 id: item.gm_function[relatedFunc].function.id,
                                 type: ItemTypes.FUNCTION,
-                                name: item.gm_function[relatedFunc].function.name,
+                                name: item.gm_function[relatedFunc].function
+                                    .name,
                             });
                         }
                         break;
@@ -204,7 +217,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             relatedItems.push({
                                 id: item.function_test[relatedFunc].function.id,
                                 type: ItemTypes.FUNCTION,
-                                name: item.function_test[relatedFunc].function.name,
+                                name: item.function_test[relatedFunc].function
+                                    .name,
                             });
                         }
                         break;
@@ -216,7 +230,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     name: item.name,
                     details: getItemDetails(item, type),
                     related: relatedItems,
-                    relevance: relevanceLevel
+                    relevance: relevanceLevel,
                 });
             } else if (relevanceLevel < results[existsIndex].relevance) {
                 // Update with better relevance if found
@@ -241,7 +255,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 case ItemTypes.TEST:
                     return { description: item.description };
                 default:
-                return {};
+                    return {};
             }
         };
 
@@ -253,16 +267,17 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
         // find direct relationships (level 3)
         const directlyRelated = new Set();
-        results.forEach(item => {
-            if (item.relevance <= 2) { // If item is level 1 or 2
-                item.related?.forEach(rel => {
+        results.forEach((item) => {
+            if (item.relevance <= 2) {
+                // If item is level 1 or 2
+                item.related?.forEach((rel) => {
                     directlyRelated.add(`${rel.type}-${rel.id}`);
                 });
             }
         });
 
         // Update relevance for directly related items
-        results.forEach(item => {
+        results.forEach((item) => {
             const itemKey = `${item.type}-${item.id}`;
             if (directlyRelated.has(itemKey) && item.relevance > 3) {
                 item.relevance = 3;
@@ -301,7 +316,6 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         });
     };
 
-
     // Add this useEffect to handle window resize
     useEffect(() => {
         const handleResize = () => {
@@ -312,10 +326,10 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
             }
         };
 
-        window.addEventListener('resize', handleResize);
+        window.addEventListener("resize", handleResize);
         handleResize(); // Initial call
 
-        return () => window.removeEventListener('resize', handleResize);
+        return () => window.removeEventListener("resize", handleResize);
     }, []);
 
     useEffect(() => {
@@ -337,7 +351,6 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
     }, [searchResult, graphView, graphDimensions]);
 
     const renderGraph = () => {
-
         // Helper function to wrap long labels
         function wrap(text, width) {
             text.each(function () {
@@ -347,21 +360,24 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     line = [],
                     lineHeight = 1.2, // ems
                     dy = -2 * lineHeight,
-                    tspan = text.text(null)
-                                .append("tspan")
-                                .attr("text-anchor", "middle")
-                                .attr("dy", dy + "em");
-                while (word = words.pop()) {
-                    line = [word, ...line]
+                    tspan = text
+                        .text(null)
+                        .append("tspan")
+                        .attr("text-anchor", "middle")
+                        .attr("dy", dy + "em");
+                while ((word = words.pop())) {
+                    line = [word, ...line];
                     tspan.text(line.join(" "));
                     if (tspan.node().getComputedTextLength() > width) {
                         line.shift();
                         tspan.text(line.join(" "));
                         line = [word];
-                        tspan = text.append("tspan")
-                                    .attr("text-anchor", "middle")
-                                    .attr("dy", (dy + lineHeight) + "em").attr("dx", - tspan.node().getComputedTextLength())
-                                    .text(word);
+                        tspan = text
+                            .append("tspan")
+                            .attr("text-anchor", "middle")
+                            .attr("dy", dy + lineHeight + "em")
+                            .attr("dx", -tspan.node().getComputedTextLength())
+                            .text(word);
                     }
                 }
             });
@@ -386,7 +402,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 type: item.type,
                 details: item.details,
                 // Store the original item for relationship lookup
-                originalItem: item
+                originalItem: item,
             });
         });
 
@@ -402,30 +418,45 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     links.push({
                         source: sourceIndex,
                         target: targetIndex,
-                        value: 1
+                        value: 1,
                     });
                 }
             });
         });
 
         // Create the force simulation with proper node references
-        const simulation = d3.forceSimulation(nodes)
-            .force("link", d3.forceLink(links)
-                .id(d => nodes.indexOf(d))  // Use node index as ID
-                .distance(80))
+        const simulation = d3
+            .forceSimulation(nodes)
+            .force(
+                "link",
+                d3
+                    .forceLink(links)
+                    .id((d) => nodes.indexOf(d)) // Use node index as ID
+                    .distance(130),
+            )
             .force("charge", d3.forceManyBody().strength(-20))
-            .force("center", d3.forceCenter(graphDimensions.width / 2, graphDimensions.height / 2))
+            .force(
+                "center",
+                d3.forceCenter(
+                    graphDimensions.width / 2,
+                    graphDimensions.height / 2,
+                ),
+            )
             .force("collision", d3.forceCollide().radius(40));
 
         // Create SVG container with Tailwind classes
         const svg = container
             .append("svg")
             .attr("class", "w-full h-full")
-            .attr("viewBox", `0 0 ${graphDimensions.width} ${graphDimensions.height}`)
+            .attr(
+                "viewBox",
+                `0 0 ${graphDimensions.width} ${graphDimensions.height}`,
+            )
             .attr("preserveAspectRatio", "xMidYMid meet");
 
         // Add zoom behavior
-        const zoom = d3.zoom()
+        const zoom = d3
+            .zoom()
             .scaleExtent([0.5, 3])
             .on("zoom", (event) => {
                 g.attr("transform", event.transform);
@@ -436,7 +467,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const g = svg.append("g");
 
         // Draw links
-        const link = g.append("g")
+        const link = g
+            .append("g")
             .selectAll("line")
             .data(links)
             .join("line")
@@ -444,79 +476,91 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
             .attr("stroke", "#999") // Explicit color as fallback
             .attr("stroke-width", 2);
 
+        // Create a size scale based on relevance
+        const sizeScale = d3
+            .scaleLinear()
+            .domain([1, 4]) // Relevance levels from 1 (highest) to 4 (lowest)
+            .range([20, 10]); // Size range from 30px (largest) to 15px (smallest)
+
         // Draw nodes
-        const node = g.append("g")
+        const node = g
+            .append("g")
             .selectAll("circle")
             .data(nodes)
             .join("circle")
-            .attr("r", 20)
-            .attr("fill", d => colorScale(d.type))
+            .attr("r", (d) => sizeScale(d.originalItem.relevance))
+            .attr("fill", (d) => colorScale(d.type))
             .attr("class", "stroke-white stroke-2")
             .call(drag(simulation));
 
         // Add labels
-        const label = g.append("g")
+        const label = g
+            .append("g")
             .selectAll("text")
             .data(nodes)
             .join("text")
-            .attr("class", "text-xs fill-gray-800 max-w-24")
-            .text(d => d.name)
-            .call(wrap, 150);
+            .attr(
+                "class",
+                (d) =>
+                    `text-xs text-[${12 - d.originalItem.relevance}px] fill-gray-800 max-w-24`,
+            )
+            .text((d) => d.name)
+            .call(wrap, 120);
 
         // Add node type indicators
-        const typeLabel = g.append("g")
+        const typeLabel = g
+            .append("g")
             .selectAll("text")
             .data(nodes)
             .join("text")
-            .attr("dy", 30)
+            .attr("dy", (d) => 30 - d.originalItem.relevance * 3)
             .attr("text-anchor", "middle")
             .attr("class", "text-[8px] fill-gray-600")
-            .text(d => d.type.split('/')[0]);
+            .text((d) => d.type.split("/")[0]);
 
         // Tooltip with Tailwind classes
-        const tooltip = d3.select("body")
+        const tooltip = d3
+            .select("body")
             .append("div")
-            .attr("class", "fixed invisible bg-white border border-gray-200 rounded p-2 pointer-events-none z-50 max-w-[300px] shadow-md");
+            .attr(
+                "class",
+                "fixed invisible bg-white border border-gray-200 rounded p-2 pointer-events-none z-50 max-w-[300px] shadow-md",
+            );
 
         // Add interactivity
         node.on("mouseover", (event, d) => {
-                tooltip.html(`
+            tooltip
+                .html(
+                    `
                     <strong class="font-semibold">${d.name}</strong><br>
                     <em class="text-gray-600">${d.type}</em><br>
                     ${formatDetails(d.details)}
-                `)
+                `,
+                )
                 .classed("invisible", false)
                 .classed("visible", true);
-            })
+        })
             .on("mousemove", (event) => {
                 tooltip
                     .style("top", `${event.pageY - document.body.scrollTop}px`)
                     .style("left", `${event.pageX}px`);
             })
             .on("mouseout", () => {
-                tooltip.classed("invisible", true)
-                    .classed("visible", false);
+                tooltip.classed("invisible", true).classed("visible", false);
             });
 
         // Update positions on each tick
         simulation.on("tick", () => {
-            link
-                .attr("x1", d => d.source.x)
-                .attr("y1", d => d.source.y)
-                .attr("x2", d => d.target.x)
-                .attr("y2", d => d.target.y);
+            link.attr("x1", (d) => d.source.x)
+                .attr("y1", (d) => d.source.y)
+                .attr("x2", (d) => d.target.x)
+                .attr("y2", (d) => d.target.y);
 
-            node
-                .attr("cx", d => d.x)
-                .attr("cy", d => d.y);
+            node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
 
-            label
-                .attr("x", d => d.x)
-                .attr("y", d => d.y);
+            label.attr("x", (d) => d.x).attr("y", (d) => d.y);
 
-            typeLabel
-                .attr("x", d => d.x)
-                .attr("y", d => d.y);
+            typeLabel.attr("x", (d) => d.x).attr("y", (d) => d.y);
         });
 
         // Drag functions
@@ -538,7 +582,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 d.fy = null;
             }
 
-            return d3.drag()
+            return d3
+                .drag()
                 .on("start", dragstarted)
                 .on("drag", dragged)
                 .on("end", dragended);
@@ -546,10 +591,13 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
         // Helper to format details for tooltip
         function formatDetails(details) {
-            if (!details) return '';
+            if (!details) return "";
             return Object.entries(details)
-                .map(([key, value]) => `<span class="text-gray-500">${key}:</span> ${value}`)
-                .join('<br>');
+                .map(
+                    ([key, value]) =>
+                        `<span class="text-gray-500">${key}:</span> ${value}`,
+                )
+                .join("<br>");
         }
 
         // Return cleanup function
@@ -561,7 +609,9 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
     const renderResultsTable = () => {
         if (searchResult.length === 0) {
-            return <p>No results to display. Perform a search to see results.</p>;
+            return (
+                <p>No results to display. Perform a search to see results.</p>
+            );
         }
 
         return (
@@ -626,7 +676,10 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                                         <span className="text-gray-500">
                                                             Hemisphere:
                                                         </span>{" "}
-                                                        {item.details.hemisphere}
+                                                        {
+                                                            item.details
+                                                                .hemisphere
+                                                        }
                                                     </div>
                                                     <div>
                                                         <span className="text-gray-500">
@@ -659,7 +712,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                                     {item.details.acronym}
                                                 </div>
                                             )}
-                                            {item.type === ItemTypes.FUNCTION && (
+                                            {item.type ===
+                                                ItemTypes.FUNCTION && (
                                                 <div>
                                                     <span className="text-gray-500">
                                                         Description:
@@ -679,17 +733,19 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                         <td className="px-4 py-2">
                                             {item.related?.length > 0 ? (
                                                 <div className="space-y-1">
-                                                    {item.related.map((rel, i) => (
-                                                        <div
-                                                            key={i}
-                                                            className="text-xs bg-gray-100 rounded px-2 py-1"
-                                                        >
-                                                            <span className="font-medium capitalize">
-                                                                {rel.type}:
-                                                            </span>{" "}
-                                                            {rel.name}
-                                                        </div>
-                                                    ))}
+                                                    {item.related.map(
+                                                        (rel, i) => (
+                                                            <div
+                                                                key={i}
+                                                                className="text-xs bg-gray-100 rounded px-2 py-1"
+                                                            >
+                                                                <span className="font-medium capitalize">
+                                                                    {rel.type}:
+                                                                </span>{" "}
+                                                                {rel.name}
+                                                            </div>
+                                                        ),
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <span className="text-gray-400">
