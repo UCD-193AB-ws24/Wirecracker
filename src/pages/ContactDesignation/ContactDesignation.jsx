@@ -87,7 +87,11 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         try {
             // First save to database if we have a file ID
             if (state.fileId) {
-                console.log('Saving designation to database...');
+                console.log('Saving designation with patientId:', {
+                    fromState: state.patientId,
+                    fromLocalizationData: localizationData?.patientId,
+                    fileId: state.fileId
+                });
                 
                 // Get user ID from session
                 const token = localStorage.getItem('token');
@@ -110,7 +114,8 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                             fileId: state.fileId,
                             fileName: state.fileName,
                             creationDate: state.creationDate,
-                            modifiedDate: new Date().toISOString()
+                            modifiedDate: new Date().toISOString(),
+                            patientId: state.patientId
                         }),
                     });
 
@@ -183,7 +188,8 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                             fileId: state.fileId,
                             fileName: state.fileName,
                             creationDate: state.creationDate,
-                            modifiedDate: new Date().toISOString()
+                            modifiedDate: new Date().toISOString(),
+                            patientId: state.patientId
                         }),
                     });
 
@@ -201,7 +207,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     }));
                     
                     // Show success feedback if this was a save operation
-                    setShowSaveSuccess(true);
+                        setShowSaveSuccess(true);
                     
                     console.log('Designation saved successfully');
                 } catch (error) {
@@ -233,7 +239,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         <div className="flex flex-col h-screen p-4">
             {/* Tab Navigation */}
             <div className="flex space-x-4 mb-4">
-                <button
+            <button
                     onClick={() => setActiveTab('designation')}
                     className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
                         activeTab === 'designation'
@@ -252,7 +258,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     }`}
                 >
                     Resection
-                </button>
+            </button>
             </div>
 
             {/* Main Content (Scrollable) */}

@@ -142,9 +142,10 @@ router.post('/save-localization', async (req, res) => {
  * @param {string} creationDate - The creation date of the file
  * @param {string} modifiedDate - The last modified date of the file
  * @param {string} token - The authorization token for the user session
+ * @param {string} patientId - The patient ID associated with the file
  * @returns {Promise<void>} - Resolves when the operation is complete, throws on error
  */
-async function handleFileRecord(fileId, fileName, creationDate, modifiedDate, token) {
+async function handleFileRecord(fileId, fileName, creationDate, modifiedDate, token, patientId) {
   // Check if file record already exists
   const { data: existingFile } = await supabase
     .from('files')
@@ -187,7 +188,8 @@ async function handleFileRecord(fileId, fileName, creationDate, modifiedDate, to
         owner_user_id: session.user_id,
         filename: fileName,
         creation_date: creationDate,
-        modified_date: modifiedDate
+        modified_date: modifiedDate,
+        patient_id: patientId
       });
 
     if (fileError) throw fileError;
@@ -215,7 +217,7 @@ router.post('/save-designation', async (req, res) => {
 
     // Handle file record
     try {
-      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization);
+      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, req.body.patientId);
     } catch (error) {
       console.error('Error saving file metadata:', error);
       return res.status(500).json({ 
@@ -312,7 +314,7 @@ router.post('/save-stimulation', async (req, res) => {
 
     // Handle file record
     try {
-      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization);
+      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, req.body.patientId);
     } catch (error) {
       console.error('Error saving file metadata:', error);
       return res.status(500).json({ 
@@ -405,7 +407,7 @@ router.post('/save-test-selection', async (req, res) => {
 
     // Handle file record
     try {
-      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization);
+      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, req.body.patientId);
     } catch (error) {
       console.error('Error saving file metadata:', error);
       return res.status(500).json({ 

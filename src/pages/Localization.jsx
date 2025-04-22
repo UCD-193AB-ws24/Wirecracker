@@ -42,17 +42,18 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
     useEffect(() => {
         // Only call onStateChange if it exists and is a function
         if (typeof onStateChange === 'function') {
-            onStateChange({
-                expandedElectrode,
-                submitFlag,
+        onStateChange({
+            expandedElectrode,
+            submitFlag,
                 electrodes,
                 fileId,
                 fileName,
                 creationDate,
-                modifiedDate
+                modifiedDate,
+                patientId: savedState.patientId // Include patientId in the state
             });
         }
-    }, [expandedElectrode, submitFlag, electrodes, fileId, fileName, creationDate, modifiedDate]);
+    }, [expandedElectrode, submitFlag, electrodes, fileId, fileName, creationDate, modifiedDate, savedState.patientId]);
 
     // Generate a unique ID for the file - using integer only for database compatibility
     const generateUniqueId = () => {
@@ -66,7 +67,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         const description = formData.get('description').replace(/[,;]/g, '');
         const numContacts = formData.get('contacts');
         const electrodeType = formData.get('electrodeType') || 'DIXI'; // Default to DIXI if not specified
-
+        
         setElectrodes(prevElectrodes => {
             const tempElectrodes = { ...prevElectrodes };
             
@@ -137,11 +138,11 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 };
                 
                 // Add contacts
-                for (let i = 1; i <= numContacts; i++) {
-                    tempElectrodes[label][i] = {
-                        contactDescription: description,
-                        associatedLocation: ''
-                    };
+            for (let i = 1; i <= numContacts; i++) {
+                tempElectrodes[label][i] = { 
+                    contactDescription: description, 
+                    associatedLocation: '' 
+                };
                 }
             }
             
@@ -165,9 +166,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 tempElectrodes[label][number] = updatedContact;
                 
                 console.log('Updated electrodes state:', tempElectrodes);
-                
-                // If this is a shared file, check for changes immediately
-                if (isSharedFile) {
+            
+            // If this is a shared file, check for changes immediately
+            if (isSharedFile) {
                     checkForChanges(tempElectrodes);
                 }
                 
@@ -188,24 +189,24 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
     };
 
     const checkForChanges = async (currentElectrodes) => {
-        try {
-            const userId = await getUserId();
-            if (!userId) return;
+                    try {
+                        const userId = await getUserId();
+                        if (!userId) return;
 
-            const { data: shareData } = await supabase
-                .from('fileshares')
-                .select('current_snapshot')
-                .eq('file_id', fileId)
-                .eq('shared_with_user_id', userId)
-                .single();
+                        const { data: shareData } = await supabase
+                            .from('fileshares')
+                            .select('current_snapshot')
+                            .eq('file_id', fileId)
+                            .eq('shared_with_user_id', userId)
+                            .single();
 
-            if (shareData) {
+                        if (shareData) {
                 const changes = calculateChanges(shareData.current_snapshot, currentElectrodes);
-                setHasChanges(Object.keys(changes).length > 0);
-            }
-        } catch (error) {
-            console.error('Error checking for changes:', error);
-        }
+                            setHasChanges(Object.keys(changes).length > 0);
+                        }
+                    } catch (error) {
+                        console.error('Error checking for changes:', error);
+                    }
     };
 
     const handleFileNameChange = (e) => {
@@ -242,7 +243,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                         owner_user_id: userId,
                         filename: fileName,
                         creation_date: creationDate,
-                        modified_date: modifiedDate
+                        modified_date: modifiedDate,
+                        patient_id: savedState.patientId // Include patient_id from savedState
                     });
 
                 if (error) {
@@ -543,17 +545,51 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         return changes;
     };
 
-    const createDesignationTab = () => {
+    const createDesignationTab = async () => {
         if (Object.keys(electrodes).length === 0) return;
 
-        // Get designation data from the current localization
-        handleSaveLocalization(false);
-        const designationData = saveCSVFile(Identifiers.LOCALIZATION, electrodes, false);
-        // Create a new tab with the designation data
-        const event = new CustomEvent('addDesignationTab', {
-            detail: { originalData: electrodes, data: designationData }
-        });
-        window.dispatchEvent(event);
+        try {
+            // First save the localization to ensure we have the latest data
+            await handleSaveLocalization(false);
+            
+            // Get the patient_id from the files table
+            const { data: fileData, error: fileError } = await supabase
+                .from('files')
+                .select('patient_id')
+                .eq('file_id', fileId)
+                .single();
+
+            if (fileError) {
+                console.error('Error fetching patient_id:', fileError);
+                return;
+            }
+
+            console.log('Creating designation tab with patientId:', {
+                fromSavedState: savedState.patientId,
+                fromFileData: fileData.patient_id,
+                fileId: fileId
+            });
+            
+            // Get designation data from the current localization
+            const designationData = saveCSVFile(Identifiers.LOCALIZATION, electrodes, false);
+            
+            // Create a new tab with the designation data
+            const event = new CustomEvent('addDesignationTab', {
+                detail: { 
+                    originalData: electrodes,
+                    data: designationData,
+                    localizationData: {
+                        ...electrodes,
+                        patientId: fileData.patient_id
+                    },
+                    patientId: fileData.patient_id // Pass patientId directly
+                }
+            });
+            window.dispatchEvent(event);
+        } catch (error) {
+            console.error('Error creating designation tab:', error);
+            alert('Failed to create designation tab. Please try again.');
+        }
     };
 
     const handleApproveFile = async () => {
@@ -681,25 +717,25 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                         />
                     </div>
                     
-                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4">
                         {!readOnly && (
                             <>
-                                <div className="text-sm text-gray-500">
-                                    <div>Created: {new Date(creationDate).toLocaleString()}</div>
-                                    <div>Modified: {new Date(modifiedDate).toLocaleString()}</div>
-                                </div>
-                                <button
-                                    className="w-40 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded p-2"
-                                    onClick={() => handleSaveLocalization(false)}
-                                >
-                                    Save
-                                </button>
-                                <button
-                                    className="w-40 bg-green-500 hover:bg-green-600 text-white font-semibold rounded p-2"
-                                    onClick={() => handleSaveLocalization(true)}
-                                >
-                                    Export
-                                </button>
+                            <div className="text-sm text-gray-500">
+                                <div>Created: {new Date(creationDate).toLocaleString()}</div>
+                                <div>Modified: {new Date(modifiedDate).toLocaleString()}</div>
+                            </div>
+                            <button
+                                className="w-40 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded p-2"
+                                onClick={() => handleSaveLocalization(false)}
+                            >
+                                Save
+                            </button>
+                    <button
+                                className="w-40 bg-green-500 hover:bg-green-600 text-white font-semibold rounded p-2"
+                                onClick={() => handleSaveLocalization(true)}
+                    >
+                                Export
+                    </button>
                             </>
                         )}
                         {isSharedFile && (
@@ -714,10 +750,10 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                                         Submit Changes
                                     </button>
                                 )}
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
+            </div>
             </div>
 
             <Electrodes
@@ -739,7 +775,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             />
 
             {!readOnly && (
-                <Container>
+            <Container>
                     <Button
                         tooltip="Add Electrode"
                         styles={{ backgroundColor: darkColors.lightBlue, color: lightColors.white }}
@@ -754,8 +790,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 trigger={showElectrodeModal}
                 onClose={() => setShowElectrodeModal(false)}
                 onSubmit={(formData) => {
-                    addElectrode(formData);
-                    setSubmitFlag(!submitFlag);
+                                    addElectrode(formData);
+                                    setSubmitFlag(!submitFlag);
                 }}
             />
 

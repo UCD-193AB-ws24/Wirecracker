@@ -486,21 +486,112 @@ const HomePage = () => {
 
     const addTab = (type, data = null) => {
         const generateUniqueId = () => {
-            // Generate an integer ID based on current timestamp
-            return Math.floor(Date.now() % 1000000000); // Last 9 digits as integer
+            return Math.floor(Date.now() % 1000000000); // Last 9 digits as integer for fileId
         };
 
-        let title = 'New Tab';
+        const generatePatientId = () => {
+            // Generate a UUID v4
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        };
+
+        let title = '';
+        let patientId = null;
+        let fileId = generateUniqueId();
+
+        console.log('Adding new tab:', {
+            type,
+            data,
+            patientIdFromData: data?.patientId,
+            patientIdFromState: data?.state?.patientId,
+            patientIdFromOriginalData: data?.originalData?.patientId
+        });
+
         switch (type) {
-            case 'localization':        title = `Localization${localizationCounter}`; setLocalizationCounter(prevCounter => prevCounter + 1); break;
-            case 'csv-localization':    title = data.name; break;
-            case 'csv-designation':     title = data.name; break;
-            case 'csv-stimulation':     title = data.name; break; // Stimulation - CCEPs and seizure recreation
-            case 'csv-functional-mapping': title = data.name; break; // Stimulation - Functional Mapping
-            case 'csv-functional-test':       title = data.name; break; // Functional Mapping test selection
-            case 'stimulation':         title = 'New Stimulation Plan'; break;
-            case 'designation':         title = 'New Designation'; break;
-            case 'functional-test':     title = 'New Functional Mapping'; break;
+            case 'localization':
+                title = 'New Localization';
+                patientId = generatePatientId(); // Generate UUID for patient_id
+                break;
+            case 'csv-localization':
+                title = 'CSV Localization';
+                patientId = generatePatientId(); // Generate UUID for patient_id
+                break;
+            case 'designation':         
+                title = 'New Designation';
+                patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
+                console.log('Setting patientId for designation:', {
+                    finalPatientId: patientId,
+                    sources: {
+                        dataPatientId: data.patientId,
+                        statePatientId: data.state?.patientId,
+                        originalDataPatientId: data.originalData?.patientId
+                    }
+                });
+                break;
+            case 'csv-stimulation':     
+                title = data.name;
+                patientId = data.patientId; // Use existing patient_id from parent localization
+                break;
+            case 'csv-functional-mapping': 
+                title = data.name;
+                patientId = data.patientId; // Use existing patient_id from parent localization
+                break;
+            case 'csv-functional-test':       
+                title = data.name;
+                patientId = data.patientId; // Use existing patient_id from parent localization
+                break;
+            case 'stimulation':         
+                title = 'New Stimulation Plan';
+                patientId = data.patientId || data.state?.patientId; // Try both possible locations for patientId
+                break;
+            case 'seizure-recreation':
+            case 'cceps':
+                return <ContactSelection
+                    key={currentTab.id}
+                    isFunctionalMapping={false}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-stimulation':
+                return <ContactSelection
+                    key={currentTab.id}
+                    isFunctionalMapping={false}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'functional-mapping':
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={true}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-functional-mapping':
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={true}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'functional-test':
+            case 'csv-functional-test':
+                return <FunctionalTestSelection
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            default:
+                return null;
         }
 
         const newTab = {
@@ -509,7 +600,8 @@ const HomePage = () => {
             content: type,
             data: data,
             state: {
-                fileId: generateUniqueId(),
+                fileId: fileId,
+                patientId: patientId, // Include patient_id in the state
                 fileName: title,
                 creationDate: new Date().toISOString(),
                 modifiedDate: new Date().toISOString()
@@ -608,6 +700,7 @@ const HomePage = () => {
                 data: fileData.data,
                 state: {
                     fileId: fileData.fileId,
+                    patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
@@ -630,6 +723,7 @@ const HomePage = () => {
                 data: { data: fileData.data, originalData: fileData.originalData },
                 state: {
                     fileId: fileData.fileId,
+                    patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
@@ -653,6 +747,7 @@ const HomePage = () => {
                 data: fileData.data,
                 state: {
                     fileId: fileData.fileId,
+                    patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
@@ -676,6 +771,7 @@ const HomePage = () => {
                 data: fileData.data,
                 state: {
                     fileId: fileData.fileId,
+                    patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
