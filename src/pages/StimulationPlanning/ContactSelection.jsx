@@ -218,15 +218,22 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
     }
 
     const showAvailableContacts = (electrode) => {
+        if (!electrode || !electrode.contacts) return [];
+        
         return electrode.contacts.map((contact, index) => { // Horizontal list for every contact
-            const pair = electrode.contacts[contact.pair - 1];
+            if (!contact) return null;
+            
+            const pair = contact.pair ? electrode.contacts[contact.pair - 1] : null;
 
             // Filter out the non-marked contacts.
-            const shouldAppear = !(droppedContacts.some((c) => c.id === contact.id)) && (contact.mark || contact.surgeonMark);
-            const pairShouldAppear = !(droppedContacts.some((c) => c.id === pair.id)) && (pair.mark || pair.surgeonMark);
+            const shouldAppear = !(droppedContacts.some((c) => c.id === contact.id)) && 
+                               (contact.mark || contact.surgeonMark);
+            const pairShouldAppear = pair && 
+                                   !(droppedContacts.some((c) => c.id === pair.id)) && 
+                                   (pair.mark || pair.surgeonMark);
 
             return (
-                !(contact.isPlanning || pair.isPlanning) && (
+                !(contact.isPlanning || (pair && pair.isPlanning)) && (
                     areAllVisible ? (
                         <Contact key={contact.id}
                             contact={contact}
@@ -240,7 +247,7 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
                     )
                 )
             );
-        })
+        }).filter(Boolean); // Remove any null entries
     }
 
     return (
@@ -334,47 +341,82 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
         }),
     }));
 
-    const createTestSelectionTab = () => {
+    const createTestSelectionTab = async () => {
         if (Object.keys(contacts).length === 0) return;
 
-        // Get designation data from the current localization
         try {
-            exportState(state, electrodes, isFunctionalMapping, false);
-        } catch (error) {
-            alert('Error saving data on database. Changes are not saved');
-        }
-
-        // Clean up the contacts
-        const functionalTestData = contacts.map(contact => {
-            const updatedContact = electrodes
-                .flatMap(electrode => electrode.contacts)
-                .find(c => c.id === contact.id);
-
-            const pair = electrodes
-                .find(electrode => electrode.label === contact.electrodeLabel)
-                ?.contacts.find(c => c.index === contact.pair);
-
-            return {
-                __contactDescription__: contact.__contactDescription__,
-                __electrodeDescription__: contact.__electrodeDescription__,
-                associatedLocation: contact.associatedLocation,
-                electrodeLabel: contact.electrodeLabel,
-                id: contact.id,
-                index: contact.index,
-                mark: contact.mark,
-                pair: pair,
-                surgeonMark: contact.surgeonMark,
-                duration: updatedContact?.duration,
-                frequency: updatedContact?.frequency,
-                current: updatedContact?.current,
+            // First save the current designation data
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('User not authenticated. Please log in to save designations.');
+                return;
             }
-        })
 
-        // Create a new tab with the designation data
-        const event = new CustomEvent('addFunctionalTestTab', {
-            detail: { data: { contacts: functionalTestData, tests: {} } }
-        });
-        window.dispatchEvent(event);
+            // Save designation data to database
+            const response = await fetch(`${config.backendURL}/api/save-designation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
+                body: JSON.stringify({
+                    electrodes: electrodes,
+                    fileId: state.fileId,
+                    fileName: state.fileName,
+                    creationDate: state.creationDate,
+                    modifiedDate: new Date().toISOString(),
+                    patientId: state.patientId
+                }),
+            });
+
+            const result = await response.json();
+            if (!result.success) {
+                console.error('Failed to save designation:', result.error);
+                alert(`Failed to save designation: ${result.error}`);
+                return;
+            }
+
+            // Get designation data from the current localization
+            const functionalTestData = contacts.map(contact => {
+                const updatedContact = electrodes
+                    .flatMap(electrode => electrode.contacts)
+                    .find(c => c.id === contact.id);
+
+                const pair = electrodes
+                    .find(electrode => electrode.label === contact.electrodeLabel)
+                    ?.contacts.find(c => c.index === contact.pair);
+
+                return {
+                    __contactDescription__: contact.__contactDescription__,
+                    __electrodeDescription__: contact.__electrodeDescription__,
+                    associatedLocation: contact.associatedLocation,
+                    electrodeLabel: contact.electrodeLabel,
+                    id: contact.id,
+                    index: contact.index,
+                    mark: contact.mark,
+                    pair: pair,
+                    surgeonMark: contact.surgeonMark,
+                    duration: updatedContact?.duration,
+                    frequency: updatedContact?.frequency,
+                    current: updatedContact?.current,
+                }
+            });
+
+            // Create a new tab with the designation data
+            const event = new CustomEvent('addFunctionalTestTab', {
+                detail: { 
+                    data: { 
+                        contacts: functionalTestData, 
+                        tests: {} 
+                    },
+                    patientId: state.patientId // Pass the patientId to the new tab
+                }
+            });
+            window.dispatchEvent(event);
+        } catch (error) {
+            console.error('Error creating test selection tab:', error);
+            alert('Failed to create test selection tab. Please try again.');
+        }
     };
 
     const handleSave = async () => {
