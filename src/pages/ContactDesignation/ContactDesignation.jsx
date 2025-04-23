@@ -300,7 +300,16 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                         onClick={() => {
                             // Navigate to stimulation plan
                             const event = new CustomEvent('addStimulationTab', {
-                                detail: { data: modifiedElectrodes }
+                                detail: { 
+                                    data: modifiedElectrodes,
+                                    patientId: state.patientId,
+                                    state: {
+                                        patientId: state.patientId
+                                    },
+                                    originalData: {
+                                        patientId: state.patientId
+                                    }
+                                }
                             });
                             window.dispatchEvent(event);
                         }}

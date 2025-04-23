@@ -545,7 +545,15 @@ const HomePage = () => {
                 break;
             case 'stimulation':         
                 title = 'New Stimulation Plan';
-                patientId = data.patientId || data.state?.patientId; // Try both possible locations for patientId
+                patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
+                console.log('Setting patientId for stimulation:', {
+                    finalPatientId: patientId,
+                    sources: {
+                        dataPatientId: data.patientId,
+                        statePatientId: data.state?.patientId,
+                        originalDataPatientId: data.originalData?.patientId
+                    }
+                });
                 break;
             case 'seizure-recreation':
             case 'cceps':
