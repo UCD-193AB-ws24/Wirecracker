@@ -686,35 +686,10 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
                 alert('User not authenticated. Please log in to save designations.');
                 return;
             }
-
-            // Fetch patient_id from the parent file
-            console.log('Fetching patient_id from parent file...');
-            const parentFileResponse = await fetch(`${config.backendURL}/api/get-file-metadata`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token
-                },
-                body: JSON.stringify({
-                    fileId: state.fileId
-                })
-            });
-
-            const parentFileData = await parentFileResponse.json();
-            console.log('Parent file metadata response:', parentFileData);
-
-            if (!parentFileData.success) {
-                console.error('Failed to fetch parent file metadata:', parentFileData.error);
-                alert('Failed to fetch parent file metadata. Please try again.');
-                return;
-            }
-
-            const parentPatientId = parentFileData.data.patient_id;
-            console.log('Retrieved patient_id from parent file:', parentPatientId);
             
             try {
                 // Save stimulation data to database
-                console.log('Saving stimulation data with patient_id:', parentPatientId);
+                console.log('Saving stimulation data with patient_id:', state.patientId);
                 const response = await fetch(`${config.backendURL}/api/save-stimulation`, {
                     method: 'POST',
                     headers: {
@@ -729,7 +704,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
                         fileName: state.fileName,
                         creationDate: state.creationDate,
                         modifiedDate: new Date().toISOString(),
-                        patientId: parentPatientId
+                        patientId: state.patientId
                     }),
                 });
 
