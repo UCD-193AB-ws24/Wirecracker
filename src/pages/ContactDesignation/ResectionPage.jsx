@@ -3,6 +3,7 @@ import load_untouch_nii from '../../utils/Nifti_viewer/load_untouch_nifti.js'
 import nifti_anatomical_conversion from '../../utils/Nifti_viewer/nifti_anatomical_conversion.js'
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useError } from '../../context/ErrorContext';
+import { niftiStorage } from '../../utils/IndexedDBStorage';
 
 const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
     const [imageLoaded, setImageLoaded] = useState(savedState.isLoaded || false);
@@ -11,7 +12,6 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
         onStateChange({
             ...savedState,
             layout: "resection",
-            //isLoaded: imageLoaded,
         });
     }, [imageLoaded]);
 
@@ -56,7 +56,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     const fixedSubViewSize = 520;
 
     const [niiData, setNiiData] = useState(null);
-//     const [niiData, setNiiData] = useState(savedState.nii || null);
     const [coordinates, setCoordinates] = useState(savedState.coordinate || []);
     const [successMessage, setSuccessMessage] = useState('');
     const [markers, setMarkers] = useState([]);
@@ -90,6 +89,24 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     const subCanvas1SliceIndexRef = useRef(subCanvas1SliceIndex);
     const maxSubCanvas0SlicesRef = useRef(maxSubCanvas0Slices);
     const maxSubCanvas1SlicesRef = useRef(maxSubCanvas1Slices);
+
+    // Load NIfTI data from IndexedDB on component mount
+    useEffect(() => {
+        const loadSavedNifti = async () => {
+            if (savedState.fileId) {
+                try {
+                    const savedNifti = await niftiStorage.getNiftiFile(savedState.fileId);
+                    if (savedNifti) {
+                        setNiiData(savedNifti);
+                        onLoad(true);
+                    }
+                } catch (error) {
+                    console.error('Error loading saved NIfTI file:', error);
+                }
+            }
+        };
+        loadSavedNifti();
+    }, [savedState.fileId]);
 
     // Update refs when state changes
     useEffect(() => { sliceIndexRef.current = sliceIndex; }, [sliceIndex]);
@@ -126,15 +143,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
             canvas_hoveredMarker: hoveredMarker,
         });
     }, [sliceIndex, maxSlices, direction, hoveredMarker, isLoaded]);
-
-//     useEffect(() => {
-//         if (niiData !== null) {
-//             onStateChange({
-//                 ...savedState,
-//                 nii: niiData
-//             });
-//         }
-//     }, [niiData]);
 
     useEffect(() => {
         onStateChange({
@@ -651,7 +659,13 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
             const isRGB = (nii.hdr.dime.datatype === 128 && nii.hdr.dime.bitpix === 24) ||
                     (nii.hdr.dime.datatype === 511 && nii.hdr.dime.bitpix === 96);
-            setNiiData({ ...nii, isRGB });
+            const niftiData = { ...nii, isRGB };
+            setNiiData(niftiData);
+
+            // Save NIfTI data to IndexedDB
+            if (savedState.fileId) {
+                await niftiStorage.saveNiftiFile(savedState.fileId, niftiData);
+            }
 
             const slices = nii.hdr.dime.dim[getDirectionDimension()];
             const subCanvas0Slices = nii.hdr.dime.dim[getDirectionDimension(subCanvas0Direction)];
@@ -673,6 +687,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
             onLoad(true);
         } catch (error) {
             console.error('Error loading NIfTI file:', error);
+            showError('Error loading NIfTI file: ' + error.message);
         }
     };
 
