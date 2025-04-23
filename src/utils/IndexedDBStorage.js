@@ -4,7 +4,7 @@ class IndexedDBStorage {
         this.storeName = 'niftiFiles';
         this.chunkStoreName = 'niftiChunks';
         this.db = null;
-        this.chunkSize = 100 * 1024 * 1024; // 100MB chunks
+        this.chunkSize = 50 * 1024 * 1024; // Reduced to 50MB chunks for better performance
         this.initDB();
     }
 
@@ -39,8 +39,9 @@ class IndexedDBStorage {
             await this.initDB();
         }
 
-        // Split the image data into chunks
-        const chunks = this.splitIntoChunks(niftiData.img);
+        // Compress the image data before chunking
+        const compressedData = await this.compressData(niftiData.img);
+        const chunks = this.splitIntoChunks(compressedData);
         const header = niftiData.hdr;
         const isRGB = niftiData.isRGB;
 
@@ -49,7 +50,9 @@ class IndexedDBStorage {
             id,
             header,
             isRGB,
-            numChunks: chunks.length
+            numChunks: chunks.length,
+            originalSize: niftiData.img.length,
+            compressedSize: compressedData.length
         };
 
         // Save metadata first
@@ -110,8 +113,9 @@ class IndexedDBStorage {
             chunks.push(chunk);
         }
 
-        // Reconstruct the image data
-        const img = this.reconstructFromChunks(chunks);
+        // Reconstruct and decompress the image data
+        const compressedData = this.reconstructFromChunks(chunks);
+        const img = await this.decompressData(compressedData, metadata.originalSize);
 
         return {
             img,
@@ -172,7 +176,63 @@ class IndexedDBStorage {
     }
 
     reconstructFromChunks(chunks) {
-        return chunks.reduce((acc, chunk) => acc.concat(chunk), []);
+        // Calculate total size
+        const totalSize = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+        const result = new Uint8Array(totalSize);
+        
+        // Copy each chunk into the result
+        let offset = 0;
+        for (const chunk of chunks) {
+            result.set(chunk, offset);
+            offset += chunk.length;
+        }
+        
+        return result;
+    }
+
+    async compressData(data) {
+        try {
+            // Convert the data to a format that can be compressed
+            const dataArray = new Uint8Array(data);
+            const blob = new Blob([dataArray]);
+            
+            // Create a stream from the blob
+            const stream = blob.stream();
+            
+            // Compress the stream
+            const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+            
+            // Convert the compressed stream back to a Uint8Array
+            const compressedBlob = await new Response(compressedStream).blob();
+            const compressedArrayBuffer = await compressedBlob.arrayBuffer();
+            return new Uint8Array(compressedArrayBuffer);
+        } catch (error) {
+            console.error('Compression error:', error);
+            // If compression fails, return the original data
+            return new Uint8Array(data);
+        }
+    }
+
+    async decompressData(compressedData, originalSize) {
+        try {
+            // Create a blob from the compressed data
+            const compressedBlob = new Blob([compressedData]);
+            
+            // Create a stream from the blob
+            const stream = compressedBlob.stream();
+            
+            // Decompress the stream
+            const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+            
+            // Convert the decompressed stream back to a Uint8Array
+            const decompressedBlob = await new Response(decompressedStream).blob();
+            const decompressedArrayBuffer = await decompressedBlob.arrayBuffer();
+            return new Uint8Array(decompressedArrayBuffer);
+        } catch (error) {
+            console.error('Decompression error:', error);
+            // If decompression fails, return the original data
+            return new Uint8Array(compressedData);
+        }
     }
 }
 

@@ -214,7 +214,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
     // Function to draw markers on the canvas
     const drawMarkers = (ctx, dir, slice, viewSize) => {
-
         if (!niiData || coordinates.length === 0) return;
 
         const [cols, rows] = getCanvasDimensions(niiData, dir);
@@ -265,9 +264,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     break;
             }
 
-
             if (canvasX !== undefined && canvasY !== undefined) {
-
                 let targetContact;
 
                 for (let electrode of electrodes) {
@@ -491,7 +488,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                             setSelectedContacts([]);
                         }
 
-
                         break;
                     case 2:
                         // UNDO the first click
@@ -525,7 +521,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
                         break;
                 }
-
 
                 setHoveredMarker(
                     {
