@@ -12,6 +12,7 @@ const backendURL = config.backendURL;
 const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const [state, setState] = useState(savedState);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+    const [showLegend, setShowLegend] = useState(false);
 
     const [layout, setLayout] = useState(() => {
         // First check savedState for layout
@@ -208,7 +209,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     };
 
     return (
-        <div className="flex flex-col h-screen p-4 ">
+        <div className="flex flex-col h-auto p-4 ">
             {/* Floating Toggle Switch at the Top Right */}
             <button
                 onClick={toggleLayout}
@@ -244,6 +245,19 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 )}
             </div>
 
+            {/* Floating Help Button and Guide at the Bottom Left */}
+            <div className="fixed bottom-6 left-6 z-50">
+                {showLegend ? (
+                    <Legend />
+                ) : (
+                    <button
+                        className="py-2 px-4 border border-sky-800 bg-sky-600 text-white font-bold rounded-full transition-colors duration-200 hover:bg-sky-800"
+                        onClick={() => setShowLegend(true)}>
+                        ?
+                    </button>
+                )}
+            </div>
+
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-6 right-6 z-50 flex gap-2">
                 <button
@@ -275,5 +289,36 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         </div>
     );
 };
+
+/**
+ * 
+ * @param {string} layout
+ * @param {string[]} page_names
+ * @returns 
+ */
+const Legend = ({ layout = "designation", page_names }) => {
+    return (
+        <div className="shadow-lg border border-gray-400">
+            {layout === page_names[0] === 0 ? (
+                <>
+                    <div>
+                        Designation Page Help
+                    </div>
+                </>
+            ) : (
+                <>
+                    <div>
+                        Resection Page Help
+                    </div>
+                </>
+            )}
+            <button
+                className="py-2 px-4 bg-sky-600 text-white font-bold rounded"
+                onClick={() => setShowLegend(false)}>
+                Close
+            </button>
+        </div>
+    );
+}
 
 export default ContactDesignation;
