@@ -246,7 +246,8 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             </div>
 
             {/* Floating Help Button and Guide at the Bottom Left */}
-            <div className="fixed bottom-6 left-6 z-50">
+            <div className="fixed bottom-2 left-2 z-50
+                            lg:bottom-6 lg:left-6">
                 {showLegend ? (
                     <Legend layout={layout} page_names={PAGE_NAME} setShowLegend={setShowLegend} />
                 ) : (
@@ -260,10 +261,10 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             </div>
 
             {/* Floating Save and Export Buttons at the Bottom Right */}
-            <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-1
-                            lg:flex-row lg:gap-2">
+            <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1
+                            lg:bottom-6 lg:right-6 lg:flex-row lg:gap-2">
                 <button
-                    className="py-1 px-2 bg-sky-600 text-white text-sm font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-blue-800 border border-sky-800 shadow-lg
+                    className="py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-blue-800 border border-sky-800 shadow-lg
                                lg:py-2 lg:px-4 lg:text-base"
                     onClick={createStimulationTab}
                 >
@@ -271,7 +272,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 </button>
                 <div className="relative">
                     <button
-                        className="py-1 px-2 bg-green-500 text-white text-sm font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-green-700 border border-green-700 shadow-lg
+                        className="py-1 px-2 bg-green-500 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-green-700 border border-green-700 shadow-lg
                                    lg:py-2 lg:px-4 lg:text-base"
                         onClick={() => exportContacts(modifiedElectrodes, false)}
                     >
@@ -284,7 +285,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     )}
                 </div>
                 <button
-                    className="py-1 px-2 bg-sky-600 text-white text-sm font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800 border border-sky-800 shadow-lg
+                    className="py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800 border border-sky-800 shadow-lg
                                lg:py-2 lg:px-4 lg:text-base"
                     onClick={() => exportContacts(modifiedElectrodes)}
                 >
@@ -304,19 +305,22 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
  */
 const Legend = ({ layout = "designation", page_names, setShowLegend }) => {
     return (
-        <div className="shadow-lg border border-gray-400 rounded bg-gray-50 p-2">
+        <div className="max-w-48 shadow-lg border border-gray-400 rounded bg-gray-50 p-1
+                        lg:max-w-72 lg:p-2">
             {layout === page_names[0] ? (
                 <>
-                    <div className="text-center font-bold font-xl">
-                        Designation Page Help
+                    <div className="text-center font-bold text-wrap
+                                    lg:text-xl">
+                        Epileptic Network Labeling Page Help
                     </div>
-                    <div>
+                    <div className="text-xs lg:text-base text-wrap">
                         Click on a node to toggle its color.
                     </div>
 
                     {/* Legend */}
-                    <div className="my-2 mx-3">
-                        <div className="text-center font-semibold font-lg">
+                    <div className="my-2 mx-2 lg:mx-5">
+                        <div className="text-center font-semibold text-sm
+                                        lg:text-lg">
                             Legend
                         </div>
                         <div>
@@ -328,13 +332,14 @@ const Legend = ({ layout = "designation", page_names, setShowLegend }) => {
                 </>
             ) : (
                 <>
-                    <div className="text-center font-bold font-xl">
+                    <div className="text-center font-semibold
+                                    lg:text-xl">
                         Resection Page Help
                     </div>
                 </>
             )}
             <button
-                className="py-2 px-4 border border-sky-800 bg-sky-600 text-white font-bold rounded cursor-pointer transition-colors duration-200 hover:bg-sky-800"
+                className="py-2 px-4 border border-sky-800 bg-sky-600 text-white font-semibold rounded cursor-pointer transition-colors duration-200 hover:bg-sky-800"
                 onClick={() => setShowLegend(false)}>
                 Close
             </button>
@@ -358,10 +363,12 @@ const LegendItem = ({ color = "black", itemName }) => {
 
     return (
         <div className="flex">
-            <div className={`${colorVariants[color]} drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,1)] justify-self-start`}>
+            <div className={`${colorVariants[color]} drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,1)] justify-self-start text-xs
+                            lg:text-base`}>
                 &#x25A0;
             </div>
-            <div className="flex-1 justify-self-end text-right">
+            <div className="flex-1 justify-self-end text-right text-xs
+                            lg:text-base">
                 {itemName}
             </div>
         </div>
