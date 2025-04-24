@@ -87,6 +87,39 @@ const Tab = ({ title, isActive, onClick, onClose, onRename }) => {
     );
 };
 
+const PatientTabGroup = ({ patientId, tabs, activeTab, onTabClick, onTabClose, onTabRename }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+    const patientTabs = tabs.filter(tab => tab.state?.patientId === patientId);
+    
+    if (patientTabs.length === 0) return null;
+
+    return (
+        <div className="relative group">
+            <div 
+                className="flex items-center px-4 py-2 border-b-2 cursor-pointer hover:bg-gray-50"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <span className="font-semibold">Patient {patientId}</span>
+                <span className="ml-2">{isExpanded ? '▼' : '▶'}</span>
+            </div>
+            {isExpanded && (
+                <div className="absolute left-0 top-full z-10 bg-white shadow-lg border border-gray-200 min-w-[200px]">
+                    {patientTabs.map(tab => (
+                        <Tab
+                            key={tab.id}
+                            title={tab.title}
+                            isActive={activeTab === tab.id}
+                            onClick={() => onTabClick(tab.id)}
+                            onClose={() => onTabClose(tab.id)}
+                            onRename={(newTitle) => onTabRename(tab.id, newTitle)}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const UserProfile = ({ onSignOut }) => {
     const navigate = useNavigate();
     const [userName, setUserName] = useState('');
@@ -707,7 +740,7 @@ const HomePage = () => {
                 content: 'csv-localization',  // Use csv-localization to reuse existing code path
                 data: fileData.data,
                 state: {
-                    fileId: fileData.fileId,
+                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
                     patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
@@ -730,7 +763,7 @@ const HomePage = () => {
                 content: 'designation',
                 data: { data: fileData.data, originalData: fileData.originalData },
                 state: {
-                    fileId: fileData.fileId,
+                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
                     patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
@@ -754,7 +787,7 @@ const HomePage = () => {
                 content: type,
                 data: fileData.data,
                 state: {
-                    fileId: fileData.fileId,
+                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
                     patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
@@ -778,7 +811,7 @@ const HomePage = () => {
                 content: type,
                 data: fileData.data,
                 state: {
-                    fileId: fileData.fileId,
+                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
                     patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
@@ -924,23 +957,43 @@ const HomePage = () => {
 
     return (
         <div className="h-dvh flex flex-col">
-            <div className="flex border-b">
-                {tabs.map(tab => (
-                    <Tab
-                        key={tab.id}
-                        title={tab.title}
-                        isActive={activeTab === tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        onClose={() => closeTab(tab.id)}
-                        onRename={(newTitle) => renameTab(tab.id, newTitle)}
-                    />
-                ))}
-                <button 
-                    className="px-4 py-2 text-gray-600 cursor-pointer hover:text-gray-800"
-                    onClick={() => addTab('localization')}
-                >
-                    +
-                </button>
+            <div className="flex flex-col border-b">
+                <div className="flex">
+                    {tabs.filter(tab => !tab.state?.patientId).map(tab => (
+                        <Tab
+                            key={tab.id}
+                            title={tab.title}
+                            isActive={activeTab === tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            onClose={() => closeTab(tab.id)}
+                            onRename={(newTitle) => renameTab(tab.id, newTitle)}
+                        />
+                    ))}
+                    
+                    {/* Group tabs by patient ID */}
+                    {Array.from(new Set(tabs
+                        .filter(tab => tab.state?.patientId)
+                        .map(tab => tab.state.patientId)))
+                        .map(patientId => (
+                            <PatientTabGroup
+                                key={patientId}
+                                patientId={patientId}
+                                tabs={tabs}
+                                activeTab={activeTab}
+                                onTabClick={setActiveTab}
+                                onTabClose={closeTab}
+                                onTabRename={renameTab}
+                            />
+                        ))
+                    }
+                    
+                    <button 
+                        className="px-4 py-2 text-gray-600 cursor-pointer hover:text-gray-800"
+                        onClick={() => addTab('localization')}
+                    >
+                        +
+                    </button>
+                </div>
             </div>
             {token && <UserProfile onSignOut={handleSignOut} />}
 
