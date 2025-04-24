@@ -248,7 +248,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             {/* Floating Help Button and Guide at the Bottom Left */}
             <div className="fixed bottom-6 left-6 z-50">
                 {showLegend ? (
-                    <Legend />
+                    <Legend layout={layout} page_names={PAGE_NAME} setShowLegend={setShowLegend} />
                 ) : (
                     <button
                         className="py-2 px-4 border border-sky-800 bg-sky-600 text-white font-bold rounded-full transition-colors duration-200 hover:bg-sky-800"
@@ -294,20 +294,36 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
  * 
  * @param {string} layout
  * @param {string[]} page_names
+ * @param setShowLegend
  * @returns 
  */
-const Legend = ({ layout = "designation", page_names }) => {
+const Legend = ({ layout = "designation", page_names, setShowLegend }) => {
     return (
-        <div className="shadow-lg border border-gray-400">
-            {layout === page_names[0] === 0 ? (
+        <div className="shadow-lg border border-gray-400 rounded bg-gray-50 p-2">
+            {layout === page_names[0] ? (
                 <>
-                    <div>
+                    <div className="text-center font-bold font-xl">
                         Designation Page Help
+                    </div>
+                    <div>
+                        Click on a node to toggle its color.
+                    </div>
+
+                    {/* Legend */}
+                    <div className="my-2 mx-3">
+                        <div className="text-center font-semibold font-lg">
+                            Legend
+                        </div>
+                        <div>
+                            <LegendItem color="rose" itemName="SOZ - Seizure Onset Zone" />
+                            <LegendItem color="amber" itemName="EN - Epileptic Network" />
+                            <LegendItem color="stone" itemName="NI - Not Involved" />
+                        </div>
                     </div>
                 </>
             ) : (
                 <>
-                    <div>
+                    <div className="text-center font-semibold font-lg">
                         Resection Page Help
                     </div>
                 </>
@@ -317,6 +333,32 @@ const Legend = ({ layout = "designation", page_names }) => {
                 onClick={() => setShowLegend(false)}>
                 Close
             </button>
+        </div>
+    );
+}
+
+/**
+ * 
+ * @param {string} color A color formatted like the Tailwind colors
+ * @param {string} itemName
+ * @returns 
+ */
+const LegendItem = ({ color = "black", itemName }) => {
+    const colorVariants = {
+        amber: "text-amber-300",
+        rose: "text-rose-300",
+        stone: "text-stone-300",
+        black: "text-black"
+    }
+
+    return (
+        <div className="flex">
+            <div className={`${colorVariants[color]} drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,1)] justify-self-start`}>
+                &#x25A0;
+            </div>
+            <div className="flex-1 justify-self-end text-right">
+                {itemName}
+            </div>
         </div>
     );
 }
