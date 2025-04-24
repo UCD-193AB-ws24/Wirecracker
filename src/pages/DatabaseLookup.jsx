@@ -29,6 +29,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const [activeSuggestions, setActiveSuggestions] = useState(false);
     const [lobeOptions, setLobeOptions] = useState([]);
     const [showFilters, setShowFilters] = useState(savedState.filter || false);
+    const debounceTimer = useRef(null);
 
     const graphRef = useRef(null);
     const [graphDimensions, setGraphDimensions] = useState({
@@ -306,7 +307,17 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
             const newHemisphere = prev.hemisphere.includes(side)
                 ? prev.hemisphere.filter((h) => h !== side)
                 : [...prev.hemisphere, side];
-            return { ...prev, hemisphere: newHemisphere };
+            const newParams = { ...prev, hemisphere: newHemisphere };
+
+            if (searchResult.length > 0 || query) {
+                if (searchResult.length > 0 || query) {
+                    clearTimeout(debounceTimer.current);
+                    debounceTimer.current = setTimeout(() => {
+                        performSearch();
+                    }, 300); // 300ms delay
+                }
+            }
+            return newParams;
         });
     };
 
@@ -315,9 +326,30 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
             const newLobe = prev.lobe.includes(lobe)
                 ? prev.lobe.filter((l) => l !== lobe)
                 : [...prev.lobe, lobe];
-            return { ...prev, lobe: newLobe };
+            const newParams = { ...prev, lobe: newLobe };
+
+            if (searchResult.length > 0 || query) {
+                if (searchResult.length > 0 || query) {
+                    clearTimeout(debounceTimer.current);
+                    debounceTimer.current = setTimeout(() => {
+                        performSearch();
+                    }, 300); // 300ms delay
+                }
+            }
+            return newParams;
         });
     };
+
+    useEffect(() => {
+        if ((searchResult.length > 0 || query) && Object.keys(parameters).length > 0) {
+            if (searchResult.length > 0 || query) {
+                clearTimeout(debounceTimer.current);
+                debounceTimer.current = setTimeout(() => {
+                    performSearch();
+                }, 300); // 300ms delay
+            }
+        }
+    }, [parameters.hemisphere, parameters.lobe]);
 
     // Add this useEffect to handle window resize
     useEffect(() => {
