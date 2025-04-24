@@ -88,31 +88,74 @@ const Tab = ({ title, isActive, onClick, onClose, onRename }) => {
 };
 
 const PatientTabGroup = ({ patientId, tabs, activeTab, onTabClick, onTabClose, onTabRename }) => {
-    const [isExpanded, setIsExpanded] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false);
     const patientTabs = tabs.filter(tab => tab.state?.patientId === patientId);
+    const groupRef = useRef(null);
     
     if (patientTabs.length === 0) return null;
 
+    const handleCloseGroup = (e) => {
+        e.stopPropagation();
+        // Close all tabs in the group at once by passing an array of tab IDs
+        onTabClose(patientTabs.map(tab => tab.id));
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (groupRef.current && !groupRef.current.contains(event.target)) {
+                setIsExpanded(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     return (
-        <div className="relative group">
+        <div className="relative group" ref={groupRef}>
             <div 
                 className="flex items-center px-4 py-2 border-b-2 cursor-pointer hover:bg-gray-50"
                 onClick={() => setIsExpanded(!isExpanded)}
             >
+                <span className="mr-5 text-gray-500 transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                </span>
                 <span className="font-semibold">Patient {patientId}</span>
-                <span className="ml-2">{isExpanded ? '▼' : '▶'}</span>
+                
+                <button 
+                    className="ml-2 text-gray-500 cursor-pointer hover:text-gray-700"
+                    onClick={handleCloseGroup}
+                >
+                    ×
+                </button>
             </div>
             {isExpanded && (
                 <div className="absolute left-0 top-full z-10 bg-white shadow-lg border border-gray-200 min-w-[200px]">
                     {patientTabs.map(tab => (
-                        <Tab
+                        <div 
                             key={tab.id}
-                            title={tab.title}
-                            isActive={activeTab === tab.id}
-                            onClick={() => onTabClick(tab.id)}
-                            onClose={() => onTabClose(tab.id)}
-                            onRename={(newTitle) => onTabRename(tab.id, newTitle)}
-                        />
+                            className={`flex items-center px-4 py-2 border-b-2 cursor-pointer ${
+                                activeTab === tab.id ? 'border-sky-700 text-sky-700' : 'border-transparent'
+                            }`}
+                            onClick={() => {
+                                onTabClick(tab.id);
+                                setIsExpanded(false);
+                            }}
+                            onDoubleClick={() => {
+                                if (tab.title !== 'Home') {
+                                    const newTitle = prompt('Enter new title:', tab.title);
+                                    if (newTitle && newTitle.trim() !== '') {
+                                        onTabRename(tab.id, newTitle.trim());
+                                    }
+                                }
+                            }}
+                        >
+                            <span>{tab.title}</span>
+                        </div>
                     ))}
                 </div>
             )}
@@ -693,10 +736,15 @@ const HomePage = () => {
     };
 
     const closeTab = (tabId) => {
-        const newTabs = tabs.filter(tab => tab.id !== tabId);
+        // If tabId is an array, close all tabs in the array
+        const tabsToClose = Array.isArray(tabId) ? tabId : [tabId];
+        
+        const newTabs = tabs.filter(tab => !tabsToClose.includes(tab.id));
         setTabs(newTabs);
-        if (activeTab === tabId) {
-            setActiveTab(newTabs[newTabs.length - 1].id);
+        
+        // If the active tab was closed, set the active tab to the last remaining tab
+        if (tabsToClose.includes(activeTab)) {
+            setActiveTab(newTabs[newTabs.length - 1]?.id || 'home');
         }
     };
 
