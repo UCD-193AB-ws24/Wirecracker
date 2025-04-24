@@ -314,7 +314,7 @@ const Legend = ({ layout = "designation", page_names, setShowLegend }) => {
                         Epileptic Network Labeling Page Help
                     </div>
                     <div className="text-xs lg:text-base text-wrap">
-                        Click on a node to toggle its color.
+                        Click on a contact to label and change its color.
                     </div>
 
                     {/* Legend */}
