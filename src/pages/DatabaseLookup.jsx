@@ -35,7 +35,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         width: 800,
         height: 600,
     });
-    const [graphView, setGraphView] = useState(false); // Toggle between table and graph view
+    const [graphView, setGraphView] = useState(savedState.graphView || false); // Toggle between table and graph view
 
     // Color scale for different node types
     const colorScale = d3
@@ -71,9 +71,10 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 results: searchResult,
                 filter: showFilters,
                 query: query,
+                graphView: graphView,
             });
         }
-    }, [parameters, searchResult, showFilters, query]);
+    }, [parameters, searchResult, showFilters, query, graphView]);
 
     const performSearch = useCallback(async () => {
         setIsLoading(true);
