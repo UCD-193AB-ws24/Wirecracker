@@ -2,15 +2,13 @@ class IndexedDBStorage {
     constructor() {
         this.dbName = 'niftiStorage';
         this.storeName = 'niftiFiles';
-        this.chunkStoreName = 'niftiChunks';
         this.db = null;
-        this.chunkSize = 50 * 1024 * 1024; // Reduced to 50MB chunks for better performance
         this.initDB();
     }
 
     async initDB() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, 2);
+            const request = indexedDB.open(this.dbName, 3); // Increment version number
 
             request.onerror = () => {
                 console.error('Error opening IndexedDB:', request.error);
@@ -27,8 +25,9 @@ class IndexedDBStorage {
                 if (!db.objectStoreNames.contains(this.storeName)) {
                     db.createObjectStore(this.storeName, { keyPath: 'id' });
                 }
-                if (!db.objectStoreNames.contains(this.chunkStoreName)) {
-                    db.createObjectStore(this.chunkStoreName, { keyPath: ['fileId', 'chunkIndex'] });
+                // Remove the chunk store as we're no longer using it
+                if (db.objectStoreNames.contains('niftiChunks')) {
+                    db.deleteObjectStore('niftiChunks');
                 }
             };
         });
@@ -39,47 +38,29 @@ class IndexedDBStorage {
             await this.initDB();
         }
 
-        // Compress the image data before chunking
-        const compressedData = await this.compressData(niftiData.img);
-        const chunks = this.splitIntoChunks(compressedData);
+        // Compress the entire NIfTI data
+        const compressedData = await this.compressData(niftiData);
         const header = niftiData.hdr;
         const isRGB = niftiData.isRGB;
 
-        // Save metadata
-        const metadata = {
+        // Save metadata and compressed data
+        const fileData = {
             id,
             header,
             isRGB,
-            numChunks: chunks.length,
-            originalSize: niftiData.img.length,
-            compressedSize: compressedData.length
+            compressedData,
+            originalSize: niftiData.img.length
         };
 
-        // Save metadata first
+        // Save the file data
         await new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
             const store = transaction.objectStore(this.storeName);
-            const request = store.put(metadata);
+            const request = store.put(fileData);
 
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
         });
-
-        // Save chunks
-        for (let i = 0; i < chunks.length; i++) {
-            await new Promise((resolve, reject) => {
-                const transaction = this.db.transaction([this.chunkStoreName], 'readwrite');
-                const store = transaction.objectStore(this.chunkStoreName);
-                const request = store.put({
-                    fileId: id,
-                    chunkIndex: i,
-                    data: chunks[i]
-                });
-
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
-            });
-        }
     }
 
     async getNiftiFile(id) {
@@ -87,8 +68,8 @@ class IndexedDBStorage {
             await this.initDB();
         }
 
-        // Get metadata first
-        const metadata = await new Promise((resolve, reject) => {
+        // Get the file data
+        const fileData = await new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
             const request = store.get(id);
@@ -97,30 +78,15 @@ class IndexedDBStorage {
             request.onerror = () => reject(request.error);
         });
 
-        if (!metadata) return null;
+        if (!fileData) return null;
 
-        // Get all chunks
-        const chunks = [];
-        for (let i = 0; i < metadata.numChunks; i++) {
-            const chunk = await new Promise((resolve, reject) => {
-                const transaction = this.db.transaction([this.chunkStoreName], 'readonly');
-                const store = transaction.objectStore(this.chunkStoreName);
-                const request = store.get([id, i]);
-
-                request.onsuccess = () => resolve(request.result?.data);
-                request.onerror = () => reject(request.error);
-            });
-            chunks.push(chunk);
-        }
-
-        // Reconstruct and decompress the image data
-        const compressedData = this.reconstructFromChunks(chunks);
-        const img = await this.decompressData(compressedData, metadata.originalSize);
+        // Decompress the data
+        const decompressedData = await this.decompressData(fileData.compressedData);
 
         return {
-            img,
-            hdr: metadata.header,
-            isRGB: metadata.isRGB
+            img: decompressedData.img,
+            hdr: fileData.header,
+            isRGB: fileData.isRGB
         };
     }
 
@@ -129,31 +95,7 @@ class IndexedDBStorage {
             await this.initDB();
         }
 
-        // Get metadata to know how many chunks to delete
-        const metadata = await new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([this.storeName], 'readonly');
-            const store = transaction.objectStore(this.storeName);
-            const request = store.get(id);
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-
-        if (!metadata) return;
-
-        // Delete all chunks
-        for (let i = 0; i < metadata.numChunks; i++) {
-            await new Promise((resolve, reject) => {
-                const transaction = this.db.transaction([this.chunkStoreName], 'readwrite');
-                const store = transaction.objectStore(this.chunkStoreName);
-                const request = store.delete([id, i]);
-
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        // Delete metadata
+        // Delete the file data
         await new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
             const store = transaction.objectStore(this.storeName);
@@ -164,37 +106,18 @@ class IndexedDBStorage {
         });
     }
 
-    splitIntoChunks(data) {
-        const chunks = [];
-        const totalSize = data.length;
-        
-        for (let i = 0; i < totalSize; i += this.chunkSize) {
-            chunks.push(data.slice(i, i + this.chunkSize));
-        }
-        
-        return chunks;
-    }
-
-    reconstructFromChunks(chunks) {
-        // Calculate total size
-        const totalSize = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-        const result = new Uint8Array(totalSize);
-        
-        // Copy each chunk into the result
-        let offset = 0;
-        for (const chunk of chunks) {
-            result.set(chunk, offset);
-            offset += chunk.length;
-        }
-        
-        return result;
-    }
-
-    async compressData(data) {
+    async compressData(niftiData) {
         try {
-            // Convert the data to a format that can be compressed
-            const dataArray = new Uint8Array(data);
-            const blob = new Blob([dataArray]);
+            // Convert the NIfTI data to a format that can be compressed
+            const dataToCompress = {
+                img: niftiData.img,
+                hdr: niftiData.hdr,
+                isRGB: niftiData.isRGB
+            };
+            
+            // Convert to JSON string and then to a Blob
+            const jsonString = JSON.stringify(dataToCompress);
+            const blob = new Blob([jsonString]);
             
             // Create a stream from the blob
             const stream = blob.stream();
@@ -208,12 +131,11 @@ class IndexedDBStorage {
             return new Uint8Array(compressedArrayBuffer);
         } catch (error) {
             console.error('Compression error:', error);
-            // If compression fails, return the original data
-            return new Uint8Array(data);
+            throw error;
         }
     }
 
-    async decompressData(compressedData, originalSize) {
+    async decompressData(compressedData) {
         try {
             // Create a blob from the compressed data
             const compressedBlob = new Blob([compressedData]);
@@ -224,14 +146,15 @@ class IndexedDBStorage {
             // Decompress the stream
             const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
             
-            // Convert the decompressed stream back to a Uint8Array
+            // Convert the decompressed stream back to a string
             const decompressedBlob = await new Response(decompressedStream).blob();
-            const decompressedArrayBuffer = await decompressedBlob.arrayBuffer();
-            return new Uint8Array(decompressedArrayBuffer);
+            const decompressedText = await decompressedBlob.text();
+            
+            // Parse the JSON string back to an object
+            return JSON.parse(decompressedText);
         } catch (error) {
             console.error('Decompression error:', error);
-            // If decompression fails, return the original data
-            return new Uint8Array(compressedData);
+            throw error;
         }
     }
 }
