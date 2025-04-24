@@ -213,7 +213,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             {/* Floating Toggle Switch at the Top Right */}
             <button
                 onClick={toggleLayout}
-                className="fixed top-6 right-6 z-50 w-50 h-10 rounded-full transition-colors duration-300 focus:outline-none flex items-center bg-gray-400 shadow-lg transition-colors duration-200 cursor-pointer hover:bg-gray-300"
+                className="fixed top-12 right-6 z-50 w-50 h-10 rounded-full transition-colors duration-300 focus:outline-none flex items-center bg-gray-400 shadow-lg transition-colors duration-200 cursor-pointer hover:bg-gray-300"
             >
                 <span
                     className={`absolute left-1 top-1 w-24 h-8 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
@@ -251,7 +251,8 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     <Legend layout={layout} page_names={PAGE_NAME} setShowLegend={setShowLegend} />
                 ) : (
                     <button
-                        className="py-2 px-4 border border-sky-800 bg-sky-600 text-white font-bold rounded-full transition-colors duration-200 cursor-pointer hover:bg-sky-800"
+                        className="py-1 px-3 border border-sky-800 bg-sky-600 text-white text-sm font-bold rounded-full transition-colors duration-200 cursor-pointer hover:bg-sky-800
+                                   lg:py-2 lg:px-4 lg:text-base"
                         onClick={() => setShowLegend(true)}>
                         ?
                     </button>
@@ -259,16 +260,19 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             </div>
 
             {/* Floating Save and Export Buttons at the Bottom Right */}
-            <div className="fixed bottom-6 right-6 z-50 flex gap-2">
+            <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-1
+                            lg:flex-row lg:gap-2">
                 <button
-                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-blue-700 border border-blue-700 shadow-lg"
+                    className="py-1 px-2 bg-sky-600 text-white text-sm font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-blue-800 border border-sky-800 shadow-lg
+                               lg:py-2 lg:px-4 lg:text-base"
                     onClick={createStimulationTab}
                 >
                     Open in Stimulation Plan
                 </button>
                 <div className="relative">
                     <button
-                        className="py-2 px-4 bg-green-500 text-white font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-green-700 border border-green-700 shadow-lg"
+                        className="py-1 px-2 bg-green-500 text-white text-sm font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-green-700 border border-green-700 shadow-lg
+                                   lg:py-2 lg:px-4 lg:text-base"
                         onClick={() => exportContacts(modifiedElectrodes, false)}
                     >
                         Save
@@ -280,7 +284,8 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     )}
                 </div>
                 <button
-                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-blue-700 border border-blue-700 shadow-lg"
+                    className="py-1 px-2 bg-sky-600 text-white text-sm font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800 border border-sky-800 shadow-lg
+                               lg:py-2 lg:px-4 lg:text-base"
                     onClick={() => exportContacts(modifiedElectrodes)}
                 >
                     Export
