@@ -213,7 +213,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             {/* Floating Toggle Switch at the Top Right */}
             <button
                 onClick={toggleLayout}
-                className="fixed top-6 right-6 z-50 w-50 h-10 rounded-full transition-colors duration-300 focus:outline-none flex items-center bg-gray-400 shadow-lg hover:bg-gray-300"
+                className="fixed top-6 right-6 z-50 w-50 h-10 rounded-full transition-colors duration-300 focus:outline-none flex items-center bg-gray-400 shadow-lg transition-colors duration-200 cursor-pointer hover:bg-gray-300"
             >
                 <span
                     className={`absolute left-1 top-1 w-24 h-8 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
@@ -251,7 +251,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     <Legend layout={layout} page_names={PAGE_NAME} setShowLegend={setShowLegend} />
                 ) : (
                     <button
-                        className="py-2 px-4 border border-sky-800 bg-sky-600 text-white font-bold rounded-full transition-colors duration-200 hover:bg-sky-800"
+                        className="py-2 px-4 border border-sky-800 bg-sky-600 text-white font-bold rounded-full transition-colors duration-200 cursor-pointer hover:bg-sky-800"
                         onClick={() => setShowLegend(true)}>
                         ?
                     </button>
@@ -261,14 +261,14 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-6 right-6 z-50 flex gap-2">
                 <button
-                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
+                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-blue-700 border border-blue-700 shadow-lg"
                     onClick={createStimulationTab}
                 >
                     Open in Stimulation Plan
                 </button>
                 <div className="relative">
                     <button
-                        className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
+                        className="py-2 px-4 bg-green-500 text-white font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-green-700 border border-green-700 shadow-lg"
                         onClick={() => exportContacts(modifiedElectrodes, false)}
                     >
                         Save
@@ -280,7 +280,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     )}
                 </div>
                 <button
-                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
+                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-blue-700 border border-blue-700 shadow-lg"
                     onClick={() => exportContacts(modifiedElectrodes)}
                 >
                     Export
@@ -323,13 +323,13 @@ const Legend = ({ layout = "designation", page_names, setShowLegend }) => {
                 </>
             ) : (
                 <>
-                    <div className="text-center font-semibold font-lg">
+                    <div className="text-center font-bold font-xl">
                         Resection Page Help
                     </div>
                 </>
             )}
             <button
-                className="py-2 px-4 bg-sky-600 text-white font-bold rounded"
+                className="py-2 px-4 border border-sky-800 bg-sky-600 text-white font-bold rounded cursor-pointer transition-colors duration-200 hover:bg-sky-800"
                 onClick={() => setShowLegend(false)}>
                 Close
             </button>
@@ -339,7 +339,7 @@ const Legend = ({ layout = "designation", page_names, setShowLegend }) => {
 
 /**
  * 
- * @param {string} color A color formatted like the Tailwind colors
+ * @param {string} color
  * @param {string} itemName
  * @returns 
  */
