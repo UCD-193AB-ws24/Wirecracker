@@ -172,6 +172,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 let relatedItems = [];
                 switch (type) {
                     case ItemTypes.CORT:
+                        item.name = `${item.hemisphere === 'l' ? 'Left' : 'Right'} ${item.name}`
                         for (let relatedGM in item.cort_gm) {
                             relatedItems.push({
                                 id: item.cort_gm[relatedGM].gm.id,
@@ -243,8 +244,9 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const getItemDetails = (item, type) => {
             switch (type) {
                 case ItemTypes.CORT:
+                    const side = item.hemisphere === 'l' ? 'left' : 'right';
                     return {
-                        hemisphere: item.hemisphere,
+                        hemisphere: side,
                         lobe: item.lobe,
                         electrode_label: item.electrode_label,
                         acronym: item.acronym,
