@@ -5,22 +5,12 @@ import Designation from "./DesignationPage";
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
 
-const PAGE_NAME = ["designation", "resection"];
-
 const backendURL = config.backendURL;
 
 const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const [state, setState] = useState(savedState);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
-
-    const [layout, setLayout] = useState(() => {
-        // First check savedState for layout
-        if (savedState && savedState.layout) {
-            return savedState.layout;
-        }
-        // Default to designation view
-        return PAGE_NAME[0];
-    });
+    const [activeTab, setActiveTab] = useState('designation');
 
     // Store the original localization data if it exists
     const [localizationData, setLocalizationData] = useState(() => {
@@ -74,11 +64,10 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         const newState = {
             ...state,
             electrodes: modifiedElectrodes,
-            layout: layout,
             localizationData: localizationData
         };
         setState(newState);
-    }, [modifiedElectrodes, layout, localizationData]);
+    }, [modifiedElectrodes, localizationData]);
 
     const updateContact = (contactId, change) => {
         setModifiedElectrodes(prevElectrodes => {
@@ -94,44 +83,85 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         });
     };
 
-    const toggleLayout = () => {
-        const newLayout = layout === PAGE_NAME[0] ? PAGE_NAME[1] : PAGE_NAME[0];
-        setLayout(newLayout);
-    };
-
-    const createStimulationTab = () => {
-        if (Object.keys(modifiedElectrodes).length === 0) return;
-
-        // Get designation data from the current localization
+    const handleSave = async () => {
         try {
-            exportContacts(modifiedElectrodes, false);
-        } catch (error) {
-            alert('Error saving data on database. Changes are not saved');
-        }
-
-        let stimulationData = modifiedElectrodes.map(electrode => ({
-            ...electrode,
-            contacts: electrode.contacts.map((contact, index) => {
-                let pair = index;
-                if (index == 0) pair = 2;
-                return {
-                    ...contact,
-                    pair: pair,
-                    isPlanning: false,
-                    duration: 3.0, // TODO : ask what default value should be
-                    frequency: 105.225,
-                    current: 2.445,
+            // First save to database if we have a file ID
+            if (state.fileId) {
+                console.log('Saving designation with patientId:', {
+                    fromState: state.patientId,
+                    fromLocalizationData: localizationData?.patientId,
+                    fileId: state.fileId
+                });
+                
+                // Get user ID from session
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('User not authenticated. Please log in to save designations.');
+                    return;
                 }
-            }),
-        }));
-        // Create a new tab with the designation data
-        const event = new CustomEvent('addStimulationTab', {
-            detail: { data: stimulationData }
-        });
-        window.dispatchEvent(event);
+                
+                try {
+                    // First save/update file metadata
+                    const response = await fetch(`${backendURL}/api/save-designation`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        },
+                        body: JSON.stringify({
+                            designationData: modifiedElectrodes,
+                            localizationData: localizationData,
+                            fileId: state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString(),
+                            patientId: state.patientId
+                        }),
+                    });
+
+                    const result = await response.json();
+                    if (!result.success) {
+                        console.error('Failed to save designation:', result.error);
+                        alert(`Failed to save designation: ${result.error}`);
+                        return;
+                    }
+                    
+                    // Update the state with new modified date
+                    setState(prevState => ({
+                        ...prevState,
+                        modifiedDate: new Date().toISOString()
+                    }));
+                    
+                    // Show success feedback if this was a save operation
+                    setShowSaveSuccess(true);
+                    
+                    console.log('Designation saved successfully');
+                } catch (error) {
+                    console.error('Error saving designation:', error);
+                    alert(`Error saving designation: ${error.message}`);
+                    return;
+                }
+            }
+
+            // Then export to CSV as before
+            if (localizationData) {
+                // If we have localization data, use it to create a CSV with the same format
+                saveDesignationCSVFile(modifiedElectrodes, localizationData, false);
+            } else {
+                // Fall back to the simple logging if no localization data
+                for (let electrode of modifiedElectrodes) {
+                    for (let contact of electrode.contacts) {
+                        console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error exporting contacts:', error);
+            alert(`Error exporting contacts: ${error.message}`);
+        }
     };
 
-    const exportContacts = async (electrodes, download = true) => {
+    const handleExport = async () => {
         try {
             // First save to database if we have a file ID
             if (state.fileId) {
@@ -153,12 +183,13 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                             'Authorization': token
                         },
                         body: JSON.stringify({
-                            designationData: electrodes,
+                            designationData: modifiedElectrodes,
                             localizationData: localizationData,
                             fileId: state.fileId,
                             fileName: state.fileName,
                             creationDate: state.creationDate,
-                            modifiedDate: new Date().toISOString()
+                            modifiedDate: new Date().toISOString(),
+                            patientId: state.patientId
                         }),
                     });
 
@@ -176,10 +207,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     }));
                     
                     // Show success feedback if this was a save operation
-                    if (!download) {
                         setShowSaveSuccess(true);
-                        setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
-                    }
                     
                     console.log('Designation saved successfully');
                 } catch (error) {
@@ -192,10 +220,10 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             // Then export to CSV as before
             if (localizationData) {
                 // If we have localization data, use it to create a CSV with the same format
-                saveDesignationCSVFile(electrodes, localizationData, download);
+                saveDesignationCSVFile(modifiedElectrodes, localizationData, true);
             } else {
                 // Fall back to the simple logging if no localization data
-                for (let electrode of electrodes) {
+                for (let electrode of modifiedElectrodes) {
                     for (let contact of electrode.contacts) {
                         console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
                     }
@@ -208,70 +236,104 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     };
 
     return (
-        <div className="flex flex-col h-screen p-4 ">
-            {/* Floating Toggle Switch at the Top Right */}
+        <div className="flex flex-col h-screen p-4">
+            {/* Tab Navigation */}
+            <div className="flex space-x-4 mb-4">
             <button
-                onClick={toggleLayout}
-                className="fixed top-6 right-6 z-50 w-50 h-10 rounded-full transition-colors duration-300 focus:outline-none flex items-center bg-gray-400 shadow-lg hover:bg-gray-300"
-            >
-                <span
-                    className={`absolute left-1 top-1 w-24 h-8 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
-                        layout === PAGE_NAME[0] ? "translate-x-0" : "translate-x-24"
-                    }`}
-                ></span>
-                <span
-                    className={`absolute left-2.5 text-sm font-semibold ${
-                        layout === PAGE_NAME[0] ? "text-blue-500" : "text-gray-500"
+                    onClick={() => setActiveTab('designation')}
+                    className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
+                        activeTab === 'designation'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                 >
-                    {PAGE_NAME[0]}
-                </span>
-                <span
-                    className={`absolute right-4.5 text-sm font-semibold ${
-                        layout === PAGE_NAME[1] ? "text-blue-500" : "text-gray-500"
+                    Designation
+                </button>
+                <button
+                    onClick={() => setActiveTab('resection')}
+                    className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
+                        activeTab === 'resection'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                 >
-                    {PAGE_NAME[1]}
-                </span>
+                    Resection
             </button>
+            </div>
 
             {/* Main Content (Scrollable) */}
             <div className="flex-1 overflow-y-auto">
-                {layout === PAGE_NAME[0] ? (
-                    <Designation electrodes={modifiedElectrodes} onClick={updateContact} />
+                {activeTab === 'designation' ? (
+                    <Designation 
+                        electrodes={modifiedElectrodes} 
+                        onClick={updateContact}
+                        onStateChange={setState}
+                        savedState={state}
+                    />
                 ) : (
-                    <Resection electrodes={modifiedElectrodes} onClick={updateContact} onStateChange={setState} savedState={state} />
+                    <Resection 
+                        electrodes={modifiedElectrodes} 
+                        onClick={updateContact} 
+                        onStateChange={setState} 
+                        savedState={state} 
+                    />
                 )}
             </div>
 
             {/* Floating Save and Export Buttons at the Bottom Right */}
-            <div className="fixed bottom-6 right-6 z-50 flex gap-2">
+            <div className="fixed bottom-6 right-6 z-50 flex gap-4">
                 <button
-                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
-                    onClick={createStimulationTab}
+                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded-md hover:bg-blue-600 transition-colors duration-200 shadow-lg"
+                    onClick={handleSave}
                 >
-                    Open in Stimulation Plan
+                    Save
                 </button>
-                <div className="relative">
-                    <button
-                        className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
-                        onClick={() => exportContacts(modifiedElectrodes, false)}
-                    >
-                        Save
-                    </button>
-                    {showSaveSuccess && (
-                        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap">
-                            Save successful!
-                        </div>
-                    )}
-                </div>
                 <button
-                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
-                    onClick={() => exportContacts(modifiedElectrodes)}
+                    className="py-2 px-4 bg-green-500 text-white font-bold rounded-md hover:bg-green-600 transition-colors duration-200 shadow-lg"
+                    onClick={handleExport}
                 >
                     Export
                 </button>
+                {activeTab === 'resection' && (
+                    <button
+                        className="py-2 px-4 bg-purple-500 text-white font-bold rounded-md hover:bg-purple-600 transition-colors duration-200 shadow-lg"
+                        onClick={() => {
+                            // Navigate to stimulation plan
+                            const event = new CustomEvent('addStimulationTab', {
+                                detail: { 
+                                    data: modifiedElectrodes,
+                                    patientId: state.patientId,
+                                    state: {
+                                        patientId: state.patientId
+                                    },
+                                    originalData: {
+                                        patientId: state.patientId
+                                    }
+                                }
+                            });
+                            window.dispatchEvent(event);
+                        }}
+                    >
+                        Open in Stimulation Plan
+                    </button>
+                )}
             </div>
+
+            {/* Save Success Modal */}
+            {showSaveSuccess && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl">
+                        <h2 className="text-xl font-bold mb-4">Success</h2>
+                        <p className="mb-4">Designation data saved successfully!</p>
+                        <button
+                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            onClick={() => setShowSaveSuccess(false)}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
