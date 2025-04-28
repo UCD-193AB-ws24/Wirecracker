@@ -20,6 +20,7 @@
     "fs": "^0.0.1-security",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "path": "^0.12.7",
     "resend": "^4.1.2",
     "uuid": "^11.1.0"
   }
