@@ -3,7 +3,6 @@ import Popup from 'reactjs-popup';
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import 'reactjs-popup/dist/index.css';
 import { saveCSVFile, Identifiers } from '../utils/CSVParser.js';
-import { supabase } from '../utils/supabaseClient';
 import config from "../../config.json" with { type: 'json' };
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useError } from '../context/ErrorContext';
@@ -154,64 +153,36 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
         setModifiedDate(new Date().toISOString());
     };
 
-    const saveFileMetadata = async (userId) => {
+    const saveFileMetadata = async () => {
         try {
-            // Check if file record already exists
-            const { data: existingFile } = await supabase
-                .from('files')
-                .select('*')
-                .eq('file_id', fileId)
-                .single();
-
-            if (existingFile) {
-                // Update existing file record
-                const { error } = await supabase
-                    .from('files')
-                    .update({
-                        filename: fileName,
-                        modified_date: modifiedDate
-                    })
-                    .eq('file_id', fileId);
-
-                if (error) throw error;
-            } else {
-                // Insert new file record
-                const { error } = await supabase
-                    .from('files')
-                    .insert({
-                        file_id: fileId,
-                        owner_user_id: userId,
-                        filename: fileName,
-                        creation_date: creationDate,
-                        modified_date: modifiedDate
-                    });
-
-                if (error) {
-                    console.error('File insert error:', error);
-                    throw error;
-                }
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No authentication token found');
             }
+
+            const response = await fetch(`${backendURL}/api/files/metadata`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    fileId,
+                    fileName,
+                    creationDate,
+                    modifiedDate
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to save file metadata');
+            }
+
+            return await response.json();
         } catch (error) {
             console.error('Error saving file metadata:', error);
             throw error;
-        }
-    };
-
-    const getUserId = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) return null;
-        
-        try {
-            const { data: session } = await supabase
-                .from('sessions')
-                .select('user_id')
-                .eq('token', token)
-                .single();
-
-            return session?.user_id || null;
-        } catch (error) {
-            console.error('Error fetching user ID:', error);
-            return null;
         }
     };
 
@@ -220,13 +191,6 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             // Update modified date
             const newModifiedDate = new Date().toISOString();
             setModifiedDate(newModifiedDate);
-            
-            // Get user ID from session
-            const userId = await getUserId();
-            if (!userId) {
-                showError('User not authenticated. Please log in to save localizations.');
-                return;
-            }
             
             console.log('File ID (integer):', fileId);
             console.log('Electrodes data to save:', electrodes);
@@ -239,7 +203,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {} }) => {
             
             try {
                 // Save file metadata first
-                await saveFileMetadata(userId);
+                await saveFileMetadata();
                 console.log('File metadata saved successfully');
             } catch (metadataError) {
                 console.error('Error saving file metadata:', metadataError);

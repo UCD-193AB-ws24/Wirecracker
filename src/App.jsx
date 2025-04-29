@@ -12,7 +12,6 @@ import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
 import { parseCSVFile, Identifiers } from './utils/CSVParser';
 import Localization from './pages/Localization';
 import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
-import { supabase } from './utils/supabaseClient';
 import { FcGoogle } from 'react-icons/fc';
 import config from '../config.json' with { type: 'json' };
 import { ErrorProvider, useError } from './context/ErrorContext';
@@ -98,23 +97,18 @@ const UserProfile = ({ onSignOut }) => {
             if (!token) return;
             
             try {
-                const { data: session } = await supabase
-                    .from('sessions')
-                    .select('user_id')
-                    .eq('token', token)
-                    .single();
-
-                if (session) {
-                    const { data: user } = await supabase
-                        .from('users')
-                        .select('name')
-                        .eq('id', session.user_id)
-                        .single();
-                    
-                    if (user) {
-                        setUserName(user.name);
+                const response = await fetch(`${backendURL}/api/user/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user profile');
                 }
+
+                const user = await response.json();
+                setUserName(user.name);
             } catch (error) {
                 console.error('Error fetching user profile:', error);
             }
@@ -208,167 +202,115 @@ const FileUtils = {
         try {
             console.log(`Attempting to load file ID: ${file.file_id} (${file.filename})`);
             
-            // First check if we can find any localization records with this file_id
-            const { data: checkData, error: checkError } = await supabase
-                .from('localization')
-                .select('id, file_id')
-                .eq('file_id', file.file_id)
-                .limit(1);
-                
-            if (checkError) {
-                console.error('Error checking localization data:', checkError);
-                showError(`Database error: ${checkError.message}`);
+            const token = localStorage.getItem('token');
+            if (!token) {
+                showError('Authentication required to open files');
                 return;
             }
             
-            console.log('Check result:', checkData);
+            // Use the backend API to check file type and get data
+            const response = await fetch(`${backendURL}/api/files/check-type?fileId=${file.file_id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             
-            if (!checkData || checkData.length === 0) {
-                console.log('No localization records found, checking for designation data...');
+            if (!response.ok) {
+                throw new Error(`Failed to check file type: ${response.statusText}`);
+            }
+            
+            const fileTypeData = await response.json();
+            console.log('File type check result:', fileTypeData);
+            
+            // If localization data exists, fetch the detailed data
+            if (fileTypeData.hasLocalization) {
+                const localizationResponse = await fetch(`${backendURL}/api/files/localization?fileId=${file.file_id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 
-                // Check if this is a designation file
-                const { data: designationData, error: designationError } = await supabase
-                    .from('designation')
-                    .select('*')
-                    .eq('file_id', file.file_id)
-                    .single();
-                    
-                if (designationError && designationError.code !== 'PGRST116') {
-                    console.error('Error checking designation data:', designationError);
-                }
-                
-                if (designationData) {
-                    console.log('Found designation data:', designationData);
-                    // Open in designation view with the saved data
-                    openSavedFile('designation', {
-                        name: file.filename || 'Unnamed Designation',
-                        fileId: file.file_id,
-                        fileName: file.filename,
-                        creationDate: file.creation_date,
-                        modifiedDate: file.modified_date,
-                        data: designationData.designation_data,
-                        originalData: designationData.localization_data
-                    });
-                    return;
-                }
-
-                // Check if this is a test selection file
-                console.log('Checking for test selection data...');
-                const { data: testSelectionData, error: testSelectionError } = await supabase
-                    .from('test_selection')
-                    .select('*')
-                    .eq('file_id', file.file_id)
-                    .single();
-
-                if (testSelectionError && testSelectionError.code !== 'PGRST116') {
-                    console.error('Error checking test selection data:', testSelectionError);
-                }
-
-                if (testSelectionData) {
-                    console.log('Found test selection data:', testSelectionData);
-                    openSavedFile('csv-functional-test', {
-                        name: file.filename || 'Unnamed Test Selection',
-                        fileId: file.file_id,
-                        fileName: file.filename,
-                        creationDate: file.creation_date,
-                        modifiedDate: file.modified_date,
-                        data: {
-                            tests: testSelectionData.tests,
-                            contacts: testSelectionData.contacts
-                        }
-                    });
-                    return;
-                }
-
-                // Check if this is a stimulation file
-                console.log('Checking for stimulation data...');
-                const { data: stimulationData, error: stimulationError } = await supabase
-                    .from('stimulation')
-                    .select('*')
-                    .eq('file_id', file.file_id)
-                    .single();
-
-                if (stimulationError && stimulationError.code !== 'PGRST116') {
-                    console.error('Error checking stimulation data:', stimulationError);
-                }
-
-                if (stimulationData) {
-                    console.log('Found stimulation data:', stimulationData);
-                    // Open in appropriate stimulation view based on is_mapping flag
-                    openSavedFile(stimulationData.is_mapping ? 'csv-functional-mapping' : 'csv-stimulation', {
-                        name: file.filename || 'Unnamed Stimulation',
-                        fileId: file.file_id,
-                        fileName: file.filename,
-                        creationDate: file.creation_date,
-                        modifiedDate: file.modified_date,
-                        data: {
-                            data: stimulationData.stimulation_data,
-                            planOrder: stimulationData.plan_order
-                        }
-                    });
-                    return;
+                if (!localizationResponse.ok) {
+                    throw new Error('Failed to fetch localization data');
                 }
                 
-                // If no data found in any table, create new empty localization
-                console.log('Creating new tab with empty data for:', file.filename);
+                const localizationData = await localizationResponse.json();
+                
+                // Transform the database records into the electrode format
+                const electrodes = FileUtils.transformLocalizationData(localizationData);
+                
+                // Open in localization view with the saved data
                 openSavedFile('localization', { 
                     name: file.filename || 'Unnamed Localization',
                     fileId: file.file_id,
                     fileName: file.filename,
                     creationDate: file.creation_date,
                     modifiedDate: file.modified_date,
-                    data: { data: {} }
+                    data: { data: electrodes }
                 });
-                
                 return;
             }
             
-            // If we found localization data, proceed with loading it
-            const { data: localizationData, error: locError } = await supabase
-                .from('localization')
-                .select(`
-                    id, contact, tissue_type, file_id,
-                    electrode:electrode_id(id, label, description, contact_number, type),
-                    region:region_id(id, name)
-                `)
-                .eq('file_id', file.file_id);
-                
-            if (locError) {
-                console.error('Error fetching localization data:', locError);
-                showError(`Failed to load file data: ${locError.message}`);
-                return;
-            }
-            
-            if (!localizationData || localizationData.length === 0) {
-                console.warn('No localization data found for file ID:', file.file_id);
-                
-                // Create a new tab with empty data
-                openSavedFile('localization', { 
-                    name: file.filename || 'Unnamed Localization',
+            // Handle designation data
+            if (fileTypeData.hasDesignation) {
+                console.log('Found designation data:', fileTypeData.designationData);
+                openSavedFile('designation', {
+                    name: file.filename || 'Unnamed Designation',
                     fileId: file.file_id,
                     fileName: file.filename,
                     creationDate: file.creation_date,
                     modifiedDate: file.modified_date,
-                    data: { data: {} }
+                    data: fileTypeData.designationData.designation_data,
+                    originalData: fileTypeData.designationData.localization_data
                 });
-                
                 return;
             }
             
-            console.log(`Retrieved ${localizationData.length} localization records:`, localizationData);
+            // Handle test selection data
+            if (fileTypeData.hasTestSelection) {
+                console.log('Found test selection data:', fileTypeData.testSelectionData);
+                openSavedFile('csv-functional-test', {
+                    name: file.filename || 'Unnamed Test Selection',
+                    fileId: file.file_id,
+                    fileName: file.filename,
+                    creationDate: file.creation_date,
+                    modifiedDate: file.modified_date,
+                    data: {
+                        tests: fileTypeData.testSelectionData.tests,
+                        contacts: fileTypeData.testSelectionData.contacts
+                    }
+                });
+                return;
+            }
             
-            // Transform the database records into the electrode format used by the Localization component
-            const electrodes = FileUtils.transformLocalizationData(localizationData);
+            // Handle stimulation data
+            if (fileTypeData.hasStimulation) {
+                console.log('Found stimulation data:', fileTypeData.stimulationData);
+                openSavedFile(fileTypeData.stimulationData.is_mapping ? 'csv-functional-mapping' : 'csv-stimulation', {
+                    name: file.filename || 'Unnamed Stimulation',
+                    fileId: file.file_id,
+                    fileName: file.filename,
+                    creationDate: file.creation_date,
+                    modifiedDate: file.modified_date,
+                    data: {
+                        data: fileTypeData.stimulationData.stimulation_data,
+                        planOrder: fileTypeData.stimulationData.plan_order
+                    }
+                });
+                return;
+            }
             
-            // Call the openSavedFile function with the complete data
+            // If no data found in any table, create new empty localization
+            console.log('No data found for this file, creating new empty localization');
             openSavedFile('localization', { 
                 name: file.filename || 'Unnamed Localization',
                 fileId: file.file_id,
                 fileName: file.filename,
                 creationDate: file.creation_date,
                 modifiedDate: file.modified_date,
-                data: { data: electrodes }
+                data: { data: {} }
             });
+            
         } catch (error) {
             console.error('Error loading file:', error);
             showError(`Failed to load file data: ${error.message}`);
@@ -383,29 +325,17 @@ const FileUtils = {
                 return [];
             }
             
-            // Get user ID from session
-            const { data: session } = await supabase
-                .from('sessions')
-                .select('user_id')
-                .eq('token', token)
-                .single();
-            
-            if (!session) {
-                return [];
+            const response = await fetch(`${backendURL}/api/files`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch user files');
             }
-            
-            // Fetch files for the current user
-            const { data: files, error } = await supabase
-                .from('files')
-                .select('*')
-                .eq('owner_user_id', session.user_id)
-                .order('modified_date', { ascending: false });
-            
-            if (error) {
-                console.error('Error fetching user files:', error);
-                return [];
-            }
-            
+
+            const files = await response.json();
             return files || [];
         } catch (error) {
             console.error('Error fetching user files:', error);
