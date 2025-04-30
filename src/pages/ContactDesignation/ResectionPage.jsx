@@ -15,7 +15,7 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
     }, [imageLoaded]);
 
     return (
-        <div className="flex-1">
+        <div className="flex-1 h-full">
             <div className="flex flex-col md:flex-row p-2 bg-gray-100">
                 <NIFTIimage
                 isLoaded={imageLoaded}
@@ -791,7 +791,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     };
 
     return (
-        <div className="p-1 lg:p-2 bg-gray-100">
+        <div className="p-1 lg:p-2 mx-2 lg:mx-5 bg-gray-100">
             <div className="flex space-x-2 mb-4
                             lg:space-x-4 lg:mb-8">
                 <input
