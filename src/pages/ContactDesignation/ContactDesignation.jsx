@@ -316,21 +316,6 @@ const Legend = ({ layout = "designation", page_names, setShowLegend }) => {
                     <div className="text-xs lg:text-base text-wrap">
                         Click on a contact to label and change its color.
                     </div>
-
-                    {/* Legend */}
-                    <div className="my-2 mx-2 lg:mx-5">
-                        <div className="text-center font-semibold text-sm
-                                        lg:text-lg">
-                            Legend
-                        </div>
-                        <div>
-                            <LegendItem color="rose" itemName="SOZ - Seizure Onset Zone" />
-                            <LegendItem color="amber" itemName="EN - Epileptic Network" />
-                            <LegendItem color="stone" itemName="OOB - Out of Brain" />
-                            <LegendItem color="white" itemName="NI - Not Involved" />
-                            <LegendItem color="white" outline="true" itemName="Marked for surgery" />
-                        </div>
-                    </div>
                 </>
             ) : (
                 <>
@@ -338,8 +323,33 @@ const Legend = ({ layout = "designation", page_names, setShowLegend }) => {
                                     lg:text-xl">
                         Resection Page Help
                     </div>
+                    <div className="text-xs lg:text-base text-wrap">
+                        <span className="text-fuchsia-700">
+                            (Optional)
+                        </span>
+                        &nbsp;Upload brain scan and contact coordinates.
+                    </div>
+                    <div className="text-xs lg:text-base text-wrap">
+                        Click contact in brain scan or list to mark for surgery.
+                    </div>
                 </>
             )}
+
+            {/* Legend */}
+            <div className="my-2 mx-2 lg:mx-5">
+                <div className="text-center font-semibold text-sm
+                                lg:text-lg">
+                    Legend
+                </div>
+                <div>
+                    <LegendItem color="rose" itemName="SOZ - Seizure Onset Zone" />
+                    <LegendItem color="amber" itemName="EN - Epileptic Network" />
+                    <LegendItem color="stone" itemName="OOB - Out of Brain" />
+                    <LegendItem color="white" itemName="NI - Not Involved" />
+                    <LegendItem color="white" outline="true" itemName="Marked for surgery" />
+                </div>
+            </div>
+
             <button
                 className="py-2 px-4 border border-sky-800 bg-sky-600 text-white font-semibold rounded cursor-pointer transition-colors duration-200 hover:bg-sky-800"
                 onClick={() => setShowLegend(false)}>
