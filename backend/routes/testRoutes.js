@@ -1,7 +1,10 @@
 import express from 'express';
+import cors from 'cors';
 import { supabase, handleFileRecord } from './utils.js';
 
 const router = express.Router();
+router.use(cors());
+router.use(express.json());
 
 // Endpoint to save test selection data
 router.post('/save-test-selection', async (req, res) => {
@@ -94,4 +97,4 @@ router.post('/save-test-selection', async (req, res) => {
   }
 });
 
-export default router; 
+export default router;

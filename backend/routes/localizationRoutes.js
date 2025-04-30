@@ -1,7 +1,10 @@
 import express from 'express';
-import { supabase, handleFileRecord, saveLocalizationToDatabase } from './utils.js';
+import cors from 'cors';
+import { supabase, saveLocalizationToDatabase } from './utils.js';
 
 const router = express.Router();
+router.use(cors());
+router.use(express.json());
 
 // Fetch electrode label descriptions
 router.get("/electrode-label-descriptions", async (req, res) => {

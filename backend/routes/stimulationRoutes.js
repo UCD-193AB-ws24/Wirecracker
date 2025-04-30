@@ -1,7 +1,10 @@
 import express from 'express';
+import cors from 'cors';
 import { supabase, handleFileRecord } from './utils.js';
 
 const router = express.Router();
+router.use(cors());
+router.use(express.json());
 
 // Endpoint to save stimulation data
 router.post('/save-stimulation', async (req, res) => {

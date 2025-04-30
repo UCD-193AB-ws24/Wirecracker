@@ -1,7 +1,10 @@
 import express from 'express';
+import cors from 'cors';
 import { supabase, TABLE_NAMES } from './utils.js';
 
 const router = express.Router();
+router.use(cors());
+router.use(express.json());
 
 // Fetch table names
 router.get("/tables", async (req, res) => {
