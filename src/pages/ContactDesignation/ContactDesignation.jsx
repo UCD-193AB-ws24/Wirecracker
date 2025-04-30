@@ -270,27 +270,31 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 >
                     Open in Stimulation Plan
                 </button>
-                <div className="relative">
+                <div className="flex flex-row gap-1
+                                lg:gap-2">
+                    <div className="relative grow-1">
+                        <button
+                            className="w-full py-1 px-2 bg-green-500 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-green-700 border border-green-700 shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                            onClick={() => exportContacts(modifiedElectrodes, false)}
+                        >
+                            Save
+                        </button>
+                        {showSaveSuccess && (
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sx whitespace-nowrap
+                                            lg:px-3 lg:text-sm">
+                                Save successful!
+                            </div>
+                        )}
+                    </div>
                     <button
-                        className="py-1 px-2 bg-green-500 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-green-700 border border-green-700 shadow-lg
-                                   lg:py-2 lg:px-4 lg:text-base"
-                        onClick={() => exportContacts(modifiedElectrodes, false)}
+                        className="grow-1 py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800 border border-sky-800 shadow-lg
+                                lg:py-2 lg:px-4 lg:text-base"
+                        onClick={() => exportContacts(modifiedElectrodes)}
                     >
-                        Save
+                        Export
                     </button>
-                    {showSaveSuccess && (
-                        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap">
-                            Save successful!
-                        </div>
-                    )}
                 </div>
-                <button
-                    className="py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800 border border-sky-800 shadow-lg
-                               lg:py-2 lg:px-4 lg:text-base"
-                    onClick={() => exportContacts(modifiedElectrodes)}
-                >
-                    Export
-                </button>
             </div>
         </div>
     );
