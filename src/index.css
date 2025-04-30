@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+@layer base {
+    .font-gray-outline {
+        -webkit-text-stroke: 1px oklch(87.2% 0.01 258.338);
+    }
+    
+    .font-stone-outline-2 {
+        -webkit-text-stroke: 2px oklch(55.3% 0.013 58.071);
+    }
+}

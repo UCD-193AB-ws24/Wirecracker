@@ -326,7 +326,9 @@ const Legend = ({ layout = "designation", page_names, setShowLegend }) => {
                         <div>
                             <LegendItem color="rose" itemName="SOZ - Seizure Onset Zone" />
                             <LegendItem color="amber" itemName="EN - Epileptic Network" />
-                            <LegendItem color="stone" itemName="NI - Not Involved" />
+                            <LegendItem color="stone" itemName="OOB - Out of Brain" />
+                            <LegendItem color="white" itemName="NI - Not Involved" />
+                            <LegendItem color="white" outline="true" itemName="Marked for surgery" />
                         </div>
                     </div>
                 </>
@@ -353,17 +355,22 @@ const Legend = ({ layout = "designation", page_names, setShowLegend }) => {
  * @param {string} itemName
  * @returns 
  */
-const LegendItem = ({ color = "black", itemName }) => {
+const LegendItem = ({ color = "black", outline = "false", itemName }) => {
     const colorVariants = {
         amber: "text-amber-300",
         rose: "text-rose-300",
         stone: "text-stone-300",
+        white: "text-white",
         black: "text-black"
+    }
+    const bolding = {
+        true: "font-stone-outline-2",
+        false: "font-gray-outline"
     }
 
     return (
         <div className="flex">
-            <div className={`${colorVariants[color]} drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,1)] justify-self-start text-xs
+            <div className={`${colorVariants[color]} ${bolding[outline]} justify-self-start text-xs
                             lg:text-base`}>
                 &#x25A0;
             </div>
