@@ -15,6 +15,7 @@ import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
 import { FcGoogle } from 'react-icons/fc';
 import config from '../config.json' with { type: 'json' };
 import { ErrorProvider, useError } from './context/ErrorContext';
+import DBLookup from './pages/DatabaseLookup';
 
 const backendURL = config.backendURL;
 
@@ -397,6 +398,18 @@ const HomePage = () => {
         };
     }, []);
 
+    // Add event listener for db lookup tab creation
+    useEffect(() => {
+        const handleAddFunctionalTestTab = (event) => {
+            addTab('database-lookup', event.detail);
+        };
+
+        window.addEventListener('addDatabaseLookupTab', handleAddFunctionalTestTab);
+        return () => {
+            window.removeEventListener('addDatabaseLookupTab', handleAddFunctionalTestTab);
+        };
+    }, []);
+
     useEffect(() => {
         // Find the highest localization number to initialize the counter
         if (tabs.length > 1) {
@@ -432,6 +445,7 @@ const HomePage = () => {
             case 'stimulation':         title = 'New Stimulation Plan'; break;
             case 'designation':         title = 'New Designation'; break;
             case 'functional-test':     title = 'New Functional Mapping'; break;
+            case 'database-lookup':     title = 'Lookup'; break;
         }
 
         const newTab = {
@@ -746,6 +760,13 @@ const HomePage = () => {
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
+            case 'database-lookup':
+                return <DBLookup
+                    key={currentTab.id}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
             default:
                 return null;
         }
@@ -801,10 +822,8 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
             <Logo />
             {token ? (
                 <>
-                    <button className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
-                                   md:w-40 md:text-sm
-                                   lg:w-48 lg:mt-4 lg:py-2 lg:text-md
-                                   xl:w-64 xl:mt-5 xl:py-3 xl:text-lg">
+                    <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3"
+                            onClick={() => window.dispatchEvent(new CustomEvent('addDatabaseLookupTab'))}>
                         Search the Database
                     </button>
                     <button

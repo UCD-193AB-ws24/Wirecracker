@@ -4,6 +4,7 @@
     "@supabase/supabase-js": "^2.48.1",
     "@tailwindcss/postcss": "^4.0.7",
     "bcryptjs": "^3.0.2",
+    "d3": "^7.9.0",
     "express-session": "^1.18.1",
     "papaparse": "^5.5.2",
     "passport": "^0.7.0",
