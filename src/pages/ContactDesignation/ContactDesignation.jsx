@@ -243,21 +243,21 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                             lg:space-x-4 lg:mb-4">
             <button
                     onClick={() => setActiveTab('designation')}
-                    className={`px-2 py-1 text-sm rounded-lg transition-colors duration-200
+                    className={`px-2 py-1 font-bold text-sm rounded-lg transition-colors duration-200
                                 lg:px-4 lg:py-2 lg:text-base ${
                         activeTab === 'designation'
-                            ? 'bg-blue-500 text-white'
+                            ? 'bg-sky-600 text-white'
                             : 'bg-gray-200 border border-gray-300 text-gray-700 hover:bg-gray-300 cursor-pointer'
                     }`}
                 >
-                    Labelling
+                    Labeling
                 </button>
                 <button
                     onClick={() => setActiveTab('resection')}
-                    className={`px-2 py-1 text-sm rounded-lg transition-colors duration-200
+                    className={`px-2 py-1 font-bold text-sm rounded-lg transition-colors duration-200
                                 lg:px-4 lg:py-2 lg:text-base ${
                         activeTab === 'resection'
-                            ? 'bg-blue-500 text-white'
+                            ? 'bg-sky-600 text-white'
                             : 'bg-gray-200 border border-gray-300 text-gray-700 hover:bg-gray-300 cursor-pointer'
                     }`}
                 >
@@ -302,28 +302,10 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1
                             lg:bottom-6 lg:right-6 lg:flex-row lg:gap-2">
-                <div className="flex flex-row gap-1
-                                lg:gap-2">
-                    <button
-                        className="grow py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-700 border border-sky-700 shadow-lg
-                                lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleSave}
-                    >
-                        Save
-                    </button>
-                    <button
-                        className="grow py-1 px-2 bg-green-500 text-white font-semibold rounded border border-green-600 hover:bg-green-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
-                                    lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleExport}
-                    >
-                        Export
-                    </button>
-                </div>
-                
                 {activeTab === 'resection' && (
                     <button
-                        className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded-md hover:bg-purple-600 transition-colors duration-200 shadow-lg
-                                   lg:py-2 lg:px-4"
+                        className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
                         onClick={() => {
                             // Navigate to stimulation plan
                             const event = new CustomEvent('addStimulationTab', {
@@ -344,6 +326,24 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                         Open in Stimulation Plan
                     </button>
                 )}
+
+                <div className="flex flex-row gap-1
+                                lg:gap-2">
+                    <button
+                        className="grow py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-700 border border-sky-700 shadow-lg
+                                lg:py-2 lg:px-4 lg:text-base"
+                        onClick={handleSave}
+                    >
+                        Save
+                    </button>
+                    <button
+                        className="grow py-1 px-2 bg-green-500 text-white font-semibold rounded border border-green-600 hover:bg-green-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                        onClick={handleExport}
+                    >
+                        Export
+                    </button>
+                </div>
             </div>
 
             {/* Save Success Modal */}
@@ -354,7 +354,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                         <p className="mb-2 lg:mb-4">Designation data saved successfully!</p>
                         <button
                             className="px-2 py-1 bg-sky-600 border border-sky-700 text-white rounded hover:bg-sky-700
-                                       lg:px-4 lg:py-2 "
+                                       lg:px-4 lg:py-2"
                             onClick={() => setShowSaveSuccess(false)}
                         >
                             Close
