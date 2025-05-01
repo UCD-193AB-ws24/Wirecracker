@@ -6,6 +6,7 @@ import Dropdown from './utils/Dropdown';
 import PlanTypePage from './pages/StimulationPlanning/PlanTypeSelection'
 import ContactSelection from './pages/StimulationPlanning/ContactSelection'
 import FunctionalTestSelection from './pages/StimulationPlanning/FunctionalTestSelection'
+import UserDocumentation from './pages/UserDocumentation'
 import Debug from './pages/Debug';
 import DatabaseTable from "./pages/DatabaseTable";
 import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
@@ -542,6 +543,18 @@ const HomePage = () => {
         };
     }, []);
 
+    // Add event listener for documentation tab creation
+    useEffect(() => {
+        const handleAddFunctionalTestTab = (event) => {
+            addTab('usage-docs', event.detail);
+        };
+
+        window.addEventListener('addDocumentationTab', handleAddFunctionalTestTab);
+        return () => {
+            window.removeEventListener('addDocumentationTab', handleAddFunctionalTestTab);
+        };
+    }, []);
+
     useEffect(() => {
         // Find the highest localization number to initialize the counter
         if (tabs.length > 1) {
@@ -630,6 +643,10 @@ const HomePage = () => {
                         originalDataPatientId: data.originalData?.patientId
                     }
                 });
+                break;
+            case 'usage-docs':
+                title = `docs - ${data.path}`;
+                // TODO do something about patient ID that is safe
                 break;
             case 'seizure-recreation':
             case 'cceps':
@@ -998,6 +1015,13 @@ const HomePage = () => {
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
+            case 'usage-docs':
+                return <UserDocumentation
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />
             default:
                 return null;
         }
@@ -1412,6 +1436,7 @@ const App = () => {
                 <Route path="/debug" element={<Debug />} />
                 <Route path="/database/:table" element={<DatabaseTable />} />
                 <Route path="/auth-success" element={<GoogleAuthSuccess />} />
+                <Route path="/usage-docs/:path" element={<UserDocumentation/>} />
             </Routes>
         </Router>
     );
