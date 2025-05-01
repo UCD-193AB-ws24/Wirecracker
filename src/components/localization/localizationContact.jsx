@@ -97,24 +97,6 @@ const LocalizationContact = ({
         return regionNames.find(name => name.toLowerCase() === lowerInput);
     };
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        let updatedContact = { ...contactData };
-        
-        if (selectedValue === 'GM/GM') {
-            const existingDesc1 = getExistingRegion(desc1) || desc1;
-            const existingDesc2 = getExistingRegion(desc2) || desc2;
-            updatedContact.contactDescription = `${existingDesc1}+${existingDesc2}`;
-        } else if (selectedValue === 'GM' || selectedValue === 'GM/WM') {
-            const existingDesc1 = getExistingRegion(desc1) || desc1;
-            updatedContact.contactDescription = existingDesc1;
-        }
-        
-        updatedContact.associatedLocation = selectedValue;
-        onContactUpdate(label, number, updatedContact);
-        setShowPopup(false);
-    };
-
     // Filter region names based on input, case-insensitive
     const filteredRegions1 = desc1Filter
         ? regionNames.filter(name => name.toLowerCase().includes(desc1Filter.toLowerCase()))
@@ -147,13 +129,38 @@ const LocalizationContact = ({
             modal
             nested
             disabled={readOnly}
+            closeOnDocumentClick
+            closeOnEscape
         >
             {close => (
                 <div className="modal bg-white p-6 rounded-lg shadow-lg">
+                    <button 
+                        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                        onClick={close}
+                        type="button"
+                    >
+                        ×
+                    </button>
                     <h4 className="text-lg font-semibold mb-4">
                         Edit Contact {number}
                     </h4>
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        let updatedContact = { ...contactData };
+                        
+                        if (selectedValue === 'GM/GM') {
+                            const existingDesc1 = getExistingRegion(desc1) || desc1;
+                            const existingDesc2 = getExistingRegion(desc2) || desc2;
+                            updatedContact.contactDescription = `${existingDesc1}+${existingDesc2}`;
+                        } else if (selectedValue === 'GM' || selectedValue === 'GM/WM') {
+                            const existingDesc1 = getExistingRegion(desc1) || desc1;
+                            updatedContact.contactDescription = existingDesc1;
+                        }
+                        
+                        updatedContact.associatedLocation = selectedValue;
+                        onContactUpdate(label, number, updatedContact);
+                        setShowPopup(false);
+                    }}>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Location Type
