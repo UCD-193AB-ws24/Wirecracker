@@ -33,17 +33,25 @@ const Designation = ({ electrodes, onClick }) => {
     }, [filterChar]);
 
     return (
-        <div className="flex-1 p-8 bg-gray-100 min-h-screen">
-            <div className="mb-6">
-                <p className="text-lg text-gray-700">
+        <div className="flex-1 p-4 bg-gray-100 h-full lg:p-8">
+            <div className="mb-3 lg:mb-6">
+                <p className="text-sm text-gray-700 lg:text-lg">
                     Filtering electrodes by: {filterChar || 'None'} (Press a key to filter, Esc or Backspace to reset)
                 </p>
             </div>
-            <ul className="space-y-6">
+            <ul className="space-y-3 lg:space-y-6">
                 {filteredElectrodes.map((electrode) => (
-                    <li key={electrode.label} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                        <p className="text-2xl font-bold text-gray-800 mb-4">{electrode.label}</p>
-                        <ul className="flex flex-wrap gap-4">
+                    <li
+                        className="p-3 bg-white border border-gray-200 rounded-lg shadow-sm
+                                   lg:p-6"
+                        key={electrode.label}
+                    >
+                        <p className="text-lg font-bold text-gray-800 mb-2
+                                      lg:text-2xl lg:mb-4">
+                            {electrode.label}
+                        </p>
+                        <ul className="flex flex-wrap gap-2
+                                       lg:gap-4">
                             {electrode.contacts.map((contact) => (
                                 <Contact
                                     key={contact.id}
@@ -62,7 +70,8 @@ const Designation = ({ electrodes, onClick }) => {
 const Contact = ({ contact, onClick }) => {
     return (
         <li
-            className={`w-[100px] p-4 rounded-lg shadow-sm cursor-pointer flex-shrink-0 transition-transform transform hover:scale-105 ${getMarkColor(contact)}`}
+            className={`w-[75px] p-2 rounded-lg shadow-sm cursor-pointer flex-shrink-0 transition-transform transform hover:scale-105 ${getMarkColor(contact)}
+                        lg:w-[100px] lg:p-4`}
             onClick={() => onClick(contact.id, (contact) => {
                 return {
                     ...contact,
@@ -70,8 +79,8 @@ const Contact = ({ contact, onClick }) => {
                 };
             })}
         >
-            <p className="text-xl font-bold text-gray-800">{contact.index}</p>
-            <p className="text-sm font-medium text-gray-600 truncate" title={contact.associatedLocation}>
+            <p className="text-base font-bold text-gray-800 lg:text-xl">{contact.index}</p>
+            <p className="text-xs font-medium text-gray-600 truncate lg:text-sm" title={contact.associatedLocation}>
                 {contact.associatedLocation}
             </p>
         </li>
