@@ -1104,7 +1104,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                                    lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                    xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
                         onClick={onNewLocalization}>
-                        Create New Localization
+                        Create New Patient
                     </button>
                     <input
                         type="file"
