@@ -6,6 +6,7 @@ import Dropdown from './utils/Dropdown';
 import PlanTypePage from './pages/StimulationPlanning/PlanTypeSelection'
 import ContactSelection from './pages/StimulationPlanning/ContactSelection'
 import FunctionalTestSelection from './pages/StimulationPlanning/FunctionalTestSelection'
+import UserDocumentation from './pages/UserDocumentation'
 import Debug from './pages/Debug';
 import DatabaseTable from "./pages/DatabaseTable";
 import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
@@ -83,6 +84,82 @@ const Tab = ({ title, isActive, onClick, onClose, onRename }) => {
                 >
                     ×
                 </button>
+            )}
+        </div>
+    );
+};
+
+const PatientTabGroup = ({ patientId, tabs, activeTab, onTabClick, onTabClose, onTabRename }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const patientTabs = tabs.filter(tab => tab.state?.patientId === patientId);
+    const groupRef = useRef(null);
+    
+    if (patientTabs.length === 0) return null;
+
+    const handleCloseGroup = (e) => {
+        e.stopPropagation();
+        // Close all tabs in the group at once by passing an array of tab IDs
+        onTabClose(patientTabs.map(tab => tab.id));
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (groupRef.current && !groupRef.current.contains(event.target)) {
+                setIsExpanded(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    return (
+        <div className="relative group" ref={groupRef}>
+            <div 
+                className="flex items-center px-4 py-2 border-b-2 cursor-pointer hover:bg-gray-50"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <span className="mr-5 text-gray-500 transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                </span>
+                <span className="font-semibold">Patient {patientId}</span>
+                
+                <button 
+                    className="ml-2 text-gray-500 cursor-pointer hover:text-gray-700"
+                    onClick={handleCloseGroup}
+                >
+                    ×
+                </button>
+            </div>
+            {isExpanded && (
+                <div className="absolute left-0 top-full z-10 bg-white shadow-lg border border-gray-200 min-w-[200px]">
+                    {patientTabs.map(tab => (
+                        <div 
+                            key={tab.id}
+                            className={`flex items-center px-4 py-2 border-b-2 cursor-pointer ${
+                                activeTab === tab.id ? 'border-sky-700 text-sky-700' : 'border-transparent'
+                            }`}
+                            onClick={() => {
+                                onTabClick(tab.id);
+                                setIsExpanded(false);
+                            }}
+                            onDoubleClick={() => {
+                                if (tab.title !== 'Home') {
+                                    const newTitle = prompt('Enter new title:', tab.title);
+                                    if (newTitle && newTitle.trim() !== '') {
+                                        onTabRename(tab.id, newTitle.trim());
+                                    }
+                                }
+                            }}
+                        >
+                            <span>{tab.title}</span>
+                        </div>
+                    ))}
+                </div>
             )}
         </div>
     );
@@ -398,6 +475,18 @@ const HomePage = () => {
         };
     }, []);
 
+    // Add event listener for documentation tab creation
+    useEffect(() => {
+        const handleAddFunctionalTestTab = (event) => {
+            addTab('usage-docs', event.detail);
+        };
+
+        window.addEventListener('addDocumentationTab', handleAddFunctionalTestTab);
+        return () => {
+            window.removeEventListener('addDocumentationTab', handleAddFunctionalTestTab);
+        };
+    }, []);
+
     // Add event listener for db lookup tab creation
     useEffect(() => {
         const handleAddFunctionalTestTab = (event) => {
@@ -430,22 +519,125 @@ const HomePage = () => {
 
     const addTab = (type, data = null) => {
         const generateUniqueId = () => {
-            // Generate an integer ID based on current timestamp
-            return Math.floor(Date.now() % 1000000000); // Last 9 digits as integer
+            return Math.floor(Date.now() % 1000000000); // Last 9 digits as integer for fileId
         };
 
-        let title = 'New Tab';
+        const generatePatientId = () => {
+            // Generate a UUID v4
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        };
+
+        let title = '';
+        let patientId = null;
+        let fileId = generateUniqueId();
+
+        console.log('Adding new tab:', {
+            type,
+            data,
+            patientIdFromData: data?.patientId,
+            patientIdFromState: data?.state?.patientId,
+            patientIdFromOriginalData: data?.originalData?.patientId
+        });
+
         switch (type) {
-            case 'localization':        title = `Localization${localizationCounter}`; setLocalizationCounter(prevCounter => prevCounter + 1); break;
-            case 'csv-localization':    title = data.name; break;
-            case 'csv-designation':     title = data.name; break;
-            case 'csv-stimulation':     title = data.name; break; // Stimulation - CCEPs and seizure recreation
-            case 'csv-functional-mapping': title = data.name; break; // Stimulation - Functional Mapping
-            case 'csv-functional-test':       title = data.name; break; // Functional Mapping test selection
-            case 'stimulation':         title = 'New Stimulation Plan'; break;
-            case 'designation':         title = 'New Designation'; break;
-            case 'functional-test':     title = 'New Functional Mapping'; break;
+            case 'localization':
+                title = 'New Localization';
+                patientId = generatePatientId(); // Generate UUID for patient_id
+                break;
+            case 'csv-localization':
+                title = 'CSV Localization';
+                patientId = generatePatientId(); // Generate UUID for patient_id
+                break;
+            case 'designation':         
+                title = 'New Designation';
+                patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
+                console.log('Setting patientId for designation:', {
+                    finalPatientId: patientId,
+                    sources: {
+                        dataPatientId: data.patientId,
+                        statePatientId: data.state?.patientId,
+                        originalDataPatientId: data.originalData?.patientId
+                    }
+                });
+                break;
+            case 'csv-stimulation':     
+                title = data.name;
+                patientId = data.patientId; // Use existing patient_id from parent localization
+                break;
+            case 'csv-functional-mapping': 
+                title = data.name;
+                patientId = data.patientId; // Use existing patient_id from parent localization
+                break;
+            case 'csv-functional-test':       
+                title = data.name;
+                patientId = data.patientId; // Use existing patient_id from parent localization
+                break;
+            case 'stimulation':         
+                title = 'New Stimulation Plan';
+                patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
+                console.log('Setting patientId for stimulation:', {
+                    finalPatientId: patientId,
+                    sources: {
+                        dataPatientId: data.patientId,
+                        statePatientId: data.state?.patientId,
+                        originalDataPatientId: data.originalData?.patientId
+                    }
+                });
+                break;
+            case 'usage-docs':
+                title = `docs - ${data.path}`;
+                // TODO do something about patient ID that is safe
+                break;
+            case 'seizure-recreation':
+            case 'cceps':
+                return <ContactSelection
+                    key={currentTab.id}
+                    isFunctionalMapping={false}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-stimulation':
+                return <ContactSelection
+                    key={currentTab.id}
+                    isFunctionalMapping={false}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'functional-mapping':
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={true}
+                    initialData={{}}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-functional-mapping':
+                return <ContactSelection
+                    key={currentTab.id}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    isFunctionalMapping={true}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'functional-test':
+            case 'csv-functional-test':
+                return <FunctionalTestSelection
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
             case 'database-lookup':     title = 'Lookup'; break;
+            default:
+                return null;
         }
 
         const newTab = {
@@ -454,7 +646,8 @@ const HomePage = () => {
             content: type,
             data: data,
             state: {
-                fileId: generateUniqueId(),
+                fileId: fileId,
+                patientId: patientId, // Include patient_id in the state
                 fileName: title,
                 creationDate: new Date().toISOString(),
                 modifiedDate: new Date().toISOString()
@@ -505,10 +698,15 @@ const HomePage = () => {
     };
 
     const closeTab = (tabId) => {
-        const newTabs = tabs.filter(tab => tab.id !== tabId);
+        // If tabId is an array, close all tabs in the array
+        const tabsToClose = Array.isArray(tabId) ? tabId : [tabId];
+        
+        const newTabs = tabs.filter(tab => !tabsToClose.includes(tab.id));
         setTabs(newTabs);
-        if (activeTab === tabId) {
-            setActiveTab(newTabs[newTabs.length - 1].id);
+        
+        // If the active tab was closed, set the active tab to the last remaining tab
+        if (tabsToClose.includes(activeTab)) {
+            setActiveTab(newTabs[newTabs.length - 1]?.id || 'home');
         }
     };
 
@@ -552,7 +750,8 @@ const HomePage = () => {
                 content: 'csv-localization',  // Use csv-localization to reuse existing code path
                 data: fileData.data,
                 state: {
-                    fileId: fileData.fileId,
+                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
+                    patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
@@ -574,7 +773,8 @@ const HomePage = () => {
                 content: 'designation',
                 data: { data: fileData.data, originalData: fileData.originalData },
                 state: {
-                    fileId: fileData.fileId,
+                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
+                    patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
@@ -597,7 +797,8 @@ const HomePage = () => {
                 content: type,
                 data: fileData.data,
                 state: {
-                    fileId: fileData.fileId,
+                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
+                    patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
@@ -620,7 +821,8 @@ const HomePage = () => {
                 content: type,
                 data: fileData.data,
                 state: {
-                    fileId: fileData.fileId,
+                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
+                    patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
@@ -760,6 +962,13 @@ const HomePage = () => {
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
+            case 'usage-docs':
+                return <UserDocumentation
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />
             case 'database-lookup':
                 return <DBLookup
                     key={currentTab.id}
@@ -774,23 +983,43 @@ const HomePage = () => {
 
     return (
         <div className="h-dvh flex flex-col">
-            <div className="flex border-b">
-                {tabs.map(tab => (
-                    <Tab
-                        key={tab.id}
-                        title={tab.title}
-                        isActive={activeTab === tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        onClose={() => closeTab(tab.id)}
-                        onRename={(newTitle) => renameTab(tab.id, newTitle)}
-                    />
-                ))}
-                <button 
-                    className="px-4 py-2 text-gray-600 cursor-pointer hover:text-gray-800"
-                    onClick={() => addTab('localization')}
-                >
-                    +
-                </button>
+            <div className="flex flex-col border-b">
+                <div className="flex">
+                    {tabs.filter(tab => !tab.state?.patientId).map(tab => (
+                        <Tab
+                            key={tab.id}
+                            title={tab.title}
+                            isActive={activeTab === tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            onClose={() => closeTab(tab.id)}
+                            onRename={(newTitle) => renameTab(tab.id, newTitle)}
+                        />
+                    ))}
+                    
+                    {/* Group tabs by patient ID */}
+                    {Array.from(new Set(tabs
+                        .filter(tab => tab.state?.patientId)
+                        .map(tab => tab.state.patientId)))
+                        .map(patientId => (
+                            <PatientTabGroup
+                                key={patientId}
+                                patientId={patientId}
+                                tabs={tabs}
+                                activeTab={activeTab}
+                                onTabClick={setActiveTab}
+                                onTabClose={closeTab}
+                                onTabRename={renameTab}
+                            />
+                        ))
+                    }
+                    
+                    <button 
+                        className="px-4 py-2 text-gray-600 cursor-pointer hover:text-gray-800"
+                        onClick={() => addTab('localization')}
+                    >
+                        +
+                    </button>
+                </div>
             </div>
             {token && <UserProfile onSignOut={handleSignOut} />}
 
@@ -1162,6 +1391,7 @@ const App = () => {
                     <Route path="/debug" element={<Debug />} />
                     <Route path="/database/:table" element={<DatabaseTable />} />
                     <Route path="/auth-success" element={<GoogleAuthSuccess />} />
+                    <Route path="/usage-docs/:path" element={<UserDocumentation/>} />
                 </Routes>
             </Router>
         </ErrorProvider>

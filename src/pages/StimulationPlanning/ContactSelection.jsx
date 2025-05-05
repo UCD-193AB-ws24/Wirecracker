@@ -220,15 +220,22 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
     }
 
     const showAvailableContacts = (electrode) => {
+        if (!electrode || !electrode.contacts) return [];
+        
         return electrode.contacts.map((contact, index) => { // Horizontal list for every contact
-            const pair = electrode.contacts[contact.pair - 1];
+            if (!contact) return null;
+            
+            const pair = contact.pair ? electrode.contacts[contact.pair - 1] : null;
 
             // Filter out the non-marked contacts.
-            const shouldAppear = !(droppedContacts.some((c) => c.id === contact.id)) && (contact.mark || contact.surgeonMark);
-            const pairShouldAppear = !(droppedContacts.some((c) => c.id === pair.id)) && (pair.mark || pair.surgeonMark);
+            const shouldAppear = !(droppedContacts.some((c) => c.id === contact.id)) && 
+                               (contact.mark || contact.surgeonMark);
+            const pairShouldAppear = pair && 
+                                   !(droppedContacts.some((c) => c.id === pair.id)) && 
+                                   (pair.mark || pair.surgeonMark);
 
             return (
-                !(contact.isPlanning || pair.isPlanning) && (
+                !(contact.isPlanning || (pair && pair.isPlanning)) && (
                     areAllVisible ? (
                         <Contact key={contact.id}
                             contact={contact}
@@ -242,7 +249,7 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
                     )
                 )
             );
-        })
+        }).filter(Boolean); // Remove any null entries
     }
 
     return (
@@ -337,7 +344,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
         }),
     }));
 
-    const createTestSelectionTab = () => {
+    const createTestSelectionTab = async () => {
         if (Object.keys(contacts).length === 0) return;
 
         // Get designation data from the current localization
@@ -353,31 +360,54 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
                 .flatMap(electrode => electrode.contacts)
                 .find(c => c.id === contact.id);
 
-            const pair = electrodes
-                .find(electrode => electrode.label === contact.electrodeLabel)
-                ?.contacts.find(c => c.index === contact.pair);
+                const pair = electrodes
+                    .find(electrode => electrode.label === contact.electrodeLabel)
+                    ?.contacts.find(c => c.index === contact.pair);
 
-            return {
-                __contactDescription__: contact.__contactDescription__,
-                __electrodeDescription__: contact.__electrodeDescription__,
-                associatedLocation: contact.associatedLocation,
-                electrodeLabel: contact.electrodeLabel,
-                id: contact.id,
-                index: contact.index,
-                mark: contact.mark,
-                pair: pair,
-                surgeonMark: contact.surgeonMark,
-                duration: updatedContact?.duration,
-                frequency: updatedContact?.frequency,
-                current: updatedContact?.current,
-            }
-        })
+                return {
+                    __contactDescription__: contact.__contactDescription__,
+                    __electrodeDescription__: contact.__electrodeDescription__,
+                    associatedLocation: contact.associatedLocation,
+                    electrodeLabel: contact.electrodeLabel,
+                    id: contact.id,
+                    index: contact.index,
+                    mark: contact.mark,
+                    pair: pair,
+                    surgeonMark: contact.surgeonMark,
+                    duration: updatedContact?.duration,
+                    frequency: updatedContact?.frequency,
+                    current: updatedContact?.current,
+                }
+            });
 
-        // Create a new tab with the designation data
-        const event = new CustomEvent('addFunctionalTestTab', {
-            detail: { data: { contacts: functionalTestData, tests: {} } }
-        });
-        window.dispatchEvent(event);
+            console.log('Creating new tab with patient_id:', parentPatientId);
+            // Create a new tab with the designation data
+            const event = new CustomEvent('addFunctionalTestTab', {
+                detail: { 
+                    data: { 
+                        contacts: functionalTestData, 
+                        tests: {} 
+                    },
+                    patientId: parentPatientId, // Pass patientId directly
+                    state: {
+                        patientId: parentPatientId // Also include in state
+                    },
+                    originalData: {
+                        patientId: parentPatientId // And in originalData
+                    }
+                }
+            });
+            window.dispatchEvent(event);
+            console.log('Test selection tab creation completed successfully');
+        } catch (error) {
+            console.error('Error creating test selection tab:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                cause: error.cause
+            });
+            alert('Failed to create test selection tab. Please try again.');
+        }
     };
 
     const handleSave = async () => {
@@ -585,6 +615,11 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
         // First save to database if we have a file ID
         if (state.fileId) {
             console.log('Saving stimulation plan to database...');
+            console.log('Current state:', {
+                fileId: state.fileId,
+                patientId: state.patientId,
+                fileName: state.fileName
+            });
 
             // Get user ID from session
             const token = localStorage.getItem('token');
@@ -594,6 +629,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
             
             try {
                 // Save stimulation data to database
+                console.log('Saving stimulation data with patient_id:', state.patientId);
                 const response = await fetch(`${config.backendURL}/api/save-stimulation`, {
                     method: 'POST',
                     headers: {
@@ -607,11 +643,13 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
                         fileId: state.fileId,
                         fileName: state.fileName,
                         creationDate: state.creationDate,
-                        modifiedDate: new Date().toISOString()
+                        modifiedDate: new Date().toISOString(),
+                        patientId: state.patientId
                     }),
                 });
 
                 const result = await response.json();
+                console.log('Save stimulation response:', result);
                 if (!result.success) {
                     console.error('Failed to save stimulation:', result.error);
                     throw new Error(`Failed to save stimulation: ${result.error}`);

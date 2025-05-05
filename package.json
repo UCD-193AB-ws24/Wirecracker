@@ -3,8 +3,11 @@
     "@heroicons/react": "^2.2.0",
     "@supabase/supabase-js": "^2.48.1",
     "@tailwindcss/postcss": "^4.0.7",
+    "antd": "^5.24.8",
+    "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "d3": "^7.9.0",
+    "clean-jsdoc-theme": "^4.3.0",
     "express-session": "^1.18.1",
     "papaparse": "^5.5.2",
     "passport": "^0.7.0",
@@ -15,9 +18,11 @@
     "react-dom": "^19.0.0",
     "react-floating-action-button": "^1.0.5",
     "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0",
     "react-modal": "^3.16.3",
     "react-router-dom": "^7.1.5",
     "reactjs-popup": "^2.0.6",
+    "remark-gfm": "^4.0.1",
     "resend": "^4.1.2",
     "tailwindcss": "^4.0.7",
     "uuid": "^11.0.5",
@@ -26,7 +31,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-docs": "jsdoc --configure jsdoc.json --verbose"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

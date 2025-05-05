@@ -279,12 +279,12 @@ test_selection |o--|| files : ""
 3. Configure hosting environment variables in `.env`
    
    `./.env`
-   ```filename="./.env"
+   ```
    VITE_SUPABASE_URL=[your url to supabase]
    VITE_SUPABASE_ANON_KEY=[your token for supabase]
    ```
    `./backend/.env`
-   ```flename="backend/.env"
+   ```
    RESEND_API_KEY=[your ... for ...]
    SUPABASE_URL=[your url to supabase. Same as VITE_SUPABASE_URL]
    SUPABASE_KEY=[your token for supabase. Same as VITE_SUPABASE_ANON_KEY]
@@ -295,7 +295,7 @@ test_selection |o--|| files : ""
 4. Configure hosting information in `config.json`
    
    `./config.json`
-   ```filename="./config.json"
+   ```
    {
        "port": [back-end port],
        "frontendURL": "[your front-end url]",

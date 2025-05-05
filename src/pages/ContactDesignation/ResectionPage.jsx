@@ -16,7 +16,7 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
     }, [imageLoaded]);
 
     return (
-        <div className="flex-1">
+        <div className="flex-1 h-full">
             <div className="flex flex-col md:flex-row p-2 bg-gray-100">
                 <NIFTIimage
                 isLoaded={imageLoaded}
@@ -27,12 +27,15 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
                 savedState={savedState} />
             </div>
             {!imageLoaded && (
-                <div className="flex-1 p-8 bg-gray-100 min-h-screen">
-                    <ul className="space-y-6">
+                <div className="flex-1 p-4 lg:p-8 bg-gray-100 h-full">
+                    <ul className="space-y-3 lg:space-y-6">
                         {electrodes.map((electrode) => (
-                            <li key={electrode.label} className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                                <p className="text-2xl font-bold text-gray-800 mb-4">{electrode.label}</p>
-                                <ul className="flex flex-wrap gap-4">
+                            <li key={electrode.label} className="p-3 lg:p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <p className="text-lg font-bold text-gray-800 mb-2
+                                              lg:text-2xl lg:mb-4">
+                                    {electrode.label}
+                                </p>
+                                <ul className="flex flex-wrap gap-2 lg:gap-4">
                                     {electrode.contacts.map((contact) => (
                                         <Contact
                                             key={contact.id}
@@ -810,8 +813,9 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     };
 
     return (
-        <div className="p-2 bg-gray-100">
-            <div className="flex space-x-4 mb-8">
+        <div className="p-1 lg:p-2 mx-2 lg:mx-5 bg-gray-100">
+            <div className="flex space-x-2 mb-4
+                            lg:space-x-4 lg:mb-8">
                 <input
                     type="file"
                     accept=".csv"
@@ -859,7 +863,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                 </div>
             </div>
             {isLoaded && (
-                <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex flex-col lg:flex-row gap-3 lg:gap-6">
                     <div className="flex justify-center relative">
                         <canvas
                             ref={mainCanvasRef}
@@ -867,18 +871,19 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                             height={fixedMainViewSize}
                             className={"max-w-[" + fixedMainViewSize + "] max-h-[" + fixedMainViewSize + "] border border-gray-300 rounded-lg shadow-sm"}
                         />
-                        <div className='absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm flex-row'>
+                        <div className="absolute top-1 right-1 bg-black bg-opacity-50 text-white px-1 py-1 rounded text-xs flex-row
+                                        lg:top-2 lg:right-2 lg:px-2 lg:text-sm">
                             {hoveredMarker && (
-                                <p className='justify-end flex'>X: {hoveredMarker.originalCoord[0]}, Y: {hoveredMarker.originalCoord[1]}, Z: {hoveredMarker.originalCoord[2]}</p>
+                                <p className="justify-end flex">X: {hoveredMarker.originalCoord[0]}, Y: {hoveredMarker.originalCoord[1]}, Z: {hoveredMarker.originalCoord[2]}</p>
                             )}
                             {selectedContacts.length !== 0 && (
-                                <p className='justify-end flex'>Selected: {selectedContacts.join(", ")}</p>
+                                <p className="justify-end flex">Selected: {selectedContacts.join(", ")}</p>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-6">
-                        <div className="flex gap-6 justify-center">
+                    <div className="flex flex-col gap-3 lg:gap-6">
+                        <div className="flex gap-3 lg:gap-6 justify-center">
                             <canvas
                                 ref={subCanvas0Ref}
                                 width={fixedSubViewSize}
@@ -893,26 +898,27 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                             />
                         </div>
 
-                        <div className="bg-white p-4 rounded-lg shadow-md w-full">
-                            <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">
+                        <div className="bg-white p-2 lg:p-4 rounded-lg shadow-md w-full">
+                            <h2 className="text-base font-semibold text-gray-800 border-b pb-1 mb-2
+                                           lg:text-xl lg:pb-1 lg:mb-2">
                                 {hoveredMarker !== null ? hoveredMarker.contact.id : "Hover over a contact..."}
                             </h2>
                             <div className="flex justify-between items-center">
                                 <div>
-                                    <p className="text-sm text-gray-600">Location</p>
-                                    <p className="text-lg font-medium text-gray-900 break-words">
+                                    <p className="text-xs lg:text-sm text-gray-600">Location</p>
+                                    <p className="text-sm md:text-base lg:text-lg font-medium text-gray-900 break-words">
                                         {hoveredMarker !== null ? hoveredMarker.contact.associatedLocation : ""}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600">Mark</p>
-                                    <p className="text-lg font-medium text-gray-900">
+                                    <p className="text-xs lg:text-sm text-gray-600">Mark</p>
+                                    <p className="text-sm md:text-base lg:text-lg font-medium text-gray-900">
                                         {hoveredMarker !== null ? getMarkName(hoveredMarker.contact) : ""}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600">Surgeon Marked</p>
-                                    <p className="text-lg font-medium text-gray-900">
+                                    <p className="text-xs lg:text-sm text-gray-600">Surgeon Marked</p>
+                                    <p className="text-sm md:text-base lg:text-lg font-medium text-gray-900">
                                         {hoveredMarker !== null ? (hoveredMarker.contact.surgeonMark ? 'Yes' : 'No') : ""}
                                     </p>
                                 </div>
@@ -929,7 +935,8 @@ const Contact = ({ contact, onClick }) => {
 
     return (
         <li
-            className={`w-[100px] p-4 rounded-lg shadow-sm cursor-pointer flex-shrink-0 transition-transform transform hover:scale-105 ${getMarkColor(contact)}`}
+            className={`w-[75px] p-2 rounded-lg shadow-sm cursor-pointer flex-shrink-0 transition-transform transform hover:scale-105
+                        lg:w-[100px] lg:p-4 ${getMarkColor(contact)}`}
             onClick={() => {
                 onClick(contact.id, (contact) => {
                     return {
@@ -939,8 +946,8 @@ const Contact = ({ contact, onClick }) => {
                 });
             }}
         >
-            <p className="text-xl font-bold text-gray-800">{contact.index}</p>
-            <p className="text-sm font-medium text-gray-600 truncate" title={contact.associatedLocation}>
+            <p className="text-base lg:text-xl font-bold text-gray-800">{contact.index}</p>
+            <p className="text-xs lg:text-sm font-medium text-gray-600 truncate" title={contact.associatedLocation}>
                 {contact.associatedLocation}
             </p>
         </li>
@@ -980,7 +987,7 @@ function getMarkName(contact) {
         case 1:
             return "Seizure Onset Zone";
         case 2:
-            return "Seizure Network";
+            return "Epileptic Network";
         case 3:
             return "Out Of Brain";
     }

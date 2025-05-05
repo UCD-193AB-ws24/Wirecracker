@@ -14,15 +14,8 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     const { showError } = useError();
     const [state, setState] = useState(savedState);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
-
-    const [layout, setLayout] = useState(() => {
-        // First check savedState for layout
-        if (savedState && savedState.layout) {
-            return savedState.layout;
-        }
-        // Default to designation view
-        return PAGE_NAME[0];
-    });
+    const [activeTab, setActiveTab] = useState('designation');
+    const [showLegend, setShowLegend] = useState(false);
 
     // Store the original localization data if it exists
     const [localizationData, setLocalizationData] = useState(() => {
@@ -76,11 +69,10 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         const newState = {
             ...state,
             electrodes: modifiedElectrodes,
-            layout: layout,
             localizationData: localizationData
         };
         setState(newState);
-    }, [modifiedElectrodes, layout, localizationData]);
+    }, [modifiedElectrodes, localizationData]);
 
     const updateContact = (contactId, change) => {
         setModifiedElectrodes(prevElectrodes => {
@@ -96,17 +88,78 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         });
     };
 
-    const toggleLayout = () => {
-        const newLayout = layout === PAGE_NAME[0] ? PAGE_NAME[1] : PAGE_NAME[0];
-        setLayout(newLayout);
-    };
-
-    const createStimulationTab = () => {
-        if (Object.keys(modifiedElectrodes).length === 0) return;
-
-        // Get designation data from the current localization
+    const handleSave = async () => {
         try {
-            exportContacts(modifiedElectrodes, false);
+            // First save to database if we have a file ID
+            if (state.fileId) {
+                console.log('Saving designation with patientId:', {
+                    fromState: state.patientId,
+                    fromLocalizationData: localizationData?.patientId,
+                    fileId: state.fileId
+                });
+                
+                // Get user ID from session
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('User not authenticated. Please log in to save designations.');
+                    return;
+                }
+                
+                try {
+                    // First save/update file metadata
+                    const response = await fetch(`${backendURL}/api/save-designation`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        },
+                        body: JSON.stringify({
+                            designationData: modifiedElectrodes,
+                            localizationData: localizationData,
+                            fileId: state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString(),
+                            patientId: state.patientId
+                        }),
+                    });
+
+                    const result = await response.json();
+                    if (!result.success) {
+                        console.error('Failed to save designation:', result.error);
+                        alert(`Failed to save designation: ${result.error}`);
+                        return;
+                    }
+                    
+                    // Update the state with new modified date
+                    setState(prevState => ({
+                        ...prevState,
+                        modifiedDate: new Date().toISOString()
+                    }));
+                    
+                    // Show success feedback if this was a save operation
+                    setShowSaveSuccess(true);
+                    
+                    console.log('Designation saved successfully');
+                } catch (error) {
+                    console.error('Error saving designation:', error);
+                    alert(`Error saving designation: ${error.message}`);
+                    return;
+                }
+            }
+
+            // Then export to CSV as before
+            if (localizationData) {
+                // If we have localization data, use it to create a CSV with the same format
+                saveDesignationCSVFile(modifiedElectrodes, localizationData, false);
+            } else {
+                // Fall back to the simple logging if no localization data
+                for (let electrode of modifiedElectrodes) {
+                    for (let contact of electrode.contacts) {
+                        console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
+                    }
+                }
+            }
         } catch (error) {
             showError('Error saving data on database. Changes are not saved');
         }
@@ -155,12 +208,13 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                             'Authorization': token
                         },
                         body: JSON.stringify({
-                            designationData: electrodes,
+                            designationData: modifiedElectrodes,
                             localizationData: localizationData,
                             fileId: state.fileId,
                             fileName: state.fileName,
                             creationDate: state.creationDate,
-                            modifiedDate: new Date().toISOString()
+                            modifiedDate: new Date().toISOString(),
+                            patientId: state.patientId
                         }),
                     });
 
@@ -178,10 +232,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     }));
                     
                     // Show success feedback if this was a save operation
-                    if (!download) {
                         setShowSaveSuccess(true);
-                        setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
-                    }
                     
                     console.log('Designation saved successfully');
                 } catch (error) {
@@ -194,10 +245,10 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             // Then export to CSV as before
             if (localizationData) {
                 // If we have localization data, use it to create a CSV with the same format
-                saveDesignationCSVFile(electrodes, localizationData, download);
+                saveDesignationCSVFile(modifiedElectrodes, localizationData, true);
             } else {
                 // Fall back to the simple logging if no localization data
-                for (let electrode of electrodes) {
+                for (let electrode of modifiedElectrodes) {
                     for (let contact of electrode.contacts) {
                         console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
                     }
@@ -210,72 +261,229 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     };
 
     return (
-        <div className="flex flex-col h-screen p-4 ">
-            {/* Floating Toggle Switch at the Top Right */}
+        <div className="flex flex-col h-9/10 p-2 lg:p-4">
+            {/* Tab Navigation */}
+            <div className="flex space-x-2 mb-2
+                            lg:space-x-4 lg:mb-4">
             <button
-                onClick={toggleLayout}
-                className="fixed top-6 right-6 z-50 w-50 h-10 rounded-full transition-colors duration-300 focus:outline-none flex items-center bg-gray-400 shadow-lg hover:bg-gray-300"
-            >
-                <span
-                    className={`absolute left-1 top-1 w-24 h-8 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
-                        layout === PAGE_NAME[0] ? "translate-x-0" : "translate-x-24"
-                    }`}
-                ></span>
-                <span
-                    className={`absolute left-2.5 text-sm font-semibold ${
-                        layout === PAGE_NAME[0] ? "text-blue-500" : "text-gray-500"
+                    onClick={() => setActiveTab('designation')}
+                    className={`px-2 py-1 font-bold text-sm rounded-lg transition-colors duration-200
+                                lg:px-4 lg:py-2 lg:text-base ${
+                        activeTab === 'designation'
+                            ? 'bg-sky-600 text-white'
+                            : 'bg-gray-200 border border-gray-300 text-gray-700 hover:bg-gray-300 cursor-pointer'
                     }`}
                 >
-                    {PAGE_NAME[0]}
-                </span>
-                <span
-                    className={`absolute right-4.5 text-sm font-semibold ${
-                        layout === PAGE_NAME[1] ? "text-blue-500" : "text-gray-500"
+                    Labeling
+                </button>
+                <button
+                    onClick={() => setActiveTab('resection')}
+                    className={`px-2 py-1 font-bold text-sm rounded-lg transition-colors duration-200
+                                lg:px-4 lg:py-2 lg:text-base ${
+                        activeTab === 'resection'
+                            ? 'bg-sky-600 text-white'
+                            : 'bg-gray-200 border border-gray-300 text-gray-700 hover:bg-gray-300 cursor-pointer'
                     }`}
                 >
-                    {PAGE_NAME[1]}
-                </span>
+                    Resection
             </button>
+            </div>
 
             {/* Main Content (Scrollable) */}
             <div className="flex-1 overflow-y-auto">
-                {layout === PAGE_NAME[0] ? (
-                    <Designation electrodes={modifiedElectrodes} onClick={updateContact} />
+                {activeTab === 'designation' ? (
+                    <Designation 
+                        electrodes={modifiedElectrodes} 
+                        onClick={updateContact}
+                        onStateChange={setState}
+                        savedState={state}
+                    />
                 ) : (
-                    <Resection electrodes={modifiedElectrodes} onClick={updateContact} onStateChange={setState} savedState={state} />
+                    <Resection 
+                        electrodes={modifiedElectrodes} 
+                        onClick={updateContact} 
+                        onStateChange={setState} 
+                        savedState={state} 
+                    />
+                )}
+            </div>
+
+            {/* Floating Help Button and Guide at the Bottom Left */}
+            <div className="fixed bottom-2 left-2 z-50
+                            lg:bottom-6 lg:left-6">
+                {showLegend ? (
+                    <Legend layout={activeTab} setShowLegend={setShowLegend} />
+                ) : (
+                    <button
+                        className="size-8 border border-sky-800 bg-sky-600 text-white text-sm text-center font-bold rounded-full transition-colors duration-200 cursor-pointer hover:bg-sky-800
+                                   lg:size-11 lg:text-base"
+                        onClick={() => setShowLegend(true)}>
+                        ?
+                    </button>
                 )}
             </div>
 
             {/* Floating Save and Export Buttons at the Bottom Right */}
-            <div className="fixed bottom-6 right-6 z-50 flex gap-2">
-                <button
-                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
-                    onClick={createStimulationTab}
-                >
-                    Open in Stimulation Plan
-                </button>
-                <div className="relative">
+            <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1
+                            lg:bottom-6 lg:right-6 lg:flex-row lg:gap-2">
+                {activeTab === 'resection' && (
                     <button
-                        className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
-                        onClick={() => exportContacts(modifiedElectrodes, false)}
+                        className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                        onClick={() => {
+                            // Navigate to stimulation plan
+                            const event = new CustomEvent('addStimulationTab', {
+                                detail: { 
+                                    data: modifiedElectrodes,
+                                    patientId: state.patientId,
+                                    state: {
+                                        patientId: state.patientId
+                                    },
+                                    originalData: {
+                                        patientId: state.patientId
+                                    }
+                                }
+                            });
+                            window.dispatchEvent(event);
+                        }}
+                    >
+                        Open in Stimulation Plan
+                    </button>
+                )}
+
+                <div className="flex flex-row gap-1
+                                lg:gap-2">
+                    <button
+                        className="grow py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-700 border border-sky-700 shadow-lg
+                                lg:py-2 lg:px-4 lg:text-base"
+                        onClick={handleSave}
                     >
                         Save
                     </button>
-                    {showSaveSuccess && (
-                        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap">
-                            Save successful!
-                        </div>
-                    )}
+                    <button
+                        className="grow py-1 px-2 bg-green-500 text-white font-semibold rounded border border-green-600 hover:bg-green-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                        onClick={handleExport}
+                    >
+                        Export
+                    </button>
                 </div>
-                <button
-                    className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
-                    onClick={() => exportContacts(modifiedElectrodes)}
-                >
-                    Export
-                </button>
             </div>
+
+            {/* Save Success Modal */}
+            {showSaveSuccess && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-3 lg:p-6 rounded-lg shadow-xl">
+                        <h2 className="text-base lg:text-xl font-bold mb-2 lg:mb-4">Success</h2>
+                        <p className="mb-2 lg:mb-4">Designation data saved successfully!</p>
+                        <button
+                            className="px-2 py-1 bg-sky-600 border border-sky-700 text-white rounded hover:bg-sky-700
+                                       lg:px-4 lg:py-2"
+                            onClick={() => setShowSaveSuccess(false)}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
+
+/**
+ * 
+ * @param {string} layout
+ * @param {string[]} page_names
+ * @param setShowLegend
+ * @returns 
+ */
+const Legend = ({ layout = "designation", setShowLegend }) => {
+    return (
+        <div className="max-w-48 shadow-lg border border-gray-400 rounded bg-gray-50 p-1
+                        lg:max-w-72 lg:p-2">
+            {layout === "designation" ? (
+                <>
+                    <div className="text-center font-bold text-wrap
+                                    lg:text-xl">
+                        Epileptic Network Labeling Page Help
+                    </div>
+                    <div className="text-xs lg:text-base text-wrap">
+                        Click on a contact to label and change its color.
+                    </div>
+                </>
+            ) : (
+                <>
+                    <div className="text-center font-semibold
+                                    lg:text-xl">
+                        Resection Page Help
+                    </div>
+                    <div className="text-xs lg:text-base text-wrap">
+                        <span className="text-fuchsia-700">
+                            (Optional)
+                        </span>
+                        &nbsp;Upload brain scan and contact coordinates.
+                    </div>
+                    <div className="text-xs lg:text-base text-wrap">
+                        Click contact in brain scan or list to mark for surgery.
+                    </div>
+                </>
+            )}
+
+            {/* Legend */}
+            <div className="my-2 mx-2 lg:mx-5">
+                <div className="text-center font-semibold text-sm
+                                lg:text-lg">
+                    Legend
+                </div>
+                <div>
+                    <LegendItem color="rose" itemName="SOZ - Seizure Onset Zone" />
+                    <LegendItem color="amber" itemName="EN - Epileptic Network" />
+                    <LegendItem color="stone" itemName="OOB - Out of Brain" />
+                    <LegendItem color="white" itemName="NI - Not Involved" />
+                    <LegendItem color="white" outline="true" itemName="Marked for surgery" />
+                </div>
+            </div>
+
+            <button
+                className="py-2 px-4 border border-sky-800 bg-sky-600 text-white font-semibold rounded cursor-pointer transition-colors duration-200 hover:bg-sky-800"
+                onClick={() => setShowLegend(false)}>
+                Close
+            </button>
+        </div>
+    );
+}
+
+/**
+ * 
+ * @param {string} color
+ * @param {string} itemName
+ * @returns 
+ */
+const LegendItem = ({ color = "black", outline = "false", itemName }) => {
+    const colorVariants = {
+        amber: "text-amber-300",
+        rose: "text-rose-300",
+        stone: "text-stone-300",
+        white: "text-white",
+        black: "text-black"
+    }
+    const bolding = {
+        true: "font-stone-outline-2",
+        false: "font-gray-outline"
+    }
+
+    return (
+        <div className="flex">
+            <div className={`${colorVariants[color]} ${bolding[outline]} justify-self-start text-xs
+                            lg:text-base`}>
+                &#x25A0;
+            </div>
+            <div className="flex-1 justify-self-end text-right text-xs
+                            lg:text-base">
+                {itemName}
+            </div>
+        </div>
+    );
+}
 
 export default ContactDesignation;

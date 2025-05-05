@@ -36,8 +36,25 @@
 //  This version is ported from original MatLab script into JavaScript by Wirecracker team and distributed under MIT license.
 
 import { permute, flip } from './matlab_functions.js'
+export default nifti_anatomical_convention;
 
-export default function nifti_anatomical_convention (nii)
+/**
+ * Automatically flips NIFTI image data to have the right side on the right.
+ * Only works on 3D black-and-white NIfTI images. It does not work on colored images,
+ * images with imaginary numbers, or 4D images.
+ *
+ * @function
+ * @memberof module:nifti_viewer
+ * @param {Object} nii - NIFTI file data loaded using `load_nifti.js` or `load_untouch_nifti.js`.
+ * @param {Object} nii.hdr - Struct containing NIFTI header fields.
+ * @param {Array} nii.img - 3D matrix representing the NIFTI image data.
+ *
+ * @returns {Object} The modified NIFTI object with flipped header and data.
+ *
+ * @example
+ * const flippedNii = open_nii_anatomical_convention(nii);
+ */
+function nifti_anatomical_convention (nii)
 {
     let final_flip = [0,0,0];
     let rot_dim = [0,1,2];
