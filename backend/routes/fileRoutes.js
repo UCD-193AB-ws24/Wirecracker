@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { supabase } from './utils';
+import { supabase } from './utils.js';
 
 const router = express.Router();
 router.use(cors());
