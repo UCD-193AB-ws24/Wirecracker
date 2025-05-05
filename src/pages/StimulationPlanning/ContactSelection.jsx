@@ -347,18 +347,80 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
     const createTestSelectionTab = async () => {
         if (Object.keys(contacts).length === 0) return;
 
-        // Get designation data from the current localization
+        
         try {
-            exportState(state, electrodes, isFunctionalMapping, false);
-        } catch (error) {
-            showError('Error saving data on database. Changes are not saved');
-        }
+            console.log('Starting test selection tab creation...');
+            console.log('Current state:', {
+                fileId: state.fileId,
+                patientId: state.patientId,
+                fileName: state.fileName
+            });
 
-        // Clean up the contacts
-        const functionalTestData = contacts.map(contact => {
-            const updatedContact = electrodes
-                .flatMap(electrode => electrode.contacts)
-                .find(c => c.id === contact.id);
+            // First save the current designation data
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.error('No authentication token found');
+                showError('User not authenticated. Please log in to save designations.');
+                return;
+            }
+
+            // Fetch patient_id from the parent file
+            console.log('Fetching patient_id from parent file...');
+            const parentFileResponse = await fetch(`${config.backendURL}/api/get-file-metadata`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
+                body: JSON.stringify({
+                    fileId: state.fileId
+                })
+            });
+
+            const parentFileData = await parentFileResponse.json();
+            console.log('Parent file metadata response:', parentFileData);
+
+            if (!parentFileData.success) {
+                console.error('Failed to fetch parent file metadata:', parentFileData.error);
+                showError('Failed to fetch parent file metadata. Please try again.');
+                return;
+            }
+
+            const parentPatientId = parentFileData.data.patient_id;
+            console.log('Retrieved patient_id from parent file:', parentPatientId);
+
+            // Save designation data to database
+            console.log('Saving designation data with patient_id:', parentPatientId);
+            const response = await fetch(`${config.backendURL}/api/save-designation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
+                body: JSON.stringify({
+                    electrodes: electrodes,
+                    fileId: state.fileId,
+                    fileName: state.fileName,
+                    creationDate: state.creationDate,
+                    modifiedDate: new Date().toISOString(),
+                    patientId: parentPatientId
+                }),
+            });
+
+            const result = await response.json();
+            console.log('Save designation response:', result);
+
+            if (!result.success) {
+                console.error('Failed to save designation:', result.error);
+                showError(`Failed to save designation: ${result.error}`);
+                return;
+            }
+
+            // Clean up the contacts
+            const functionalTestData = contacts.map(contact => {
+                const updatedContact = electrodes
+                    .flatMap(electrode => electrode.contacts)
+                    .find(c => c.id === contact.id);
 
                 const pair = electrodes
                     .find(electrode => electrode.label === contact.electrodeLabel)
@@ -406,7 +468,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
                 stack: error.stack,
                 cause: error.cause
             });
-            alert('Failed to create test selection tab. Please try again.');
+            showError('Failed to create test selection tab. Please try again.');
         }
     };
 

@@ -52,7 +52,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 fileName,
                 creationDate,
                 modifiedDate,
-                savedState.patientId // Include patientId in the state
+                patientId : savedState.patientId // Include patientId in the state
             });
         }
     }, [expandedElectrode, submitFlag, electrodes, fileId, fileName, creationDate, modifiedDate, savedState.patientId]);
@@ -186,7 +186,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 stack: error.stack,
                 cause: error.cause
             });
-            alert('Failed to update contact. Please try again.');
+            showError('Failed to update contact. Please try again.');
         }
     };
 
@@ -234,7 +234,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     fileName,
                     creationDate,
                     modifiedDate,
-                    savedState.patientId // Include patient_id from savedState
+                    patientId : savedState.patientId // Include patient_id from savedState
                 })
             });
 
@@ -295,16 +295,6 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             // Update modified date
             const newModifiedDate = new Date().toISOString();
             setModifiedDate(newModifiedDate);
-            
-            // Get user ID from session
-            const userId = await getUserId();
-            console.log('Retrieved user ID:', userId);
-
-            if (!userId) {
-                console.error('No user ID found in session');
-                showError('User not authenticated. Please log in to save localizations.');
-                return;
-            }
 
             // If this is a shared file, update the changed_data in fileshares
             if (isSharedFile) {
@@ -367,8 +357,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             // Prepare data for sending to backend
             const dataToSend = {
                 electrodes: cleanedElectrodes,
-                fileId: fileId,
-                userId: userId
+                fileId: fileId
             };
             
             console.log('Sending data to backend:', JSON.stringify(dataToSend, null, 2));
@@ -391,36 +380,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             const result = await response.json();
             console.log('Backend save response:', result);
 
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to save localization data');
-            }
-
-            // Verify the data was saved by fetching it back
-            try {
-                console.log('Verifying saved data...');
-                const { data: savedData, error: fetchError } = await supabase
-                    .from('localization')
-                    .select('*')
-                    .eq('file_id', fileId);
-
-                if (fetchError) {
-                    console.error('Error verifying saved data:', fetchError);
-                } else {
-                    console.log(`Verified ${savedData?.length || 0} records saved to localization table:`, savedData);
-                    console.log('Expected records:', totalContacts);
-                    if (savedData?.length !== totalContacts) {
-                        console.error(`Mismatch in saved records! Expected ${totalContacts}, got ${savedData?.length}`);
-                    }
-                }
-            } catch (verifyError) {
-                console.error('Error verifying saved data:', verifyError);
-            }
-
             // Save to CSV if requested
-            if (download) {
-                console.log('Generating CSV file...');
-                saveCSVFile(Identifiers.LOCALIZATION, electrodes, true);
-            }
+            saveCSVFile(Identifiers.LOCALIZATION, electrodes, download);
             
             // Update tab with latest data
             onStateChange({
@@ -430,7 +391,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 fileId,
                 fileName,
                 creationDate,
-                modifiedDate: newModifiedDate
+                modifiedDate
             });
             
             // Set hasChanges to false since we just saved
@@ -558,7 +519,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             window.dispatchEvent(event);
         } catch (error) {
             console.error('Error creating designation tab:', error);
-            alert('Failed to create designation tab. Please try again.');
+            showError('Failed to create designation tab. Please try again.');
         }
     };
 
@@ -605,7 +566,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
         } catch (error) {
             console.error('Error approving file:', error);
-            alert('Failed to approve file. Please try again.');
+            showError('Failed to approve file. Please try again.');
         }
     };
 
@@ -656,11 +617,11 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             window.dispatchEvent(new CustomEvent('refreshSharedFiles'));
 
             // Show success message
-            alert('Changes submitted successfully!');
+            console.log('Changes submitted successfully!');
 
         } catch (error) {
             console.error('Error submitting changes:', error);
-            alert('Failed to submit changes. Please try again.');
+            showError('Failed to submit changes. Please try again.');
             throw error;
         }
     };
@@ -686,135 +647,42 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                             className="filename-input"
                         />
                     </div>
-                    <div className="mb-4 relative">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Description
-                        </label>
-                        <input
-                            name="description"
-                            className="w-full p-2 border border-gray-300 rounded-md"
-                            value={descriptionInput}
-                            onChange={(e) => setDescriptionInput(e.target.value)}
-                            placeholder="Enter or select description"
-                            onFocus={() => setShowSuggestions(true)}
-                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                            required
-                        />
-                        {showSuggestions && suggestions.length > 0 && (
-                            <div className="absolute bg-white border border-gray-300 w-full mt-1 rounded-md shadow-lg z-10">
-                            {suggestions.map((s, index) => (
-                                <div
-                                key={index}
-                                className="p-2 hover:bg-gray-100 cursor-pointer"
-                                onMouseDown={() => {
-                                    setDescriptionInput(`${hemisphere} ${s.description}`);
-                                    setShowSuggestions(false);
-                                }}
-                                >
-                                {hemisphere} {s.description}
-                                </div>
-                            ))}
+                    
+                        <div className="flex items-center gap-4">
+                        {!readOnly && (
+                            <>
+                            <div className="text-sm text-gray-500">
+                                <div>Created: {new Date(creationDate).toLocaleString()}</div>
+                                <div>Modified: {new Date(modifiedDate).toLocaleString()}</div>
                             </div>
-                        )}
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Electrode Contacts
-                        </label>
-                        <div className="flex space-x-4 mb-2">
-                            <button 
-                                type="button" 
-                                onClick={() => setSelectedElectrodeType('DIXI')}
-                                className={`py-2 px-4 rounded-md ${selectedElectrodeType === 'DIXI' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}
+                            <button
+                                className="w-40 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded p-2"
+                                onClick={() => handleSaveLocalization(false)}
                             >
-                                DIXI
+                                Save
                             </button>
-                            <button 
-                                type="button" 
-                                onClick={() => setSelectedElectrodeType('Adtech')}
-                                className={`py-2 px-4 rounded-md ${selectedElectrodeType === 'Adtech' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}
-                            >
-                                AdTech
-                            </button>
-                        </div>
-                        <div className="flex items-center">
-                            <input 
-                                type="range" 
-                                list="tickmarks" 
-                                min={minValue} 
-                                max={maxValue} 
-                                step="1" 
-                                value={sliderValue} 
-                                onChange={handleSliderChange} 
-                                className="flex-1"
-                            />
-                            <input 
-                                type="number" 
-                                min="1"
-                                value={sliderValue} 
-                                onChange={handleInputChange} 
-                                className="ml-2 w-16 p-2 border border-gray-300 rounded-md"
-                            />
-                        </div>
-                        <datalist id="tickmarks">
-                            {sliderMarks.map(mark => (
-                                <option key={mark} value={mark} />
-                            ))}
-                        </datalist>
-                        <div className="flex mt-0 relative" style={{ width: 'calc(100% - 5.625em)', marginLeft: '0.6em' }}>
-                            {sliderMarks.map((mark, index) => {
-                                // Calculate position as percentage
-                                const position = ((mark - minValue) / (maxValue - minValue)) * 100;
-                                return (
-                                    <div 
-                                        key={mark} 
-                                        className="text-xs text-gray-500 absolute"
-                                        style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
-                                    >
-                                        {mark}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                    <button type="submit" className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200">
-                        {editMode ? 'Update' : 'Add'}
+                    <button
+                                className="w-40 bg-green-500 hover:bg-green-600 text-white font-semibold rounded p-2"
+                                onClick={() => handleSaveLocalization(true)}
+                    >
+                                Export
                     </button>
-                </form>
-            </div>
-        );
-    };
-
-    return (
-        <div className="flex flex-col h-screen p-4">
-            <div className="p-4">
-                <div className="flex justify-between">
-                    <div className="flex items-center">
-                        <h1 className="text-2xl font-bold">Localization</h1>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="text-sm text-gray-500">
-                            <div>Created: {new Date(creationDate).toLocaleString()}</div>
-                            <div>Modified: {new Date(modifiedDate).toLocaleString()}</div>
-                        </div>
-                        {showSaveSuccess && (
-                            <div className="text-green-500 font-medium">
-                                Save successful!
-                            </div>
+                            </>
                         )}
-                        <button
-                            className="w-40 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded p-2"
-                            onClick={() => handleSaveLocalization(false)}
-                        >
-                            Save
-                        </button>
-                        <button
-                            className="w-40 bg-green-500 hover:bg-green-600 text-white font-semibold rounded p-2"
-                            onClick={() => handleSaveLocalization(true)}
-                        >
-                            Export
-                        </button>
-                    </div>
+                        {isSharedFile && (
+                            <div className="shared-file-controls">
+                                <ViewLogsButton
+                                    fileId={fileId}
+                                    highlightedChange={highlightedChange}
+                                    onHighlightChange={onHighlightChange}
+                                />
+                                {hasChanges && (
+                                    <button onClick={() => setShowApprovalModal(true)} className="submit-changes-btn">
+                                        Submit Changes
+                                    </button>
+                                )}
+                        </div>
+                    )}
                 </div>
             </div>
             </div>

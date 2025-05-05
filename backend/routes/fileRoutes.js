@@ -44,7 +44,7 @@ router.post("/files/metadata", async (req, res) => {
       return res.status(401).json({ error: "No authentication token provided" });
     }
   
-    const { fileId, fileName, creationDate, modifiedDate } = req.body;
+    const { fileId, fileName, creationDate, modifiedDate, patientId } = req.body;
   
     try {
       const { data: session } = await supabase
@@ -81,7 +81,8 @@ router.post("/files/metadata", async (req, res) => {
             owner_user_id: session.user_id,
             filename: fileName,
             creation_date: creationDate,
-            modified_date: modifiedDate
+            modified_date: modifiedDate,
+            patient_id: patientId
           });
   
         if (error) throw error;

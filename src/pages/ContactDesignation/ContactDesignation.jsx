@@ -101,7 +101,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 // Get user ID from session
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    alert('User not authenticated. Please log in to save designations.');
+                    showError('User not authenticated. Please log in to save designations.');
                     return;
                 }
                 
@@ -127,7 +127,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save designation:', result.error);
-                        alert(`Failed to save designation: ${result.error}`);
+                        showError(`Failed to save designation: ${result.error}`);
                         return;
                     }
                     
@@ -143,7 +143,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     console.log('Designation saved successfully');
                 } catch (error) {
                     console.error('Error saving designation:', error);
-                    alert(`Error saving designation: ${error.message}`);
+                    showError(`Error saving designation: ${error.message}`);
                     return;
                 }
             }

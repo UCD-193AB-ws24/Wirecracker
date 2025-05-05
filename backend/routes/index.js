@@ -9,6 +9,7 @@ import searchRoutes from './searchRoutes.js';
 import userRoutes from './userRoutes.js';
 import authRoutes from './authRoutes.js';
 import fileRoutes from './fileRoutes.js';
+import docsRoutes from './docsRoutes.js';
 
 const router = express.Router();
 router.use(cors());
@@ -24,5 +25,6 @@ router.use('/', searchRoutes);
 router.use('/', userRoutes);
 router.use('/', authRoutes);
 router.use('/', fileRoutes);
+router.use('/', docsRoutes);
 
 export default router; 
