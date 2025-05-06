@@ -11,7 +11,7 @@ router.post('/save-designation', async (req, res) => {
   try {
     console.log('Received designation save request', req.body);
     
-    const { designationData, localizationData, fileId, fileName, creationDate, modifiedDate } = req.body;
+    const { designationData, localizationData, fileId, fileName, creationDate, modifiedDate, patientId } = req.body;
     
     if (!designationData) {
       return res.status(400).json({ success: false, error: 'Missing designation data' });
@@ -25,9 +25,13 @@ router.post('/save-designation', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing file ID' });
     }
 
+    if (!patientId) {
+      return res.status(400).json({ success: false, error: 'Missing patient ID' });
+    }
+
     // Handle file record
     try {
-      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization);
+      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
     } catch (error) {
       console.error('Error saving file metadata:', error);
       return res.status(500).json({ 

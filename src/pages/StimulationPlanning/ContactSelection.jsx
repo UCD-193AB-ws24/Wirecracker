@@ -356,11 +356,10 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
                 fileName: state.fileName
             });
 
-            // First save the current designation data
             const token = localStorage.getItem('token');
             if (!token) {
                 console.error('No authentication token found');
-                showError('User not authenticated. Please log in to save designations.');
+                showError('User not authenticated. Please log in to save stimulation.');
                 return;
             }
 
@@ -370,7 +369,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': token
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
@@ -386,32 +385,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
             const parentPatientId = parentFileData.patientId;
             console.log('Retrieved patient_id from parent file:', parentPatientId);
 
-            // Save designation data to database
-            console.log('Saving designation data with patient_id:', parentPatientId);
-            const response = await fetch(`${config.backendURL}/api/save-designation`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token
-                },
-                body: JSON.stringify({
-                    electrodes: electrodes,
-                    fileId: state.fileId,
-                    fileName: state.fileName,
-                    creationDate: state.creationDate,
-                    modifiedDate: new Date().toISOString(),
-                    patientId: parentPatientId
-                }),
-            });
-
-            const result = await response.json();
-            console.log('Save designation response:', result);
-
-            if (!result.success) {
-                console.error('Failed to save designation:', result.error);
-                showError(`Failed to save designation: ${result.error}`);
-                return;
-            }
+            await handleSave();
 
             // Clean up the contacts
             const functionalTestData = contacts.map(contact => {

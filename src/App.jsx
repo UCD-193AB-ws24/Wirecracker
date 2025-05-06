@@ -545,7 +545,7 @@ const HomePage = () => {
 
         switch (type) {
             case 'localization':
-                title = 'New Localization';
+                title = 'Localization';
                 patientId = generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'csv-localization':
@@ -553,7 +553,7 @@ const HomePage = () => {
                 patientId = generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'designation':         
-                title = 'New Designation';
+                title = 'Designation';
                 patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
                 console.log('Setting patientId for designation:', {
                     finalPatientId: patientId,
@@ -564,20 +564,24 @@ const HomePage = () => {
                     }
                 });
                 break;
+            case 'csv-designation':
+                title = data.name;
+                patientId = generatePatientId();
+                break;
             case 'csv-stimulation':     
                 title = data.name;
-                patientId = data.patientId; // Use existing patient_id from parent localization
+                patientId = data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
                 break;
             case 'csv-functional-mapping': 
                 title = data.name;
-                patientId = data.patientId; // Use existing patient_id from parent localization
+                patientId = data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
                 break;
             case 'csv-functional-test':       
                 title = data.name;
-                patientId = data.patientId; // Use existing patient_id from parent localization
+                patientId = data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
                 break;
             case 'stimulation':         
-                title = 'New Stimulation Plan';
+                title = 'Stimulation Plan';
                 patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
                 console.log('Setting patientId for stimulation:', {
                     finalPatientId: patientId,
@@ -601,14 +605,6 @@ const HomePage = () => {
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
-            case 'csv-stimulation':
-                return <ContactSelection
-                    key={currentTab.id}
-                    isFunctionalMapping={false}
-                    initialData={currentTab.data}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
             case 'functional-mapping':
                 return <ContactSelection
                     key={currentTab.id}
@@ -618,23 +614,10 @@ const HomePage = () => {
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
-            case 'csv-functional-mapping':
-                return <ContactSelection
-                    key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    isFunctionalMapping={true}
-                    initialData={currentTab.data}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
             case 'functional-test':
-            case 'csv-functional-test':
-                return <FunctionalTestSelection
-                    key={currentTab.id}
-                    initialData={currentTab.data}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
+                title = 'Test Selection';
+                patientId = data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
+                break;
             case 'database-lookup':     title = 'Lookup'; break;
             default:
                 return null;

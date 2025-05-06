@@ -63,6 +63,11 @@ const FunctionalTestSelection = ({
                 selectedContact: selectedContact,
                 selectedTest: selectedTest,
                 expandedTests: expandedTests,
+                patientId: savedState.patientId,
+                fileId: savedState.fileId,
+                fileName: savedState.fileName,
+                creationDate: savedState.creationDate,
+                modifiedDate: savedState.modifiedDate
             };
         });
     }, [
@@ -73,6 +78,11 @@ const FunctionalTestSelection = ({
         selectedContact,
         selectedTest,
         expandedTests,
+        savedState.patientId,
+        savedState.fileId,
+        savedState.fileName,
+        savedState.creationDate,
+        savedState.modifiedDate
     ]);
 
     // Function to select the best test based on population and disruption rate
@@ -169,6 +179,11 @@ const FunctionalTestSelection = ({
             // First save to database if we have a file ID
             if (savedState.fileId) {
                 console.log('Saving test selection to database...');
+                console.log('Current state:', {
+                    fileId: savedState.fileId,
+                    patientId: savedState.patientId,
+                    fileName: savedState.fileName
+                });
 
                 // Get user ID from session
                 const token = localStorage.getItem('token');
@@ -191,7 +206,8 @@ const FunctionalTestSelection = ({
                             fileId: savedState.fileId,
                             fileName: savedState.fileName,
                             creationDate: savedState.creationDate,
-                            modifiedDate: new Date().toISOString()
+                            modifiedDate: new Date().toISOString(),
+                            patientId: savedState.patientId
                         }),
                     });
 

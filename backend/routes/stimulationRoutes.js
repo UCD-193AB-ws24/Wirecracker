@@ -11,7 +11,7 @@ router.post('/save-stimulation', async (req, res) => {
   try {
     console.log('Received stimulation save request', req.body);
     
-    const { electrodes, planOrder, isFunctionalMapping, fileId, fileName, creationDate, modifiedDate } = req.body;
+    const { electrodes, planOrder, isFunctionalMapping, fileId, fileName, creationDate, modifiedDate, patientId } = req.body;
     
     if (!electrodes) {
       return res.status(400).json({ success: false, error: 'Missing electrodes data' });
@@ -28,12 +28,16 @@ router.post('/save-stimulation', async (req, res) => {
     if (isFunctionalMapping === undefined) {
       return res.status(400).json({ success: false, error: 'Missing isFunctionalMapping flag' });
     }
+
+    if (!patientId) {
+      return res.status(400).json({ success: false, error: 'Missing patient ID' });
+    }
     
     console.log(`Processing stimulation save request for file ID: ${fileId}`);
 
     // Handle file record
     try {
-      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization);
+      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
     } catch (error) {
       console.error('Error saving file metadata:', error);
       return res.status(500).json({ 

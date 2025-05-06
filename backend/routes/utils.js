@@ -32,9 +32,10 @@ export const TABLE_NAMES = [
  * @param {string} creationDate - The creation date of the file
  * @param {string} modifiedDate - The last modified date of the file
  * @param {string} token - The authorization token for the user session
+ * @param {string} patientId - The ID of the patient associated with the file
  * @returns {Promise<void>} - Resolves when the operation is complete, throws on error
  */
-export async function handleFileRecord(fileId, fileName, creationDate, modifiedDate, token) {
+export async function handleFileRecord(fileId, fileName, creationDate, modifiedDate, token, patientId) {
   // Check if file record already exists
   const { data: existingFile } = await supabase
     .from('files')
@@ -48,7 +49,8 @@ export async function handleFileRecord(fileId, fileName, creationDate, modifiedD
       .from('files')
       .update({
         filename: fileName,
-        modified_date: modifiedDate
+        modified_date: modifiedDate,
+        patient_id: patientId
       })
       .eq('file_id', fileId);
 
@@ -77,7 +79,8 @@ export async function handleFileRecord(fileId, fileName, creationDate, modifiedD
         owner_user_id: session.user_id,
         filename: fileName,
         creation_date: creationDate,
-        modified_date: modifiedDate
+        modified_date: modifiedDate,
+        patient_id: patientId
       });
 
     if (fileError) throw fileError;
