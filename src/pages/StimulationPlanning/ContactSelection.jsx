@@ -366,27 +366,24 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
 
             // Fetch patient_id from the parent file
             console.log('Fetching patient_id from parent file...');
-            const parentFileResponse = await fetch(`${config.backendURL}/api/get-file-metadata`, {
-                method: 'POST',
+            const parentFileResponse = await fetch(`${config.backendURL}/api/files/patient/${state.fileId}`, {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': token
-                },
-                body: JSON.stringify({
-                    fileId: state.fileId
-                })
+                }
             });
 
             const parentFileData = await parentFileResponse.json();
             console.log('Parent file metadata response:', parentFileData);
 
-            if (!parentFileData.success) {
+            if (!parentFileData.patientId) {
                 console.error('Failed to fetch parent file metadata:', parentFileData.error);
                 showError('Failed to fetch parent file metadata. Please try again.');
                 return;
             }
 
-            const parentPatientId = parentFileData.data.patient_id;
+            const parentPatientId = parentFileData.patientId;
             console.log('Retrieved patient_id from parent file:', parentPatientId);
 
             // Save designation data to database

@@ -223,4 +223,41 @@ router.get("/files/localization", async (req, res) => {
     }
 });
 
+// Get patient ID from file
+router.get("/files/patient/:fileId", async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: "No authentication token provided" });
+    }
+
+    const { fileId } = req.params;
+    if (!fileId) {
+        return res.status(400).json({ error: "File ID is required" });
+    }
+
+    try {
+        const { data: session } = await supabase
+            .from('sessions')
+            .select('user_id')
+            .eq('token', token)
+            .single();
+
+        if (!session?.user_id) {
+            return res.status(401).json({ error: "Invalid or expired session" });
+        }
+
+        const { data: file, error } = await supabase
+            .from('files')
+            .select('patient_id')
+            .eq('file_id', fileId)
+            .single();
+
+        if (error) throw error;
+        res.json({ patientId: file?.patient_id });
+    } catch (error) {
+        console.error('Error fetching patient ID:', error);
+        res.status(500).json({ error: "Error fetching patient ID" });
+    }
+});
+
 export default router;

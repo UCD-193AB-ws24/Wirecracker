@@ -191,24 +191,30 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
     };
 
     const checkForChanges = async (currentElectrodes) => {
-                    try {
-                        const userId = await getUserId();
-                        if (!userId) return;
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
 
-                        const { data: shareData } = await supabase
-                            .from('fileshares')
-                            .select('current_snapshot')
-                            .eq('file_id', fileId)
-                            .eq('shared_with_user_id', userId)
-                            .single();
+            const response = await fetch(`${backendURL}/api/logs/${fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-                        if (shareData) {
-                const changes = calculateChanges(shareData.current_snapshot, currentElectrodes);
-                            setHasChanges(Object.keys(changes).length > 0);
-                        }
-                    } catch (error) {
-                        console.error('Error checking for changes:', error);
-                    }
+            if (!response.ok) {
+                throw new Error('Failed to fetch file logs');
+            }
+
+            const logs = await response.json();
+            const latestSnapshot = logs.find(log => log.type === 'changes')?.snapshot;
+
+            if (latestSnapshot) {
+                const changes = calculateChanges(latestSnapshot, currentElectrodes);
+                setHasChanges(Object.keys(changes).length > 0);
+            }
+        } catch (error) {
+            console.error('Error checking for changes:', error);
+        }
     };
 
     const handleFileNameChange = (e) => {
@@ -301,40 +307,39 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 try {
                     console.log('Handling shared file update...');
                     // Get the current share record to preserve current_snapshot
-                    const { data: shareData, error: shareError } = await supabase
-                        .from('fileshares')
-                        .select('current_snapshot')
-                        .eq('file_id', fileId)
-                        .eq('shared_with_user_id', userId)
-                        .single();
+                    const logsResponse = await fetch(`${backendURL}/api/logs/${fileId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
 
-                    if (shareError) {
-                        console.error('Error fetching share data:', shareError);
-                        throw shareError;
+                    if (!logsResponse.ok) {
+                        throw new Error('Failed to fetch file logs');
                     }
 
-                    console.log('Current snapshot:', shareData.current_snapshot);
+                    const logs = await logsResponse.json();
+                    const latestSnapshot = logs.find(log => log.type === 'changes')?.snapshot;
+
+                    console.log('Current snapshot:', latestSnapshot);
 
                     // Calculate changes by comparing current state with snapshot
-                    const changes = calculateChanges(shareData.current_snapshot, cleanedElectrodes);
+                    const changes = calculateChanges(latestSnapshot, cleanedElectrodes);
                     console.log('Calculated changes:', changes);
 
                     if (Object.keys(changes).length > 0) {
                         // Update fileshares with changes
-                        const { error: updateError } = await supabase
-                            .from('fileshares')
-                            .update({
-                                changed_data: changes,
-                                status: 'changes_suggested'
-                            })
-                            .eq('file_id', fileId)
-                            .eq('shared_with_user_id', userId);
+                        const updateResponse = await fetch(`${backendURL}/api/submit-changes/${fileId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ changes })
+                        });
 
-                        if (updateError) {
-                            console.error('Error updating shared file:', updateError);
-                            throw updateError;
+                        if (!updateResponse.ok) {
+                            throw new Error('Failed to update shared file');
                         }
-                        console.log('Successfully updated shared file changes');
                     }
                 } catch (error) {
                     console.error('Error updating shared file changes:', error);
@@ -484,20 +489,26 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             await handleSaveLocalization(false);
             
             // Get the patient_id from the files table
-            const { data: fileData, error: fileError } = await supabase
-                .from('files')
-                .select('patient_id')
-                .eq('file_id', fileId)
-                .single();
-
-            if (fileError) {
-                console.error('Error fetching patient_id:', fileError);
-                return;
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No authentication token found');
             }
 
+            const response = await fetch(`${backendURL}/api/files/patient/${fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch patient ID');
+            }
+
+            const { patientId } = await response.json();
+            
             console.log('Creating designation tab with patientId:', {
                 fromSavedState: savedState.patientId,
-                fromFileData: fileData.patient_id,
+                fromFileData: patientId,
                 fileId: fileId
             });
             
@@ -511,9 +522,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     data: designationData,
                     localizationData: {
                         ...electrodes,
-                        patientId: fileData.patient_id
+                        patientId: patientId
                     },
-                    patientId: fileData.patient_id // Pass patientId directly
+                    patientId: patientId // Pass patientId directly
                 }
             });
             window.dispatchEvent(event);
@@ -525,35 +536,23 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
     const handleApproveFile = async () => {
         try {
-            // Get current user's ID
             const token = localStorage.getItem('token');
-            const { data: session } = await supabase
-                .from('sessions')
-                .select('user_id')
-                .eq('token', token)
-                .single();
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
 
-            if (!session) throw new Error('No active session');
+            // Remove from fileshares and add to approved_files
+            const response = await fetch(`${backendURL}/api/approve/${fileId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
 
-            // Remove from fileshares
-            const { error: deleteError } = await supabase
-                .from('fileshares')
-                .delete()
-                .eq('file_id', fileId)
-                .eq('shared_with_user_id', session.user_id);
-
-            if (deleteError) throw deleteError;
-
-            // Add to approved_files
-            const { error: approvedError } = await supabase
-                .from('approved_files')
-                .insert({
-                    file_id: fileId,
-                    approved_by_user_id: session.user_id,
-                    approved_date: new Date().toISOString()
-                });
-
-            if (approvedError) throw approvedError;
+            if (!response.ok) {
+                throw new Error('Failed to approve file');
+            }
 
             // Close the current tab
             const event = new CustomEvent('closeTab', {
@@ -572,40 +571,41 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
     const handleSubmitChanges = async () => {
         try {
-            // Get current user's ID
             const token = localStorage.getItem('token');
-            const { data: session } = await supabase
-                .from('sessions')
-                .select('user_id')
-                .eq('token', token)
-                .single();
-
-            if (!session) throw new Error('No active session');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
 
             // Get the current share record
-            const { data: shareData, error: shareError } = await supabase
-                .from('fileshares')
-                .select('current_snapshot')
-                .eq('file_id', fileId)
-                .eq('shared_with_user_id', session.user_id)
-                .single();
+            const logsResponse = await fetch(`${backendURL}/api/logs/${fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-            if (shareError) throw shareError;
+            if (!logsResponse.ok) {
+                throw new Error('Failed to fetch file logs');
+            }
+
+            const logs = await logsResponse.json();
+            const latestSnapshot = logs.find(log => log.type === 'changes')?.snapshot;
 
             // Calculate changes by comparing current state with snapshot
-            const changes = calculateChanges(shareData.current_snapshot, electrodes);
+            const changes = calculateChanges(latestSnapshot, electrodes);
 
-            // Update fileshares with changes and status
-            const { error: updateError } = await supabase
-                .from('fileshares')
-                .update({
-                    changed_data: changes,
-                    status: 'changes_suggested'
-                })
-                .eq('file_id', fileId)
-                .eq('shared_with_user_id', session.user_id);
+            // Submit changes
+            const submitResponse = await fetch(`${backendURL}/api/submit-changes/${fileId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ changes })
+            });
 
-            if (updateError) throw updateError;
+            if (!submitResponse.ok) {
+                throw new Error('Failed to submit changes');
+            }
 
             // Close the current tab
             const event = new CustomEvent('closeTab', {
@@ -655,6 +655,11 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                                 <div>Created: {new Date(creationDate).toLocaleString()}</div>
                                 <div>Modified: {new Date(modifiedDate).toLocaleString()}</div>
                             </div>
+                            {showSaveSuccess && (
+                                <div className="text-green-500 font-medium">
+                                    Save successful!
+                                </div>
+                            )}
                             <button
                                 className="w-40 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded p-2"
                                 onClick={() => handleSaveLocalization(false)}
