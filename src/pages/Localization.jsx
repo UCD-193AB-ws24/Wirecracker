@@ -2,16 +2,17 @@ import { useState, useEffect } from 'react';
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import 'reactjs-popup/dist/index.css';
 import { saveCSVFile, Identifiers } from '../utils/CSVParser.js';
-import { supabase } from '../utils/supabaseClient';
 import config from "../../config.json" with { type: 'json' };
 import ViewLogsButton from '../components/localization/ViewLogsButton';
 import LocalizationContact from '../components/localization/localizationContact';
 import EditElectrodeModal from '../components/localization/EditElectrodeModal';
 import Electrodes from '../components/localization/Electrodes';
+import { useError } from '../context/ErrorContext';
 
 const backendURL = config.backendURL;
 
 const Localization = ({ initialData = {}, onStateChange, savedState = {}, isSharedFile = false, readOnly = false, changesData = null, highlightedChange = null, onHighlightChange = () => {}, expandedElectrode: initialExpandedElectrode = null }) => {
+    const { showError } = useError();
     const [expandedElectrode, setExpandedElectrode] = useState(initialExpandedElectrode || '');
     const [submitFlag, setSubmitFlag] = useState(savedState.submitFlag || false);
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || {});
@@ -22,6 +23,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
     const [showApprovalModal, setShowApprovalModal] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
     const [showElectrodeModal, setShowElectrodeModal] = useState(false);
+    const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
     useEffect(() => {
         if (initialData.data && !savedState.electrodes) {
@@ -50,7 +52,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 fileName,
                 creationDate,
                 modifiedDate,
-                patientId: savedState.patientId // Include patientId in the state
+                patientId : savedState.patientId // Include patientId in the state
             });
         }
     }, [expandedElectrode, submitFlag, electrodes, fileId, fileName, creationDate, modifiedDate, savedState.patientId]);
@@ -184,29 +186,35 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 stack: error.stack,
                 cause: error.cause
             });
-            alert('Failed to update contact. Please try again.');
+            showError('Failed to update contact. Please try again.');
         }
     };
 
     const checkForChanges = async (currentElectrodes) => {
-                    try {
-                        const userId = await getUserId();
-                        if (!userId) return;
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
 
-                        const { data: shareData } = await supabase
-                            .from('fileshares')
-                            .select('current_snapshot')
-                            .eq('file_id', fileId)
-                            .eq('shared_with_user_id', userId)
-                            .single();
+            const response = await fetch(`${backendURL}/api/logs/${fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-                        if (shareData) {
-                const changes = calculateChanges(shareData.current_snapshot, currentElectrodes);
-                            setHasChanges(Object.keys(changes).length > 0);
-                        }
-                    } catch (error) {
-                        console.error('Error checking for changes:', error);
-                    }
+            if (!response.ok) {
+                throw new Error('Failed to fetch file logs');
+            }
+
+            const logs = await response.json();
+            const latestSnapshot = logs.find(log => log.type === 'changes')?.snapshot;
+
+            if (latestSnapshot) {
+                const changes = calculateChanges(latestSnapshot, currentElectrodes);
+                setHasChanges(Object.keys(changes).length > 0);
+            }
+        } catch (error) {
+            console.error('Error checking for changes:', error);
+        }
     };
 
     const handleFileNameChange = (e) => {
@@ -214,65 +222,37 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         setModifiedDate(new Date().toISOString());
     };
 
-    const saveFileMetadata = async (userId) => {
+    const saveFileMetadata = async () => {
         try {
-            // Check if file record already exists
-            const { data: existingFile } = await supabase
-                .from('files')
-                .select('*')
-                .eq('file_id', fileId)
-                .single();
-
-            if (existingFile) {
-                // Update existing file record
-                const { error } = await supabase
-                    .from('files')
-                    .update({
-                        filename: fileName,
-                        modified_date: modifiedDate
-                    })
-                    .eq('file_id', fileId);
-
-                if (error) throw error;
-            } else {
-                // Insert new file record
-                const { error } = await supabase
-                    .from('files')
-                    .insert({
-                        file_id: fileId,
-                        owner_user_id: userId,
-                        filename: fileName,
-                        creation_date: creationDate,
-                        modified_date: modifiedDate,
-                        patient_id: savedState.patientId // Include patient_id from savedState
-                    });
-
-                if (error) {
-                    console.error('File insert error:', error);
-                    throw error;
-                }
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No authentication token found');
             }
+
+            const response = await fetch(`${backendURL}/api/files/metadata`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    fileId,
+                    fileName,
+                    creationDate,
+                    modifiedDate,
+                    patientId : savedState.patientId // Include patient_id from savedState
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to save file metadata');
+            }
+
+            return await response.json();
         } catch (error) {
             console.error('Error saving file metadata:', error);
             throw error;
-        }
-    };
-
-    const getUserId = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) return null;
-        
-        try {
-            const { data: session } = await supabase
-                .from('sessions')
-                .select('user_id')
-                .eq('token', token)
-                .single();
-
-            return session?.user_id || null;
-        } catch (error) {
-            console.error('Error fetching user ID:', error);
-            return null;
         }
     };
 
@@ -321,71 +301,60 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             // Update modified date
             const newModifiedDate = new Date().toISOString();
             setModifiedDate(newModifiedDate);
-            
-            // Get user ID from session
-            const userId = await getUserId();
-            console.log('Retrieved user ID:', userId);
-
-            if (!userId) {
-                console.error('No user ID found in session');
-                alert('User not authenticated. Please log in to save localizations.');
-                return;
-            }
 
             // If this is a shared file, update the changed_data in fileshares
             if (isSharedFile) {
                 try {
                     console.log('Handling shared file update...');
                     // Get the current share record to preserve current_snapshot
-                    const { data: shareData, error: shareError } = await supabase
-                        .from('fileshares')
-                        .select('current_snapshot')
-                        .eq('file_id', fileId)
-                        .eq('shared_with_user_id', userId)
-                        .single();
+                    const logsResponse = await fetch(`${backendURL}/api/logs/${fileId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
 
-                    if (shareError) {
-                        console.error('Error fetching share data:', shareError);
-                        throw shareError;
+                    if (!logsResponse.ok) {
+                        throw new Error('Failed to fetch file logs');
                     }
 
-                    console.log('Current snapshot:', shareData.current_snapshot);
+                    const logs = await logsResponse.json();
+                    const latestSnapshot = logs.find(log => log.type === 'changes')?.snapshot;
+
+                    console.log('Current snapshot:', latestSnapshot);
 
                     // Calculate changes by comparing current state with snapshot
-                    const changes = calculateChanges(shareData.current_snapshot, cleanedElectrodes);
+                    const changes = calculateChanges(latestSnapshot, cleanedElectrodes);
                     console.log('Calculated changes:', changes);
 
                     if (Object.keys(changes).length > 0) {
                         // Update fileshares with changes
-                        const { error: updateError } = await supabase
-                            .from('fileshares')
-                            .update({
-                                changed_data: changes,
-                                status: 'changes_suggested'
-                            })
-                            .eq('file_id', fileId)
-                            .eq('shared_with_user_id', userId);
+                        const updateResponse = await fetch(`${backendURL}/api/submit-changes/${fileId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ changes })
+                        });
 
-                        if (updateError) {
-                            console.error('Error updating shared file:', updateError);
-                            throw updateError;
+                        if (!updateResponse.ok) {
+                            throw new Error('Failed to update shared file');
                         }
-                        console.log('Successfully updated shared file changes');
                     }
                 } catch (error) {
                     console.error('Error updating shared file changes:', error);
-                    alert('Failed to save changes to shared file');
+                    showError('Failed to save changes to shared file');
                     return;
                 }
             } else {
                 // Regular save for non-shared files
                 try {
                     console.log('Saving file metadata...');
-                    await saveFileMetadata(userId);
+                    await saveFileMetadata();
                     console.log('File metadata saved successfully');
                 } catch (metadataError) {
                     console.error('Error saving file metadata:', metadataError);
-                    alert(`File metadata error: ${metadataError.message}`);
+                    showError(`File metadata error: ${metadataError.message}`);
                     return;
                 }
             }
@@ -393,8 +362,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             // Prepare data for sending to backend
             const dataToSend = {
                 electrodes: cleanedElectrodes,
-                fileId: fileId,
-                userId: userId
+                fileId: fileId
             };
             
             console.log('Sending data to backend:', JSON.stringify(dataToSend, null, 2));
@@ -417,36 +385,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             const result = await response.json();
             console.log('Backend save response:', result);
 
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to save localization data');
-            }
-
-            // Verify the data was saved by fetching it back
-            try {
-                console.log('Verifying saved data...');
-                const { data: savedData, error: fetchError } = await supabase
-                    .from('localization')
-                    .select('*')
-                    .eq('file_id', fileId);
-
-                if (fetchError) {
-                    console.error('Error verifying saved data:', fetchError);
-                } else {
-                    console.log(`Verified ${savedData?.length || 0} records saved to localization table:`, savedData);
-                    console.log('Expected records:', totalContacts);
-                    if (savedData?.length !== totalContacts) {
-                        console.error(`Mismatch in saved records! Expected ${totalContacts}, got ${savedData?.length}`);
-                    }
-                }
-            } catch (verifyError) {
-                console.error('Error verifying saved data:', verifyError);
-            }
-
             // Save to CSV if requested
-            if (download) {
-                console.log('Generating CSV file...');
-                saveCSVFile(Identifiers.LOCALIZATION, electrodes, true);
-            }
+            saveCSVFile(Identifiers.LOCALIZATION, electrodes, download);
             
             // Update tab with latest data
             onStateChange({
@@ -456,22 +396,18 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 fileId,
                 fileName,
                 creationDate,
-                modifiedDate: newModifiedDate
+                modifiedDate
             });
             
             // Set hasChanges to false since we just saved
             setHasChanges(false);
-            
-            console.log('Save process completed successfully');
-            alert('Localization saved successfully!');
-        } catch (error) {
+            // Show success message
+            setShowSaveSuccess(true);
+            setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
+        }
+        catch (error) {
             console.error('Error saving localization:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                cause: error.cause
-            });
-            alert(`Failed to save localization: ${error.message}`);
+            showError(`Failed to save localization. ${error.message}`);
         }
     };
 
@@ -553,20 +489,26 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             await handleSaveLocalization(false);
             
             // Get the patient_id from the files table
-            const { data: fileData, error: fileError } = await supabase
-                .from('files')
-                .select('patient_id')
-                .eq('file_id', fileId)
-                .single();
-
-            if (fileError) {
-                console.error('Error fetching patient_id:', fileError);
-                return;
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No authentication token found');
             }
 
+            const response = await fetch(`${backendURL}/api/files/patient/${fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch patient ID');
+            }
+
+            const { patientId } = await response.json();
+            
             console.log('Creating designation tab with patientId:', {
                 fromSavedState: savedState.patientId,
-                fromFileData: fileData.patient_id,
+                fromFileData: patientId,
                 fileId: fileId
             });
             
@@ -580,49 +522,37 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     data: designationData,
                     localizationData: {
                         ...electrodes,
-                        patientId: fileData.patient_id
+                        patientId: patientId
                     },
-                    patientId: fileData.patient_id // Pass patientId directly
+                    patientId: patientId // Pass patientId directly
                 }
             });
             window.dispatchEvent(event);
         } catch (error) {
             console.error('Error creating designation tab:', error);
-            alert('Failed to create designation tab. Please try again.');
+            showError('Failed to create designation tab. Please try again.');
         }
     };
 
     const handleApproveFile = async () => {
         try {
-            // Get current user's ID
             const token = localStorage.getItem('token');
-            const { data: session } = await supabase
-                .from('sessions')
-                .select('user_id')
-                .eq('token', token)
-                .single();
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
 
-            if (!session) throw new Error('No active session');
+            // Remove from fileshares and add to approved_files
+            const response = await fetch(`${backendURL}/api/approve/${fileId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
 
-            // Remove from fileshares
-            const { error: deleteError } = await supabase
-                .from('fileshares')
-                .delete()
-                .eq('file_id', fileId)
-                .eq('shared_with_user_id', session.user_id);
-
-            if (deleteError) throw deleteError;
-
-            // Add to approved_files
-            const { error: approvedError } = await supabase
-                .from('approved_files')
-                .insert({
-                    file_id: fileId,
-                    approved_by_user_id: session.user_id,
-                    approved_date: new Date().toISOString()
-                });
-
-            if (approvedError) throw approvedError;
+            if (!response.ok) {
+                throw new Error('Failed to approve file');
+            }
 
             // Close the current tab
             const event = new CustomEvent('closeTab', {
@@ -635,46 +565,47 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
         } catch (error) {
             console.error('Error approving file:', error);
-            alert('Failed to approve file. Please try again.');
+            showError('Failed to approve file. Please try again.');
         }
     };
 
     const handleSubmitChanges = async () => {
         try {
-            // Get current user's ID
             const token = localStorage.getItem('token');
-            const { data: session } = await supabase
-                .from('sessions')
-                .select('user_id')
-                .eq('token', token)
-                .single();
-
-            if (!session) throw new Error('No active session');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
 
             // Get the current share record
-            const { data: shareData, error: shareError } = await supabase
-                .from('fileshares')
-                .select('current_snapshot')
-                .eq('file_id', fileId)
-                .eq('shared_with_user_id', session.user_id)
-                .single();
+            const logsResponse = await fetch(`${backendURL}/api/logs/${fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-            if (shareError) throw shareError;
+            if (!logsResponse.ok) {
+                throw new Error('Failed to fetch file logs');
+            }
+
+            const logs = await logsResponse.json();
+            const latestSnapshot = logs.find(log => log.type === 'changes')?.snapshot;
 
             // Calculate changes by comparing current state with snapshot
-            const changes = calculateChanges(shareData.current_snapshot, electrodes);
+            const changes = calculateChanges(latestSnapshot, electrodes);
 
-            // Update fileshares with changes and status
-            const { error: updateError } = await supabase
-                .from('fileshares')
-                .update({
-                    changed_data: changes,
-                    status: 'changes_suggested'
-                })
-                .eq('file_id', fileId)
-                .eq('shared_with_user_id', session.user_id);
+            // Submit changes
+            const submitResponse = await fetch(`${backendURL}/api/submit-changes/${fileId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ changes })
+            });
 
-            if (updateError) throw updateError;
+            if (!submitResponse.ok) {
+                throw new Error('Failed to submit changes');
+            }
 
             // Close the current tab
             const event = new CustomEvent('closeTab', {
@@ -686,11 +617,11 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             window.dispatchEvent(new CustomEvent('refreshSharedFiles'));
 
             // Show success message
-            alert('Changes submitted successfully!');
+            console.log('Changes submitted successfully!');
 
         } catch (error) {
             console.error('Error submitting changes:', error);
-            alert('Failed to submit changes. Please try again.');
+            showError('Failed to submit changes. Please try again.');
             throw error;
         }
     };
@@ -724,6 +655,11 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                                 <div>Created: {new Date(creationDate).toLocaleString()}</div>
                                 <div>Modified: {new Date(modifiedDate).toLocaleString()}</div>
                             </div>
+                            {showSaveSuccess && (
+                                <div className="text-green-500 font-medium">
+                                    Save successful!
+                                </div>
+                            )}
                             <button
                                 className="w-40 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded p-2"
                                 onClick={() => handleSaveLocalization(false)}

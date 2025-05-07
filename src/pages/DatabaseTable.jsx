@@ -10,7 +10,7 @@ const DatabaseTable = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`${backendURL}:5000/api/tables/${table}`)
+        fetch(`${backendURL}/api/tables/${table}`)
             .then(response => response.json())
             .then(data => {
                 setData(data);

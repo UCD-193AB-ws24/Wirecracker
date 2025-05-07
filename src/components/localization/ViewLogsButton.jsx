@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import Popup from 'reactjs-popup';
-import { supabase } from '../../utils/supabaseClient';
-import Localization from '../../pages/Localization';
+import Localization from '../../pages/Localization.jsx';
+import { useError } from '../../context/ErrorContext.jsx'
+import config from "../../../config.json" with { type: 'json' };
+
+const backendURL = config.backendURL;
 
 const ViewLogsButton = ({ fileId, onHighlightChange }) => {
     const [showLogs, setShowLogs] = useState(false);
@@ -13,45 +16,11 @@ const ViewLogsButton = ({ fileId, onHighlightChange }) => {
     useEffect(() => {
         const fetchLogs = async () => {
             try {
-                // Get approvals
-                const { data: approvals } = await supabase
-                    .from('approved_files')
-                    .select(`
-                        approved_date,
-                        approved_by:approved_by_user_id(name)
-                    `)
-                    .eq('file_id', fileId);
-
-                // Get suggested changes
-                const { data: suggestions } = await supabase
-                    .from('fileshares')
-                    .select(`
-                        shared_date,
-                        changed_data,
-                        current_snapshot,
-                        shared_with:shared_with_user_id(name),
-                        status
-                    `)
-                    .eq('file_id', fileId)
-                    .eq('status', 'changes_suggested');
-
-                const allLogs = [
-                    ...(approvals?.map(a => ({
-                        type: 'approval',
-                        date: a.approved_date,
-                        user: a.approved_by?.name,
-                        message: `File approved by: ${a.approved_by?.name}`
-                    })) || []),
-                    ...(suggestions?.map(s => ({
-                        type: 'changes',
-                        date: s.shared_date,
-                        user: s.shared_with?.name,
-                        message: `Changes suggested by: ${s.shared_with?.name}`,
-                        changes: s.changed_data,
-                        snapshot: s.current_snapshot
-                    })) || [])
-                ].sort((a, b) => new Date(b.date) - new Date(a.date));
-
+                const response = await fetch(`${backendURL}/api/fileShare/logs/${fileId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch logs');
+                }
+                const allLogs = await response.json();
                 setLogs(allLogs);
             } catch (error) {
                 console.error('Error fetching logs:', error);
