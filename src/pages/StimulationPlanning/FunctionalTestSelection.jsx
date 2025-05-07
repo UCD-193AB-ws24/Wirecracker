@@ -13,13 +13,22 @@ const FunctionalTestSelection = ({
 }) => {
     const { showError } = useError();
     const allAvailableTests = demoTestData;
-
-    const [contacts, setContacts] = useState(
-        savedState.contacts || initialData.data.contacts || demoContactsData
-    );
+    const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || null);
+    const [contactPairs, setContactPairs] = useState(() => {
+        if (savedState.contactPairs) return savedState.contactPairs;
+        if (initialData.data) {
+            console.log(initialData)
+            return initialData.data.map(electrode => {
+                return mapConsecutive(electrode.contacts, 2,
+                    (contacts) => {return contacts});
+            })
+            .flat()
+            .sort((a, b) => a[0].order - b[0].order);
+        }
+    })
     const [tests, setTests] = useState(() => {
         if (savedState.tests) return savedState.tests;
-        if (initialData.data.tests) {
+        if (initialData.tests) {
             let loadedTests = {};
             Object.entries(initialData.data.tests).map(([contactID, tests]) => { // for each contact
                 loadedTests[contactID] = tests.map(test => {
@@ -58,7 +67,8 @@ const FunctionalTestSelection = ({
     useEffect(() => {
         setState(() => {
             return {
-                contacts: contacts,
+                electrodes: electrodes,
+                contactPairs: contactPairs,
                 tests: tests,
                 availableTests: availableTests,
                 showPopup: showPopup,
@@ -73,7 +83,8 @@ const FunctionalTestSelection = ({
             };
         });
     }, [
-        contacts,
+        electrodes,
+        contactPairs,
         tests,
         availableTests,
         showPopup,
@@ -122,13 +133,14 @@ const FunctionalTestSelection = ({
     // Automatically assigns the best test to each contact
     const autoAssignTests = () => {
         const newTests = {};
-        contacts.forEach((contact) => {
+        contactPairs.forEach((contactPair) => {
             const availableTests = allAvailableTests.filter(
-                (test) => test.region === contact.associatedLocation,
+                (test) => (test.region === contactPair[0].associatedLocation) ||
+                          (test.region === contactPair[1].associatedLocation),
             );
             if (availableTests.length > 0) {
                 const bestTest = selectBestTest(availableTests);
-                newTests[contact.id] = [bestTest];
+                newTests[contactPair[0].id] = [bestTest];
             }
         });
         setTests(newTests);
@@ -176,7 +188,7 @@ const FunctionalTestSelection = ({
         });
     };
 
-    const exportTests = async (tests, contacts, download = true) => {
+    const exportTests = async (tests, contactPairs, download = true) => {
         try {
             // First save to database if we have a file ID
             if (savedState.fileId) {
@@ -204,7 +216,7 @@ const FunctionalTestSelection = ({
                         },
                         body: JSON.stringify({
                             tests: tests,
-                            contacts: contacts,
+                            contactPairs: contactPairs,
                             fileId: savedState.fileId,
                             fileName: savedState.fileName,
                             creationDate: savedState.creationDate,
@@ -241,16 +253,16 @@ const FunctionalTestSelection = ({
             }
 
             // Then export to CSV if download is true
-            if (download) {
-                saveTestCSVFile(tests, contacts, download);
-            }
+            // if (download) {
+            //     saveTestCSVFile(tests, contactPairs, download);
+            // }
         } catch (error) {
             console.error("Error exporting contacts:", error);
             showError(`Error exporting contacts: ${error.message}`);
         }
     };
 
-    console.log(contacts)
+    console.log(contactPairs)
 
     return (
         <div className="p-12 bg-gray-50 min-h-screen">
@@ -267,11 +279,12 @@ const FunctionalTestSelection = ({
             </button>
 
             <div className="bg-white py-4 px-40 shadow-md rounded-lg">
-                {mapConsecutive(contacts, 2, (contactPair) => (
+                {contactPairs.map((contactPair) => (
                     <div
                         key={contactPair[0].id}
                         className="border p-4 mb-4 rounded-lg shadow-sm bg-gray-100"
                     >
+                        {console.log(contactPair)}
                         <div className="flex justify-between items-center">
                             <span className="font-semibold text-lg">
                                 {contactPair[0].id}-{contactPair[1].id}
@@ -489,6 +502,17 @@ const FunctionalTestSelection = ({
                     onClick={() => exportTests(tests, contacts)}
                 >
                     Export
+                </button>
+            </div>
+
+            {/* Floating Back Button at the Bottom Left */}
+            <div className="fixed bottom-2 left-2 z-50
+                            lg:bottom-6 lg:left-6">
+                <button
+                    className="py-1 px-2 border border-sky-800 bg-sky-600 text-white text-sm text-center font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800
+                               lg:py-2 lg:px-4 lg:text-base"
+                    onClick={() => switchContent('stimulation')}>
+                    Back
                 </button>
             </div>
         </div>
