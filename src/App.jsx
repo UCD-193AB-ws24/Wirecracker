@@ -922,29 +922,12 @@ const HomePage = () => {
                     switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     savedState={currentTab.state}
                 />;
-            case 'functional-mapping':
-                return <ContactSelection
-                    key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    isFunctionalMapping={true}
-                    initialData={{}}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
-            case 'csv-functional-mapping':
-                return <ContactSelection
-                    key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    isFunctionalMapping={true}
-                    initialData={currentTab.data}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
             case 'functional-test':
             case 'csv-functional-test':
                 return <FunctionalTestSelection
                     key={currentTab.id}
                     initialData={currentTab.data}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;

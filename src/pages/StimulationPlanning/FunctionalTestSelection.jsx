@@ -3,10 +3,12 @@ import { demoContactsData, demoTestData } from "./demoContactsData";
 import { saveTestCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
+import mapConsecutive from "../../utils/MapConsecutive";
 
 const FunctionalTestSelection = ({
     initialData = {},
     onStateChange,
+    switchContent,
     savedState = {},
 }) => {
     const { showError } = useError();
@@ -248,6 +250,8 @@ const FunctionalTestSelection = ({
         }
     };
 
+    console.log(contacts)
+
     return (
         <div className="p-12 bg-gray-50 min-h-screen">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">
@@ -263,36 +267,36 @@ const FunctionalTestSelection = ({
             </button>
 
             <div className="bg-white py-4 px-40 shadow-md rounded-lg">
-                {contacts.map((contact) => (
+                {mapConsecutive(contacts, 2, (contactPair) => (
                     <div
-                        key={contact.id}
+                        key={contactPair[0].id}
                         className="border p-4 mb-4 rounded-lg shadow-sm bg-gray-100"
                     >
                         <div className="flex justify-between items-center">
                             <span className="font-semibold text-lg">
-                                {contact.id}
+                                {contactPair[0].id}-{contactPair[1].id}
                             </span>
                             <span className="text-gray-600 text-sm">
-                                {contact.associatedLocation}
+                                {contactPair[0].associatedLocation} - {contactPair[1].associatedLocation}
                             </span>
                         </div>
                         <div className="text-gray-500 text-sm">
-                            Duration: {contact.duration} sec | Frequency:{" "}
-                            {contact.frequency} Hz | Current: {contact.current}{" "}
+                            Duration: {contactPair[0].duration} sec | Frequency:{" "}
+                            {contactPair[0].frequency} Hz | Current: {contactPair[0].current}{" "}
                             mA
                         </div>
 
                         {/* Display added tests */}
                         <div className="mt-2">
-                            {tests[contact.id]?.map((test, index) => {
-                                const testKey = `${contact.id}-${test.id}`;
+                            {tests[contactPair[0].id]?.map((test, index) => {
+                                const testKey = `${contactPair[0].id} - ${test.id}`;
                                 return (
                                     <div
                                         key={index}
                                         className="bg-blue-100 p-3 rounded mt-1 cursor-pointer"
                                         onClick={() =>
                                             toggleTestDetails(
-                                                contact.id,
+                                                contactPair[0].id,
                                                 test.id,
                                             )
                                         }
@@ -318,7 +322,7 @@ const FunctionalTestSelection = ({
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     removeTest(
-                                                        contact.id,
+                                                        contactPair[0].id,
                                                         index,
                                                     );
                                                 }}

@@ -1,6 +1,6 @@
 class contact {
-    constructor(label, loc, duration, frequency, current) {
-        this.label = label;
+    constructor(id, loc, duration, frequency, current) {
+        this.id = id;
         this.associatedLocation = loc;
         this.duration = duration;
         this.frequency = frequency;
