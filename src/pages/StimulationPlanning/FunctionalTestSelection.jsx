@@ -4,13 +4,16 @@ import { saveTestCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
 
+const backendURL = config.backendURL;
+
 const FunctionalTestSelection = ({
     initialData = {},
     onStateChange,
     savedState = {},
 }) => {
     const { showError } = useError();
-    const allAvailableTests = demoTestData;
+
+    const [allAvailableTests, setAllAvailableTests] = useState([] || savedState.allTests);
 
     const [contacts, setContacts] = useState(
         savedState.contacts || initialData.data.contacts || demoContactsData
@@ -50,6 +53,22 @@ const FunctionalTestSelection = ({
     const [state, setState] = useState(savedState);
 
     useEffect(() => {
+        // Fetch tests from backend
+        const fetchTests = async () => {
+            try {
+                const res = await fetch(`${backendURL}/api/get-tests`);
+                if (!res.ok) throw new Error(`Error: ${res.status}`);
+                const { data } = await res.json();
+                setAllAvailableTests(data);
+            } catch (err) {
+                console.error("Failed to fetch lobe options:", err);
+            }
+        };
+
+        fetchTests();
+    }, []);
+
+    useEffect(() => {
         onStateChange(state);
     }, [state]);
 
@@ -58,6 +77,7 @@ const FunctionalTestSelection = ({
             return {
                 contacts: contacts,
                 tests: tests,
+                allTests: allAvailableTests,
                 availableTests: availableTests,
                 showPopup: showPopup,
                 selectedContact: selectedContact,
@@ -73,6 +93,7 @@ const FunctionalTestSelection = ({
     }, [
         contacts,
         tests,
+        allAvailableTests,
         availableTests,
         showPopup,
         selectedContact,
@@ -100,7 +121,7 @@ const FunctionalTestSelection = ({
             const filteredTests = allAvailableTests
                 .filter(
                     (test) =>
-                        test.region === selectedContact.associatedLocation,
+                        test.region.includes(selectedContact.associatedLocation.toLowerCase()),
                 )
                 .filter(
                     (test) =>
@@ -122,7 +143,7 @@ const FunctionalTestSelection = ({
         const newTests = {};
         contacts.forEach((contact) => {
             const availableTests = allAvailableTests.filter(
-                (test) => test.region === contact.associatedLocation,
+                (test) => test.region.includes(contact.associatedLocation.toLowerCase()),
             );
             if (availableTests.length > 0) {
                 const bestTest = selectBestTest(availableTests);
