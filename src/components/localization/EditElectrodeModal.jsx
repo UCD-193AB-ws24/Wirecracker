@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Popup from 'reactjs-popup';
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import config from "../../../config.json" with { type: 'json' };
+import ErrorMessage from '../ErrorMessage';
 
 const backendURL = config.backendURL;
 
@@ -76,7 +77,7 @@ const EditElectrodeModal = ({
     };
 
     const [sliderMarks, setSliderMarks] = useState(getSliderMarks(selectedElectrodeType));
-    const [sliderValue, setSliderValue] = useState(getInitialSliderValue());
+    const [sliderValue, setSliderValue] = useState(getInitialSliderValue().toString());
     const [labelInput, setLabelInput] = useState(isEditMode && initialData ? initialData.label || "" : "");
     const [descriptionInput, setDescriptionInput] = useState(isEditMode && initialData ? initialData.description || "" : "");
     const [electrodeLabelDescriptions, setElectrodeLabelDescriptions] = useState([]);
@@ -84,6 +85,7 @@ const EditElectrodeModal = ({
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [descriptionEdited, setDescriptionEdited] = useState(false);
     const [descDropdownOpen, setDescDropdownOpen] = useState(false);
+    const [error, setError] = useState("");
 
     // Fetch electrode label descriptions from endpoint
     useEffect(() => {
@@ -134,14 +136,11 @@ const EditElectrodeModal = ({
     }, [labelInput, hemisphere, suggestions]);
 
     const handleSliderChange = (e) => {
-        setSliderValue(parseInt(e.target.value, 10));
+        setSliderValue(e.target.value);
     };
 
     const handleInputChange = (e) => {
-        let value = parseInt(e.target.value, 10);
-        // Allow any positive integer value
-        if (isNaN(value) || value < 1) value = 1;
-        setSliderValue(value);
+        setSliderValue(e.target.value);
     };
 
     const minValue = Math.min(...sliderMarks);
@@ -149,6 +148,14 @@ const EditElectrodeModal = ({
 
     const handleSubmit = (event) => {
         event.preventDefault();
+        if (!isEditMode && labelInput.trim() === "") {
+            setError("Electrode label cannot be blank.");
+            return;
+        }
+        if (sliderValue.trim() === "" || isNaN(Number(sliderValue)) || Number(sliderValue) <= 0) {
+            setError("Number of contacts must be a positive integer.");
+            return;
+        }
         const formData = new FormData();
         formData.set("label", labelInput);
         formData.set("description", descriptionInput);
@@ -181,6 +188,7 @@ const EditElectrodeModal = ({
         >
             {close => (
                 <div className="modal bg-white p-6 rounded-lg shadow-lg">
+                    {error && <ErrorMessage message={error} onClose={() => setError("")} />}
                     <h4 className="text-lg font-semibold mb-4">
                         {isEditMode ? 'Edit Electrode' : 'Add Electrode'}
                     </h4>
@@ -267,7 +275,7 @@ const EditElectrodeModal = ({
                                     type="range"
                                     min={minValue}
                                     max={maxValue}
-                                    value={sliderValue}
+                                    value={sliderValue === "" ? minValue : Math.max(minValue, Math.min(maxValue, Number(sliderValue)))}
                                     onChange={handleSliderChange}
                                     className="w-full"
                                     list="contact-marks"
