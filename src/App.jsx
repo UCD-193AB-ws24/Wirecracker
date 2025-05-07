@@ -6,6 +6,7 @@ import Dropdown from './utils/Dropdown';
 import PlanTypePage from './pages/StimulationPlanning/PlanTypeSelection'
 import ContactSelection from './pages/StimulationPlanning/ContactSelection'
 import FunctionalTestSelection from './pages/StimulationPlanning/FunctionalTestSelection'
+import UserDocumentation from './pages/UserDocumentation';
 import Debug from './pages/Debug';
 import DatabaseTable from "./pages/DatabaseTable";
 import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
