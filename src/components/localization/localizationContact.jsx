@@ -246,26 +246,48 @@ const LocalizationContact = ({
                             )}
 
                             {selectedValue === 'GM/GM' && (
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Second Region
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={desc2}
-                                        onChange={(e) => {
-                                            setDesc2(e.target.value);
-                                            setDesc2Filter(e.target.value);
-                                        }}
-                                        className="w-full p-2 border border-gray-300 rounded-md"
-                                        list="regions2"
-                                    />
-                                    <datalist id="regions2">
-                                        {filteredRegions2.map(name => (
-                                            <option key={name} value={name} />
-                                        ))}
-                                    </datalist>
-                                </div>
+                                <>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            First Region
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={desc1}
+                                            onChange={(e) => {
+                                                setDesc1(e.target.value);
+                                                setDesc1Filter(e.target.value);
+                                            }}
+                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                            list="regions1"
+                                        />
+                                        <datalist id="regions1">
+                                            {filteredRegions1.map(name => (
+                                                <option key={name} value={name} />
+                                            ))}
+                                        </datalist>
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Second Region
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={desc2}
+                                            onChange={(e) => {
+                                                setDesc2(e.target.value);
+                                                setDesc2Filter(e.target.value);
+                                            }}
+                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                            list="regions2"
+                                        />
+                                        <datalist id="regions2">
+                                            {filteredRegions2.map(name => (
+                                                <option key={name} value={name} />
+                                            ))}
+                                        </datalist>
+                                    </div>
+                                </>
                             )}
 
                             <button
