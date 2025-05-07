@@ -58,11 +58,6 @@ const EditElectrodeModal = ({
         return maxContact;
     };
 
-    // Ensure we have valid slider marks based on the selected type
-    const getSliderMarks = (type) => {
-        return electrodeOverviewData[type] || electrodeOverviewData[defaultType];
-    };
-
     // Get the initial slider value based on whether we're editing or adding
     const getInitialSliderValue = () => {
         if (isEditMode && initialData) {
@@ -71,12 +66,11 @@ const EditElectrodeModal = ({
             return contactCount;
         } else {
             // When adding, use the first value from the slider marks
-            const marks = getSliderMarks(selectedElectrodeType);
+            const marks = electrodeOverviewData[selectedElectrodeType];
             return marks[0];
         }
     };
 
-    const [sliderMarks, setSliderMarks] = useState(getSliderMarks(selectedElectrodeType));
     const [sliderValue, setSliderValue] = useState(getInitialSliderValue().toString());
     const [labelInput, setLabelInput] = useState(isEditMode && initialData ? initialData.label || "" : "");
     const [descriptionInput, setDescriptionInput] = useState(isEditMode && initialData ? initialData.description || "" : "");
@@ -86,6 +80,7 @@ const EditElectrodeModal = ({
     const [descriptionEdited, setDescriptionEdited] = useState(false);
     const [descDropdownOpen, setDescDropdownOpen] = useState(false);
     const [error, setError] = useState("");
+    const [contactsEdited, setContactsEdited] = useState(false);
 
     // Fetch electrode label descriptions from endpoint
     useEffect(() => {
@@ -121,12 +116,8 @@ const EditElectrodeModal = ({
     }, [isEditMode, showSuggestions, suggestions, hemisphere]);
 
     useEffect(() => {
-        const marks = getSliderMarks(selectedElectrodeType);
-        setSliderMarks(marks);
-    }, [selectedElectrodeType]);
-
-    useEffect(() => {
         setDescriptionEdited(false);
+        setContactsEdited(false);
     }, [labelInput]);
 
     useEffect(() => {
@@ -137,14 +128,18 @@ const EditElectrodeModal = ({
 
     const handleSliderChange = (e) => {
         setSliderValue(e.target.value);
+        setContactsEdited(true);
     };
 
     const handleInputChange = (e) => {
         setSliderValue(e.target.value);
+        setContactsEdited(true);
     };
 
-    const minValue = Math.min(...sliderMarks);
-    const maxValue = Math.max(...sliderMarks);
+    // Always use 1 to 20 for slider
+    const minValue = 1;
+    const maxValue = 20;
+    const sliderMarks = Array.from({ length: 20 }, (_, i) => i + 1);
 
     const handleSubmit = (event) => {
         event.preventDefault();
@@ -258,7 +253,14 @@ const EditElectrodeModal = ({
                             </label>
                             <select
                                 value={selectedElectrodeType}
-                                onChange={(e) => setSelectedElectrodeType(e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSelectedElectrodeType(val);
+                                    if (!contactsEdited) {
+                                        if (val === 'DIXI') setSliderValue('4');
+                                        else if (val === 'AD-TECH') setSliderValue('5');
+                                    }
+                                }}
                                 className="w-full p-2 border border-gray-300 rounded-md"
                             >
                                 <option value="DIXI">DIXI</option>
@@ -270,28 +272,46 @@ const EditElectrodeModal = ({
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Number of Contacts
                             </label>
-                            <div className="flex items-center gap-4">
-                                <input
-                                    type="range"
-                                    min={minValue}
-                                    max={maxValue}
-                                    value={sliderValue === "" ? minValue : Math.max(minValue, Math.min(maxValue, Number(sliderValue)))}
-                                    onChange={handleSliderChange}
-                                    className="w-full"
-                                    list="contact-marks"
-                                />
-                                <input
-                                    type="number"
-                                    value={sliderValue}
-                                    onChange={handleInputChange}
-                                    className="w-20 p-2 border border-gray-300 rounded-md"
-                                />
+                            <div>
+                                <div className="flex items-center gap-4 w-full">
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="range"
+                                            min={minValue}
+                                            max={maxValue}
+                                            step={1}
+                                            value={sliderValue === "" ? minValue : Math.max(minValue, Math.min(maxValue, Number(sliderValue)))}
+                                            onChange={handleSliderChange}
+                                            className="w-full"
+                                            list="contact-marks"
+                                            style={{ backgroundSize: '100% 2px' }}
+                                        />
+                                        <div
+                                            className="absolute left-0 right-0 -bottom-5 grid"
+                                            style={{
+                                                gridTemplateColumns: 'repeat(20, 1fr)',
+                                                width: '100%',
+                                                pointerEvents: 'none'
+                                            }}
+                                        >
+                                            {sliderMarks.map(mark => (
+                                                <span key={mark} className="text-center text-xs text-gray-500" style={{ pointerEvents: 'none' }}>{mark}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={sliderValue}
+                                        onChange={handleInputChange}
+                                        className="w-20 p-2 border border-gray-300 rounded-md"
+                                    />
+                                    <datalist id="contact-marks">
+                                        {sliderMarks.map(mark => (
+                                            <option key={mark} value={mark} />
+                                        ))}
+                                    </datalist>
+                                </div>
                             </div>
-                            <datalist id="contact-marks">
-                                {sliderMarks.map(mark => (
-                                    <option key={mark} value={mark} />
-                                ))}
-                            </datalist>
                         </div>
                         <button 
                             type="submit" 
