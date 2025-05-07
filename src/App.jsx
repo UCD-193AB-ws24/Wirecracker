@@ -698,12 +698,15 @@ const HomePage = () => {
         const tabsToClose = Array.isArray(tabId) ? tabId : [tabId];
         
         const newTabs = tabs.filter(tab => !tabsToClose.includes(tab.id));
-        setTabs(newTabs);
         
         // If the active tab was closed, set the active tab to the last remaining tab
+        // or to 'home' if no tabs remain
         if (tabsToClose.includes(activeTab)) {
-            setActiveTab(newTabs[newTabs.length - 1]?.id || 'home');
+            const newActiveTab = newTabs.length > 0 ? newTabs[newTabs.length - 1].id : 'home';
+            setActiveTab(newActiveTab);
         }
+        
+        setTabs(newTabs);
     };
 
     const handleFileUpload = async (event) => {

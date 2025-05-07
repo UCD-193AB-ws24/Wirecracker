@@ -521,14 +521,14 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             
             if (existingTab) {
                 // Compare the current localization data with the existing tab's data
-                const currentLocalizationData = electrodes;
-                const existingLocalizationData = existingTab.data.originalData;
+                const currentLocalizationData = saveCSVFile(Identifiers.LOCALIZATION, electrodes, false);
+                const existingLocalizationData = existingTab.state.electrodes;
                 
                 // Check if the localization data has changed
                 const hasLocalizationChanged = JSON.stringify(currentLocalizationData) !== JSON.stringify(existingLocalizationData);
                 
                 if (hasLocalizationChanged) {
-                    console.log("localization changed");
+                    console.log("changed");
                     // Close the existing tab
                     const closeEvent = new CustomEvent('closeTab', {
                         detail: { tabId: existingTab.id }
@@ -539,7 +539,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     const event = new CustomEvent('addDesignationTab', {
                         detail: { 
                             originalData: electrodes,
-                            data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
+                            data: currentLocalizationData,
                             localizationData: {
                                 ...electrodes,
                                 patientId: patientId
@@ -551,7 +551,6 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     window.dispatchEvent(event);
                 } else {
                     // Just set the existing tab as active
-                    console.log("setting active: ", existingTab.id);
                     const activateEvent = new CustomEvent('setActiveTab', {
                         detail: { tabId: existingTab.id }
                     });
