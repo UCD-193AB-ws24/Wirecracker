@@ -506,40 +506,38 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
             const { patientId } = await response.json();
             
-            console.log('Creating designation tab with patientId:', {
-                fromSavedState: savedState.patientId,
-                fromFileData: patientId,
-                fileId: fileId
-            });
-
-            // Check if a designation tab already exists in the UI
+            // Get current tabs from localStorage
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            
+            // Find any existing designation tab for this patient
             const existingTab = tabs.find(tab => 
                 tab.content === 'designation' && 
                 tab.state?.patientId === patientId
             );
-            
+
             if (existingTab) {
-                // Compare the current localization data with the existing tab's data
-                const currentLocalizationData = saveCSVFile(Identifiers.LOCALIZATION, electrodes, false);
-                const existingLocalizationData = existingTab.state.electrodes;
+                // Check if there are any changes using the existing function
+                await checkForChanges(electrodes);
                 
-                // Check if the localization data has changed
-                const hasLocalizationChanged = JSON.stringify(currentLocalizationData) !== JSON.stringify(existingLocalizationData);
-                
-                if (hasLocalizationChanged) {
-                    console.log("changed");
-                    // Close the existing tab
+                if (hasChanges) {
+                    // First, remove the tab from localStorage to prevent ghost tabs
+                    const updatedTabs = tabs.filter(tab => tab.id !== existingTab.id);
+                    localStorage.setItem('tabs', JSON.stringify(updatedTabs));
+
+                    // Then close the existing tab
                     const closeEvent = new CustomEvent('closeTab', {
                         detail: { tabId: existingTab.id }
                     });
                     window.dispatchEvent(closeEvent);
 
+                    // Wait a bit to ensure the tab is fully closed
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
                     // Create a new tab with updated data
                     const event = new CustomEvent('addDesignationTab', {
                         detail: { 
                             originalData: electrodes,
-                            data: currentLocalizationData,
+                            data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
                             localizationData: {
                                 ...electrodes,
                                 patientId: patientId

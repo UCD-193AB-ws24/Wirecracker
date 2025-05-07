@@ -706,16 +706,36 @@ const HomePage = () => {
         // If tabId is an array, close all tabs in the array
         const tabsToClose = Array.isArray(tabId) ? tabId : [tabId];
         
-        const newTabs = tabs.filter(tab => !tabsToClose.includes(tab.id));
-        
-        // If the active tab was closed, set the active tab to the last remaining tab
-        // or to 'home' if no tabs remain
-        if (tabsToClose.includes(activeTab)) {
-            const newActiveTab = newTabs.length > 0 ? newTabs[newTabs.length - 1].id : 'home';
-            setActiveTab(newActiveTab);
-        }
-        
-        setTabs(newTabs);
+        setTabs(prevTabs => {
+            // First, find any duplicate designation tabs for the same patient
+            const tabsToRemove = new Set(tabsToClose);
+            
+            // If we're closing a designation tab, find all other designation tabs for the same patient
+            const closingTab = prevTabs.find(tab => tabsToClose.includes(tab.id));
+            if (closingTab?.content === 'designation' && closingTab?.state?.patientId) {
+                prevTabs.forEach(tab => {
+                    if (tab.content === 'designation' && 
+                        tab.state?.patientId === closingTab.state.patientId && 
+                        tab.id !== closingTab.id) {
+                        tabsToRemove.add(tab.id);
+                    }
+                });
+            }
+            
+            const newTabs = prevTabs.filter(tab => !tabsToRemove.has(tab.id));
+            
+            // If the active tab was closed, set the active tab to the last remaining tab
+            // or to 'home' if no tabs remain
+            if (tabsToClose.includes(activeTab)) {
+                const newActiveTab = newTabs.length > 0 ? newTabs[newTabs.length - 1].id : 'home';
+                setActiveTab(newActiveTab);
+            }
+            
+            // Update localStorage with the new tabs
+            localStorage.setItem('tabs', JSON.stringify(newTabs));
+            
+            return newTabs;
+        });
     };
 
     const handleFileUpload = async (event) => {
@@ -880,6 +900,7 @@ const HomePage = () => {
                                     onNewLocalization={() => addTab('localization')}
                                     onFileUpload={handleFileUpload}
                                     error={error}
+                                    openSavedFile={openSavedFile}
                                 />
                                 <div className="lg:basis-6 lg:flex-auto"></div>
                             </>
@@ -888,6 +909,7 @@ const HomePage = () => {
                                 onNewLocalization={() => addTab('localization')}
                                 onFileUpload={handleFileUpload}
                                 error={error}
+                                openSavedFile={openSavedFile}
                             />
                         )}
                     </div>
@@ -1038,7 +1060,7 @@ const HomePage = () => {
     );
 };
 
-const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
+const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }) => {
     const [showDatabaseModal, setShowDatabaseModal] = useState(false);
     const [patients, setPatients] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -1195,7 +1217,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                         <PatientDetails
                             patient={selectedPatient}
                             onClose={() => setSelectedPatient(null)}
-                            openSavedFile={onNewLocalization}
+                            openSavedFile={openSavedFile}
                         />
                     )}
                 </>
@@ -1298,6 +1320,9 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                         // Handle each file type based on the check-type response
                         switch (button.type) {
                             case 'designation': {
+                                if (!fileTypeData.hasDesignation) {
+                                    throw new Error('No designation data found');
+                                }
                                 return {
                                     fileId: button.fileId,
                                     name: button.name,
@@ -1305,8 +1330,8 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                     modifiedDate: metadata.modified_date || new Date().toISOString(),
                                     patientId: patient.patient_id,
                                     type: 'designation',
-                                    data: fileTypeData.designationData?.designation_data || [],
-                                    originalData: fileTypeData.designationData?.localization_data || {}
+                                    data: fileTypeData.designationData.designation_data,
+                                    originalData: fileTypeData.designationData.localization_data
                                 };
                             }
                             case 'localization': {
@@ -1318,6 +1343,8 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                     });
                                     if (!localizationResponse.ok) throw new Error('Failed to fetch localization data');
                                     const localizationData = await localizationResponse.json();
+                                    const transformedData = FileUtils.transformLocalizationData(localizationData);
+                                    console.log('Transformed localization data:', transformedData);
                                     return {
                                         fileId: button.fileId,
                                         name: button.name,
@@ -1325,7 +1352,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                         modifiedDate: metadata.modified_date || new Date().toISOString(),
                                         patientId: patient.patient_id,
                                         type: 'localization',
-                                        data: { data: FileUtils.transformLocalizationData(localizationData) }
+                                        data: { data: transformedData }
                                     };
                                 }
                                 return {
@@ -1339,6 +1366,9 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                 };
                             }
                             case 'stimulation': {
+                                if (!fileTypeData.hasStimulation) {
+                                    throw new Error('No stimulation data found');
+                                }
                                 return {
                                     fileId: button.fileId,
                                     name: button.name,
@@ -1347,12 +1377,15 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                     patientId: patient.patient_id,
                                     type: fileTypeData.stimulationData.is_mapping ? 'csv-functional-mapping' : 'csv-stimulation',
                                     data: {
-                                        data: fileTypeData.stimulationData?.stimulation_data || {},
-                                        planOrder: fileTypeData.stimulationData?.plan_order || []
+                                        data: fileTypeData.stimulationData.stimulation_data,
+                                        planOrder: fileTypeData.stimulationData.plan_order
                                     }
                                 };
                             }
                             case 'functional-test': {
+                                if (!fileTypeData.hasTestSelection) {
+                                    throw new Error('No test selection data found');
+                                }
                                 return {
                                     fileId: button.fileId,
                                     name: button.name,
@@ -1361,26 +1394,20 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                     patientId: patient.patient_id,
                                     type: 'csv-functional-test',
                                     data: {
-                                        tests: fileTypeData.testSelectionData?.tests || [],
-                                        contacts: fileTypeData.testSelectionData?.contacts || []
+                                        tests: fileTypeData.testSelectionData.tests,
+                                        contacts: fileTypeData.testSelectionData.contacts
                                     }
                                 };
                             }
                             default:
-                                return {
-                                    fileId: button.fileId,
-                                    name: button.name,
-                                    creationDate: metadata.creation_date || new Date().toISOString(),
-                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
-                                    patientId: patient.patient_id,
-                                    type: button.type
-                                };
+                                throw new Error(`Unknown file type: ${button.type}`);
                         }
                     })
             );
 
             // Add tabs for each available file sequentially
             for (const file of availableFiles) {
+                console.log('Opening file:', file);
                 await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay between each file
                 openSavedFile(file.type, file);
             }
