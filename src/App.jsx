@@ -226,6 +226,8 @@ const FileUtils = {
             return {};
         }
         
+        console.log('Raw database records:', JSON.stringify(dbRecords, null, 2));
+        
         const electrodes = {};
         
         console.log('Starting data transformation with record count:', dbRecords.length);
@@ -285,7 +287,6 @@ const FileUtils = {
                 showError('Authentication required to open files');
                 return;
             }
-            
             // Use the backend API to check file type and get data
             const response = await fetch(`${backendURL}/api/files/check-type?fileId=${file.file_id}`, {
                 headers: {
@@ -439,6 +440,14 @@ const HomePage = () => {
         localStorage.setItem('activeTab', activeTab);
     }, [tabs, activeTab]);
 
+    // Make addTab available globally
+    useEffect(() => {
+        window.addTab = addTab;
+        return () => {
+            delete window.addTab;
+        };
+    }, []);
+
     // Add event listener for designation tab creation
     useEffect(() => {
         const handleAddDesignationTab = (event) => {
@@ -559,11 +568,11 @@ const HomePage = () => {
         switch (type) {
             case 'localization':
                 title = 'Localization';
-                patientId = generatePatientId(); // Generate UUID for patient_id
+                patientId = data ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'csv-localization':
                 title = 'CSV Localization';
-                patientId = generatePatientId(); // Generate UUID for patient_id
+                patientId = data.patientId ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'designation':         
                 title = 'Designation';
@@ -594,7 +603,7 @@ const HomePage = () => {
                 patientId = data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
                 break;
             case 'stimulation':         
-                title = 'Stimulation Plan';
+                title = 'Stimulation';
                 patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
                 console.log('Setting patientId for stimulation:', {
                     finalPatientId: patientId,
@@ -760,7 +769,7 @@ const HomePage = () => {
             
             console.log('Created new tab with state:', newTab.state);
             
-            setTabs([...tabs, newTab]);
+            setTabs(prevTabs => [...prevTabs, newTab]);
             setActiveTab(newTab.id);
         } 
         else if (type === 'designation') {
@@ -784,7 +793,7 @@ const HomePage = () => {
 
             console.log('Created new tab with state:', newTab.state);
 
-            setTabs([...tabs, newTab]);
+            setTabs(prevTabs => [...prevTabs, newTab]);
             setActiveTab(newTab.id);
         }
         else if (type === 'csv-functional-test') {
@@ -808,7 +817,7 @@ const HomePage = () => {
 
             console.log('Created new test selection tab with state:', newTab.state);
 
-            setTabs([...tabs, newTab]);
+            setTabs(prevTabs => [...prevTabs, newTab]);
             setActiveTab(newTab.id);
         }
         else if (type === 'csv-stimulation' || type === 'csv-functional-mapping') {
@@ -833,7 +842,7 @@ const HomePage = () => {
 
             console.log('Created new stimulation tab with state:', newTab.state);
 
-            setTabs([...tabs, newTab]);
+            setTabs(prevTabs => [...prevTabs, newTab]);
             setActiveTab(newTab.id);
         } else {
             // Fallback to basic tab creation
@@ -1031,15 +1040,32 @@ const HomePage = () => {
 
 const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
     const [showDatabaseModal, setShowDatabaseModal] = useState(false);
-    const [databaseFiles, setDatabaseFiles] = useState([]);
+    const [patients, setPatients] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [selectedPatient, setSelectedPatient] = useState(null);
     const { showError } = useError();
 
-    const loadDatabaseFiles = async () => {
+    const loadPatients = async () => {
         setIsLoading(true);
-        const files = await FileUtils.fetchUserFiles();
-        setDatabaseFiles(files);
-        setIsLoading(false);
+        try {
+            const response = await fetch(`${backendURL}/api/patients/recent`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch patients');
+            }
+
+            const data = await response.json();
+            setPatients(data);
+        } catch (error) {
+            console.error('Error loading patients:', error);
+            showError('Failed to load patients');
+        } finally {
+            setIsLoading(false);
+        }
     };
     
     return (
@@ -1095,7 +1121,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                                     document.getElementById('fileInput').click();
                                     break;
                                 case "Open-Database":
-                                    loadDatabaseFiles();
+                                    loadPatients();
                                     setShowDatabaseModal(true);
                                     break;
                             }
@@ -1103,12 +1129,12 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                     />
                     {error && <p className="text-red-500 mt-2">{error}</p>}
 
-                    {/* Database Files Modal */}
+                    {/* Database Patients Modal */}
                     {showDatabaseModal && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                             <div className="bg-white p-6 rounded-lg shadow-xl w-4/5 max-w-3xl max-h-[80vh] overflow-y-auto">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-2xl font-bold">Open File from Database</h2>
+                                    <h2 className="text-2xl font-bold">Select Patient</h2>
                                     <button 
                                         onClick={() => setShowDatabaseModal(false)}
                                         className="text-gray-500 transition-colors duration-200 cursor-pointer hover:text-gray-700 text-xl"
@@ -1119,31 +1145,34 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                                 
                                 {isLoading ? (
                                     <div className="text-center py-8">
-                                        <p className="text-gray-600">Loading your files...</p>
+                                        <p className="text-gray-600">Loading patients...</p>
                                     </div>
-                                ) : databaseFiles.length === 0 ? (
+                                ) : patients.length === 0 ? (
                                     <div className="text-center py-8">
-                                        <p className="text-gray-600">No files found. Create a new file to get started.</p>
+                                        <p className="text-gray-600">No patients found. Create a new file to get started.</p>
                                     </div>
                                 ) : (
                                     <div className="divide-y">
-                                        {databaseFiles.map(file => (
+                                        {patients.map(patient => (
                                             <div 
-                                                key={file.file_id}
+                                                key={patient.patient_id}
                                                 className="py-3 px-4 transition-colors duration-200 hover:bg-sky-50 cursor-pointer flex justify-between items-center"
                                                 onClick={() => {
-                                                    window.handleFileClick(file);
+                                                    setSelectedPatient(patient);
                                                     setShowDatabaseModal(false);
                                                 }}
                                             >
                                                 <div className="flex-1">
-                                                    <div className="font-medium">{file.filename || 'Unnamed File'}</div>
+                                                    <div className="font-medium">Patient {patient.patient_id}</div>
                                                     <div className="text-sm text-gray-500">
-                                                        Created: {new Date(file.creation_date).toLocaleDateString()}
+                                                        Last modified: {patient.latest_file ? new Date(patient.latest_file.modified_date).toLocaleDateString() : 'No files'}
                                                     </div>
                                                 </div>
                                                 <div className="text-sm text-gray-500">
-                                                    Modified: {new Date(file.modified_date).toLocaleDateString()}
+                                                    {patient.has_localization && <span className="mr-2">📍</span>}
+                                                    {patient.has_designation && <span className="mr-2">📝</span>}
+                                                    {patient.has_stimulation && <span className="mr-2">⚡</span>}
+                                                    {patient.has_test_selection && <span>🧪</span>}
                                                 </div>
                                             </div>
                                         ))}
@@ -1153,13 +1182,21 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                                 <div className="mt-6 flex justify-end">
                                     <button
                                         onClick={() => setShowDatabaseModal(false)}
-                                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded  transition-colors duration-200 cursor-pointer hover:bg-gray-300"
+                                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded transition-colors duration-200 cursor-pointer hover:bg-gray-300"
                                     >
                                         Cancel
                                     </button>
                                 </div>
                             </div>
                         </div>
+                    )}
+
+                    {selectedPatient && (
+                        <PatientDetails
+                            patient={selectedPatient}
+                            onClose={() => setSelectedPatient(null)}
+                            openSavedFile={onNewLocalization}
+                        />
                     )}
                 </>
             ) : <SignInButtons />}
@@ -1184,37 +1221,272 @@ const Activity = () => {
     );
 };
 
+const PatientDetails = ({ patient, onClose, openSavedFile }) => {
+    const { showError } = useError();
+    const [clickedFileId, setClickedFileId] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const buttons = [
+        {
+            name: 'Localization',
+            type: 'localization',
+            exists: patient.has_localization,
+            fileId: patient.localization_file_id,
+            message: 'No localization file created yet'
+        },
+        {
+            name: 'Designation',
+            type: 'designation',
+            exists: patient.has_designation,
+            fileId: patient.designation_file_id,
+            message: 'No designation file created yet'
+        },
+        {
+            name: 'Stimulation',
+            type: 'stimulation',
+            exists: patient.has_stimulation,
+            fileId: patient.stimulation_file_id,
+            message: 'No stimulation file created yet'
+        },
+        {
+            name: 'Test Selection',
+            type: 'functional-test',
+            exists: patient.has_test_selection,
+            fileId: patient.test_selection_file_id,
+            message: 'No test selection file created yet'
+        }
+    ];
+
+    const handleButtonClick = async (clickedButton) => {
+        if (!clickedButton.exists) return;
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            showError('Authentication required to open files');
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            setClickedFileId(clickedButton.fileId);
+
+            // Get all files for each patient
+            const availableFiles = await Promise.all(
+                buttons
+                    .filter(button => button.exists)
+                    .map(async (button) => {
+                        // First check file type and get initial data
+                        console.log('Fetching file type data for file ID:', button.fileId);
+                        const response = await fetch(`${backendURL}/api/files/check-type?fileId=${button.fileId}`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        if (!response.ok) throw new Error('Failed to check file type');
+                        const fileTypeData = await response.json();
+
+                        // Get file metadata from database
+                        const metadataResponse = await fetch(`${backendURL}/api/files/dates-metadata?fileId=${button.fileId}`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        if (!metadataResponse.ok) throw new Error('Failed to fetch file metadata');
+                        const metadata = await metadataResponse.json();
+
+                        // Handle each file type based on the check-type response
+                        switch (button.type) {
+                            case 'designation': {
+                                return {
+                                    fileId: button.fileId,
+                                    name: button.name,
+                                    creationDate: metadata.creation_date || new Date().toISOString(),
+                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
+                                    patientId: patient.patient_id,
+                                    type: 'designation',
+                                    data: fileTypeData.designationData?.designation_data || [],
+                                    originalData: fileTypeData.designationData?.localization_data || {}
+                                };
+                            }
+                            case 'localization': {
+                                if (fileTypeData.hasLocalization) {
+                                    const localizationResponse = await fetch(`${backendURL}/api/files/localization?fileId=${button.fileId}`, {
+                                        headers: {
+                                            'Authorization': `Bearer ${token}`
+                                        }
+                                    });
+                                    if (!localizationResponse.ok) throw new Error('Failed to fetch localization data');
+                                    const localizationData = await localizationResponse.json();
+                                    return {
+                                        fileId: button.fileId,
+                                        name: button.name,
+                                        creationDate: metadata.creation_date || new Date().toISOString(),
+                                        modifiedDate: metadata.modified_date || new Date().toISOString(),
+                                        patientId: patient.patient_id,
+                                        type: 'localization',
+                                        data: { data: FileUtils.transformLocalizationData(localizationData) }
+                                    };
+                                }
+                                return {
+                                    fileId: button.fileId,
+                                    name: button.name,
+                                    creationDate: metadata.creation_date || new Date().toISOString(),
+                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
+                                    patientId: patient.patient_id,
+                                    type: 'localization',
+                                    data: { data: {} }
+                                };
+                            }
+                            case 'stimulation': {
+                                return {
+                                    fileId: button.fileId,
+                                    name: button.name,
+                                    creationDate: metadata.creation_date || new Date().toISOString(),
+                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
+                                    patientId: patient.patient_id,
+                                    type: fileTypeData.stimulationData.is_mapping ? 'csv-functional-mapping' : 'csv-stimulation',
+                                    data: {
+                                        data: fileTypeData.stimulationData?.stimulation_data || {},
+                                        planOrder: fileTypeData.stimulationData?.plan_order || []
+                                    }
+                                };
+                            }
+                            case 'functional-test': {
+                                return {
+                                    fileId: button.fileId,
+                                    name: button.name,
+                                    creationDate: metadata.creation_date || new Date().toISOString(),
+                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
+                                    patientId: patient.patient_id,
+                                    type: 'csv-functional-test',
+                                    data: {
+                                        tests: fileTypeData.testSelectionData?.tests || [],
+                                        contacts: fileTypeData.testSelectionData?.contacts || []
+                                    }
+                                };
+                            }
+                            default:
+                                return {
+                                    fileId: button.fileId,
+                                    name: button.name,
+                                    creationDate: metadata.creation_date || new Date().toISOString(),
+                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
+                                    patientId: patient.patient_id,
+                                    type: button.type
+                                };
+                        }
+                    })
+            );
+
+            // Add tabs for each available file sequentially
+            for (const file of availableFiles) {
+                await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay between each file
+                openSavedFile(file.type, file);
+            }
+
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            const clickedTab = tabs.find(tab => tab.title === clickedButton.name);
+            if (clickedTab) {
+                const tabId = clickedTab.id;
+                window.dispatchEvent(new CustomEvent('setActiveTab', { detail: { tabId } }));
+            }
+            
+            onClose();
+        } catch (error) {
+            console.error('Error loading files:', error);
+            showError(`Failed to load files: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-lg shadow-xl w-4/5 max-w-3xl">
+                <div className="flex justify-between items-center mb-8">
+                    <h2 className="text-2xl font-bold">Patient {patient.patient_id}</h2>
+                    <button 
+                        onClick={onClose}
+                        className="text-gray-500 hover:text-gray-700 text-xl"
+                    >
+                        ×
+                    </button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-6">
+                    {buttons.map((button) => (
+                        <div key={button.type} className="flex flex-col items-center">
+                            <button
+                                onClick={() => handleButtonClick(button)}
+                                className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                                    ${button.exists 
+                                        ? 'bg-sky-700 text-white hover:bg-sky-600' 
+                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                                disabled={!button.exists || isLoading}
+                            >
+                                {button.name}
+                            </button>
+                            {!button.exists && (
+                                <p className="mt-2 text-sm text-gray-500">{button.message}</p>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                {isLoading && (
+                    <div className="mt-4 text-center text-gray-600">
+                        Loading files...
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const RecentFiles = ({ onOpenFile, className }) => {
-    const [recentLocalizations, setRecentLocalizations] = useState([]);
+    const [recentPatients, setRecentPatients] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedPatient, setSelectedPatient] = useState(null);
     const { showError } = useError();
     
+    // Get addTab from HomePage context
+    const addTab = window.addTab;
+    
     useEffect(() => {
-        const fetchRecentFiles = async () => {
+        const fetchRecentPatients = async () => {
             setIsLoading(true);
-            const files = await FileUtils.fetchUserFiles();
-            setRecentLocalizations(files.slice(0, 7)); // Limit to 7 most recent
-            setIsLoading(false);
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    setRecentPatients([]);
+                    return;
+                }
+
+                const response = await fetch(`${backendURL}/api/patients/recent`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch recent patients');
+                }
+
+                const patients = await response.json();
+                setRecentPatients(patients.slice(0, 7));
+            } catch (error) {
+                console.error('Error fetching recent patients:', error);
+                showError('Failed to load recent patients');
+            } finally {
+                setIsLoading(false);
+            }
         };
         
-        fetchRecentFiles();
-    }, []);
+        fetchRecentPatients();
+    }, [showError]);
     
-    const handleFileClick = (file) => {
-        // Show loading state in the UI
-        const fileElement = document.getElementById(`file-${file.file_id}`);
-        if (fileElement) {
-            fileElement.classList.add('text-sky-600');
-            fileElement.querySelector('.filename').innerText = "Loading...";
-        }
-        
-        FileUtils.handleFileOpen(file, onOpenFile, showError)
-            .finally(() => {
-                // Reset the loading state if needed
-                if (fileElement && fileElement.querySelector('.filename')) {
-                    fileElement.querySelector('.filename').innerText = file.filename || 'Unnamed Localization';
-                }
-            });
+    const handlePatientClick = (patient) => {
+        setSelectedPatient(patient);
     };
     
     return (
@@ -1223,36 +1495,44 @@ const RecentFiles = ({ onOpenFile, className }) => {
                            md:text-2xl
                            lg:text-3xl
                            xl:text-4xl">
-                Recent Files
+                Recent Patients
             </h3>
             <div className="bg-sky-200 rounded-xl p-2 mt-2">
                 {isLoading ? (
                     <div className="text-gray-500">Loading...</div>
-                ) : recentLocalizations.length > 0 ? (
+                ) : recentPatients.length > 0 ? (
                     <div>
-                        {recentLocalizations.map((file) => (
+                        {recentPatients.map((patient) => (
                             <div 
-                                id={`file-${file.file_id}`}
-                                key={file.file_id} 
+                                id={`patient-${patient.patient_id}`}
+                                key={patient.patient_id} 
                                 className="hover:bg-sky-50 hover:text-sky-600 rounded cursor-pointer py-1 pr-1 transition-colors duration-150 flex justify-between items-center"
-                                onClick={() => handleFileClick(file)}
+                                onClick={() => handlePatientClick(patient)}
                             >
-                                <div className="text-xs truncate max-w-30 filename px-1
+                                <div className="text-xs truncate max-w-30 patient-id px-1
                                                 md:max-w-42
                                                 lg:max-w-50 lg:text-sm lg:px-2
                                                 xl:max-w-64">
-                                    {file.filename || 'Unnamed Localization'}
+                                    Patient {patient.patient_id}
                                 </div>
                                 <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                                    {new Date(file.modified_date).toLocaleDateString()}
+                                    {patient.latest_file ? new Date(patient.latest_file.modified_date).toLocaleDateString() : 'No files'}
                                 </span>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="text-gray-500">No files available</div>
+                    <div className="text-gray-500">No patients available</div>
                 )}
             </div>
+
+            {selectedPatient && (
+                <PatientDetails
+                    patient={selectedPatient}
+                    onClose={() => setSelectedPatient(null)}
+                    openSavedFile={onOpenFile}
+                />
+            )}
         </div>
     );
 };
@@ -1386,7 +1666,7 @@ const App = () => {
 {/*                    <Route path="/localization" element={<Localization />} />
                     <Route path="/stimulation" element={<PlanTypePage />} />
                     <Route path="/stimulation/contacts" element={<ContactSelection />} />
-                    <Route path="/stimulation/functional-tests" element={<FunctionalTestSelection />} />*/}
+                    <Route path="/stimulation/functional-tests" element={<FunctionalTestSelection />*/}
                     <Route path="/debug" element={<Debug />} />
                     <Route path="/database/:table" element={<DatabaseTable />} />
                     <Route path="/auth-success" element={<GoogleAuthSuccess />} />

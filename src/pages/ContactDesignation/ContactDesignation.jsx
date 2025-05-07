@@ -242,6 +242,8 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
 
     const handleOpenStimulation = async () => {
         try {
+            await handleSave();
+
             let stimulationData = modifiedElectrodes.map(electrode => ({
                 ...electrode,
                 contacts: electrode.contacts.map((contact, index) => {
