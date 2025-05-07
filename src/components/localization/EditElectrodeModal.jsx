@@ -82,6 +82,8 @@ const EditElectrodeModal = ({
     const [electrodeLabelDescriptions, setElectrodeLabelDescriptions] = useState([]);
     const [hemisphere, setHemisphere] = useState("Right");
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [descriptionEdited, setDescriptionEdited] = useState(false);
+    const [descDropdownOpen, setDescDropdownOpen] = useState(false);
 
     // Fetch electrode label descriptions from endpoint
     useEffect(() => {
@@ -110,16 +112,26 @@ const EditElectrodeModal = ({
 
     // Update description when a suggestion is found
     useEffect(() => {
-        if (showSuggestions && suggestions.length > 0) {
+        if (isEditMode && showSuggestions && suggestions.length > 0) {
             const suggestedDescription = `${hemisphere} ${suggestions[0].description}`;
             setDescriptionInput(suggestedDescription);
         }
-    }, [showSuggestions, suggestions, hemisphere]);
+    }, [isEditMode, showSuggestions, suggestions, hemisphere]);
 
     useEffect(() => {
         const marks = getSliderMarks(selectedElectrodeType);
         setSliderMarks(marks);
     }, [selectedElectrodeType]);
+
+    useEffect(() => {
+        setDescriptionEdited(false);
+    }, [labelInput]);
+
+    useEffect(() => {
+        if (!descriptionEdited && suggestions.length > 0) {
+            setDescriptionInput(`${hemisphere} ${suggestions[0].description}`);
+        }
+    }, [labelInput, hemisphere, suggestions]);
 
     const handleSliderChange = (e) => {
         setSliderValue(parseInt(e.target.value, 10));
@@ -194,16 +206,43 @@ const EditElectrodeModal = ({
                                 </div>
                             )}
                         </div>
-                        <div className="mb-4">
+                        <div className="mb-4 relative">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Description
                             </label>
                             <input 
                                 type="text"
                                 value={descriptionInput}
-                                onChange={(e) => setDescriptionInput(e.target.value)}
+                                onChange={(e) => {
+                                    setDescriptionInput(e.target.value);
+                                    setDescriptionEdited(true);
+                                }}
                                 className="w-full p-2 border border-gray-300 rounded-md"
+                                onFocus={() => setDescDropdownOpen(true)}
+                                onBlur={() => setTimeout(() => setDescDropdownOpen(false), 100)}
                             />
+                            {descDropdownOpen && (
+                                <div className="absolute z-50 bg-white border border-gray-300 rounded shadow max-h-40 overflow-y-auto w-full">
+                                    {electrodeLabelDescriptions
+                                        .filter(item => item.label.toUpperCase() === letterPortion)
+                                        .map((item, idx) => {
+                                            const option = `${hemisphere} ${item.description}`;
+                                            return (
+                                                <div
+                                                    key={option + idx}
+                                                    className="px-3 py-2 hover:bg-blue-100 cursor-pointer"
+                                                    onMouseDown={() => {
+                                                        setDescriptionInput(option);
+                                                        setDescriptionEdited(true);
+                                                        setDescDropdownOpen(false);
+                                                    }}
+                                                >
+                                                    {option}
+                                                </div>
+                                            );
+                                        })}
+                                </div>
+                            )}
                         </div>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -216,7 +255,6 @@ const EditElectrodeModal = ({
                             >
                                 <option value="DIXI">DIXI</option>
                                 <option value="AD-TECH">AD-TECH</option>
-                                <option value="PMT">PMT</option>
                                 <option value="OTHER">OTHER</option>
                             </select>
                         </div>
