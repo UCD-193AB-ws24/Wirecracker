@@ -445,9 +445,22 @@ const HomePage = () => {
             addTab('designation', event.detail);
         };
 
+        const handleCloseTab = (event) => {
+            closeTab(event.detail.tabId);
+        };
+
+        const handleSetActiveTab = (event) => {
+            setActiveTab(event.detail.tabId);
+        };
+
         window.addEventListener('addDesignationTab', handleAddDesignationTab);
+        window.addEventListener('closeTab', handleCloseTab);
+        window.addEventListener('setActiveTab', handleSetActiveTab);
+        
         return () => {
             window.removeEventListener('addDesignationTab', handleAddDesignationTab);
+            window.removeEventListener('closeTab', handleCloseTab);
+            window.removeEventListener('setActiveTab', handleSetActiveTab);
         };
     }, []);
 

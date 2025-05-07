@@ -511,23 +511,81 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 fromFileData: patientId,
                 fileId: fileId
             });
+
+            // Check if a designation tab already exists in the UI
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            const existingTab = tabs.find(tab => 
+                tab.content === 'designation' && 
+                tab.state?.patientId === patientId
+            );
             
-            // Get designation data from the current localization
-            const designationData = saveCSVFile(Identifiers.LOCALIZATION, electrodes, false);
-            
-            // Create a new tab with the designation data
-            const event = new CustomEvent('addDesignationTab', {
-                detail: { 
-                    originalData: electrodes,
-                    data: designationData,
-                    localizationData: {
-                        ...electrodes,
-                        patientId: patientId
-                    },
-                    patientId: patientId // Pass patientId directly
+            if (existingTab) {
+                // Compare the current localization data with the existing tab's data
+                const currentLocalizationData = electrodes;
+                const existingLocalizationData = existingTab.data.originalData;
+                
+                // Check if the localization data has changed
+                const hasLocalizationChanged = JSON.stringify(currentLocalizationData) !== JSON.stringify(existingLocalizationData);
+                
+                if (hasLocalizationChanged) {
+                    console.log("localization changed");
+                    // Close the existing tab
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(closeEvent);
+
+                    // Create a new tab with updated data
+                    const event = new CustomEvent('addDesignationTab', {
+                        detail: { 
+                            originalData: electrodes,
+                            data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
+                            localizationData: {
+                                ...electrodes,
+                                patientId: patientId
+                            },
+                            patientId: patientId,
+                            fileId: existingTab.state.fileId
+                        }
+                    });
+                    window.dispatchEvent(event);
+                } else {
+                    // Just set the existing tab as active
+                    console.log("setting active: ", existingTab.id);
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
                 }
-            });
-            window.dispatchEvent(event);
+            } else {
+                // Only make database calls when creating a new tab
+                const designationResponse = await fetch(`${backendURL}/api/by-patient/${patientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!designationResponse.ok) {
+                    throw new Error('Failed to check for existing designation');
+                }
+
+                const designationResult = await designationResponse.json();
+                
+                // Create a new tab
+                const event = new CustomEvent('addDesignationTab', {
+                    detail: { 
+                        originalData: designationResult.exists ? designationResult.data.localization_data : electrodes,
+                        data: designationResult.exists ? designationResult.data.designation_data : saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
+                        localizationData: {
+                            ...(designationResult.exists ? designationResult.data.localization_data : electrodes),
+                            patientId: patientId
+                        },
+                        patientId: patientId,
+                        fileId: designationResult.exists ? designationResult.fileId : null
+                    }
+                });
+                window.dispatchEvent(event);
+            }
         } catch (error) {
             console.error('Error creating designation tab:', error);
             showError('Failed to create designation tab. Please try again.');
