@@ -126,6 +126,20 @@ const EditElectrodeModal = ({
         }
     }, [labelInput, hemisphere, suggestions]);
 
+    useEffect(() => {
+        if (trigger && !isEditMode) {
+            setLabelInput("");
+            setDescriptionInput("");
+            setSliderValue("4"); // default to 4 for DIXI
+            setSelectedElectrodeType("DIXI");
+            setDescriptionEdited(false);
+            setContactsEdited(false);
+            setShowSuggestions(false);
+            setDescDropdownOpen(false);
+            setError("");
+        }
+    }, [trigger, isEditMode]);
+
     const handleSliderChange = (e) => {
         setSliderValue(e.target.value);
         setContactsEdited(true);
