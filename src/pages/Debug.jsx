@@ -60,7 +60,7 @@ const Debug = () => {
         setIdentifier(null);
 
         try {
-            const { identifier, data } = await parseCSVFile(file);
+            const { identifier, data } = await parseCSVFile(file, false, (msg) => setError(msg));
             setCsvData(data);
             setIdentifier(identifier);
         } catch (err) {
@@ -75,7 +75,6 @@ const Debug = () => {
         }
         try {
             await saveCSVFile(identifier, csvData);
-            alert("CSV file saved successfully!");
         } catch (err) {
             setError("Failed to save CSV file.");
         }

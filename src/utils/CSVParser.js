@@ -20,12 +20,16 @@ export const Identifiers = Object.freeze({
  * Parses a CSV file and returns the parsed data.
  *
  * @param {File} file - The CSV file to be parsed.
+ * @param {boolean} coordinates - Whether the file is a coordinates file.
+ * @param {Function} showError - Function to display error messages.
  * @returns {Promise<{ identifier: string, data: Object }>} A promise that resolves with the identifier and parsed CSV data.
  */
-export function parseCSVFile( file, coordinates = false ) {
+export function parseCSVFile(file, coordinates = false, showError = null) {
     return new Promise((resolve, reject) => {
         if (!file) {
-            reject(new Error("No file provided."));
+            const errorMsg = "No file provided.";
+            if (showError) showError(errorMsg);
+            reject(new Error(errorMsg));
             return;
         }
 
@@ -43,7 +47,9 @@ export function parseCSVFile( file, coordinates = false ) {
                     lines[0].trim() !== Identifiers.STIMULATION &&
                     lines[0].trim() !== Identifiers.STIMULATION_FUNCTION
                 ) || lines[1].trim() !== IDENTIFIER_LINE_2 )) {
-                reject(new Error("Invalid file. The first line must be the correct identifier."));
+                const errorMsg = "Invalid file. The first line must be the correct identifier.";
+                if (showError) showError(errorMsg);
+                reject(new Error(errorMsg));
                 return;
             }
 
@@ -96,12 +102,14 @@ export function parseCSVFile( file, coordinates = false ) {
                     resolve({ identifier, data: results.data });
                 },
                 error: function (err) {
+                    if (showError) showError("Parsing error: " + err.message);
                     reject(new Error("Parsing error: " + err.message));
                 }
             });
         };
 
         reader.onerror = function () {
+            if (showError) showError("Error reading file.");
             reject(new Error("Error reading file."));
         };
 
@@ -263,7 +271,7 @@ function parseStimulation(csvData) {
         if (isPlanning) {
             contactObj.order = parseInt(row.PlanOrder);
             if (contactObj.order < 0) {
-                alert("error found on csv. Contact(s) will be missing from planning pane.");
+                if (showError) showError("error found on csv. Contact(s) will be missing from planning pane.");
                 contactObj.isPlanning = false;
             }
         }

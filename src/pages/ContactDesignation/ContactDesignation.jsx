@@ -4,10 +4,14 @@ import Resection from "./ResectionPage";
 import Designation from "./DesignationPage";
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
+import { useError } from '../../context/ErrorContext';
+
+const PAGE_NAME = ["designation", "resection"];
 
 const backendURL = config.backendURL;
 
 const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }) => {
+    const { showError } = useError();
     const [state, setState] = useState(savedState);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
     const [activeTab, setActiveTab] = useState('designation');
@@ -97,7 +101,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 // Get user ID from session
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    alert('User not authenticated. Please log in to save designations.');
+                    showError('User not authenticated. Please log in to save designations.');
                     return;
                 }
                 
@@ -123,7 +127,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save designation:', result.error);
-                        alert(`Failed to save designation: ${result.error}`);
+                        showError(`Failed to save designation: ${result.error}`);
                         return;
                     }
                     
@@ -133,13 +137,14 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                         modifiedDate: new Date().toISOString()
                     }));
                     
-                    // Show success feedback if this was a save operation
+                    // Show success feedback
                     setShowSaveSuccess(true);
+                    setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
                     
                     console.log('Designation saved successfully');
                 } catch (error) {
                     console.error('Error saving designation:', error);
-                    alert(`Error saving designation: ${error.message}`);
+                    showError(`Error saving designation: ${error.message}`);
                     return;
                 }
             }
@@ -157,8 +162,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 }
             }
         } catch (error) {
-            console.error('Error exporting contacts:', error);
-            alert(`Error exporting contacts: ${error.message}`);
+            showError('Error saving data on database. Changes are not saved');
         }
     };
 
@@ -171,7 +175,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 // Get user ID from session
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    alert('User not authenticated. Please log in to save designations.');
+                    showError('User not authenticated. Please log in to save designations.');
                     return;
                 }
                 
@@ -197,7 +201,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save designation:', result.error);
-                        alert(`Failed to save designation: ${result.error}`);
+                        showError(`Failed to save designation: ${result.error}`);
                         return;
                     }
                     
@@ -213,7 +217,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     console.log('Designation saved successfully');
                 } catch (error) {
                     console.error('Error saving designation:', error);
-                    alert(`Error saving designation: ${error.message}`);
+                    showError(`Error saving designation: ${error.message}`);
                     return;
                 }
             }
@@ -232,7 +236,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             }
         } catch (error) {
             console.error('Error exporting contacts:', error);
-            alert(`Error exporting contacts: ${error.message}`);
+            showError(`Error exporting contacts: ${error.message}`);
         }
     };
 
@@ -307,18 +311,24 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                         className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
                                     lg:py-2 lg:px-4 lg:text-base"
                         onClick={() => {
-                            // Navigate to stimulation plan
-                            const event = new CustomEvent('addStimulationTab', {
-                                detail: { 
-                                    data: modifiedElectrodes,
-                                    patientId: state.patientId,
-                                    state: {
-                                        patientId: state.patientId
-                                    },
-                                    originalData: {
-                                        patientId: state.patientId
+                            let stimulationData = modifiedElectrodes.map(electrode => ({
+                                ...electrode,
+                                contacts: electrode.contacts.map((contact, index) => {
+                                    let pair = index;
+                                    if (index == 0) pair = 2;
+                                    return {
+                                        ...contact,
+                                        pair: pair,
+                                        isPlanning: false,
+                                        duration: 3.0, // TODO : ask what default value should be
+                                        frequency: 105.225,
+                                        current: 2.445,
                                     }
-                                }
+                                }),
+                            }));
+                            // Create a new tab with the designation data
+                            const event = new CustomEvent('addStimulationTab', {
+                                detail: { data: stimulationData, patientId : state.patientId }
                             });
                             window.dispatchEvent(event);
                         }}
@@ -329,13 +339,20 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
 
                 <div className="flex flex-row gap-1
                                 lg:gap-2">
-                    <button
-                        className="grow py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-700 border border-sky-700 shadow-lg
-                                lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleSave}
-                    >
-                        Save
-                    </button>
+                    <div className="relative">
+                        <button
+                            className="grow py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-700 border border-sky-700 shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                            onClick={handleSave}
+                        >
+                            Save
+                        </button>
+                        {showSaveSuccess && (
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap z-50">
+                                Save successful!
+                            </div>
+                        )}
+                    </div>
                     <button
                         className="grow py-1 px-2 bg-green-500 text-white font-semibold rounded border border-green-600 hover:bg-green-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
                                     lg:py-2 lg:px-4 lg:text-base"
@@ -345,23 +362,6 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     </button>
                 </div>
             </div>
-
-            {/* Save Success Modal */}
-            {showSaveSuccess && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-3 lg:p-6 rounded-lg shadow-xl">
-                        <h2 className="text-base lg:text-xl font-bold mb-2 lg:mb-4">Success</h2>
-                        <p className="mb-2 lg:mb-4">Designation data saved successfully!</p>
-                        <button
-                            className="px-2 py-1 bg-sky-600 border border-sky-700 text-white rounded hover:bg-sky-700
-                                       lg:px-4 lg:py-2"
-                            onClick={() => setShowSaveSuccess(false)}
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
