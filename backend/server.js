@@ -2,7 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { Resend } from 'resend';
-import apiRoutes from './apiRoutes.js';
+import routes from './routes/index.js';
 import oauthRoutes from './oauth.js';
 import config from "../config.json" with { type: 'json' };
 
@@ -26,7 +26,7 @@ app.use(cors({
 app.use(express.json()); // Parse JSON request body
 
 app.use('/', oauthRoutes);
-app.use("/api", apiRoutes);
+app.use("/api", routes);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

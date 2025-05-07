@@ -7,8 +7,10 @@ import { Container, Button, darkColors, lightColors } from 'react-floating-actio
 import { saveStimulationCSVFile } from "../../utils/CSVParser";
 import mapConsecutive from "../../utils/MapConsecutive";
 import config from "../../../config.json" with { type: 'json' };
+import { useError } from '../../context/ErrorContext';
 
 const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, isFunctionalMapping = false }) => {
+    const { showError } = useError();
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || demoContactData)
     const [planningContacts, setPlanningContacts] = useState(() => {
         if (savedState.planningContacts) return savedState.planningContacts;
@@ -246,6 +248,7 @@ const Contact = ({ contacts, onClick }) => {
 
 // Planning pane on the right
 const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, submitFlag, setSubmitFlag, setElectrodes, onStateChange, savedState, isFunctionalMapping = false }) => {
+    const { showError } = useError();
     const [hoverIndex, setHoverIndex] = useState(null);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
@@ -280,6 +283,7 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
     const createTestSelectionTab = async () => {
         if (Object.keys(contactPairs).length === 0) return;
 
+        
         try {
             console.log('Starting test selection tab creation...');
             console.log('Current state:', {
@@ -288,68 +292,38 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
                 fileName: state.fileName
             });
 
-            // First save the current designation data
             const token = localStorage.getItem('token');
             if (!token) {
                 console.error('No authentication token found');
-                alert('User not authenticated. Please log in to save designations.');
+                showError('User not authenticated. Please log in to save stimulation.');
                 return;
             }
 
             // Fetch patient_id from the parent file
             console.log('Fetching patient_id from parent file...');
-            const parentFileResponse = await fetch(`${config.backendURL}/api/get-file-metadata`, {
-                method: 'POST',
+            const parentFileResponse = await fetch(`${config.backendURL}/api/files/patient/${state.fileId}`, {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': token
-                },
-                body: JSON.stringify({
-                    fileId: state.fileId
-                })
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
             const parentFileData = await parentFileResponse.json();
             console.log('Parent file metadata response:', parentFileData);
 
-            if (!parentFileData.success) {
+            if (!parentFileData.patientId) {
                 console.error('Failed to fetch parent file metadata:', parentFileData.error);
-                alert('Failed to fetch parent file metadata. Please try again.');
+                showError('Failed to fetch parent file metadata. Please try again.');
                 return;
             }
 
-            const parentPatientId = parentFileData.data.patient_id;
+            const parentPatientId = parentFileData.patientId;
             console.log('Retrieved patient_id from parent file:', parentPatientId);
 
-            // Save designation data to database
-            console.log('Saving designation data with patient_id:', parentPatientId);
-            const response = await fetch(`${config.backendURL}/api/save-designation`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token
-                },
-                body: JSON.stringify({
-                    electrodes: electrodes,
-                    fileId: state.fileId,
-                    fileName: state.fileName,
-                    creationDate: state.creationDate,
-                    modifiedDate: new Date().toISOString(),
-                    patientId: parentPatientId
-                }),
-            });
+            await handleSave();
 
-            const result = await response.json();
-            console.log('Save designation response:', result);
-
-            if (!result.success) {
-                console.error('Failed to save designation:', result.error);
-                alert(`Failed to save designation: ${result.error}`);
-                return;
-            }
-
-            // Get designation data from the current localization
-            console.log('Preparing functional test data...');
+            // Clean up the contacts
             const functionalTestData = contacts.map(contact => {
                 const updatedContact = electrodes
                     .flatMap(electrode => electrode.contacts)
@@ -401,7 +375,7 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
                 stack: error.stack,
                 cause: error.cause
             });
-            alert('Failed to create test selection tab. Please try again.');
+            showError('Failed to create test selection tab. Please try again.');
         }
     };
 
@@ -412,6 +386,7 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
             setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
         } catch (error) {
             console.error('Error saving:', error);
+            showError(error.message);
         }
     };
 
@@ -465,8 +440,8 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
 
                 <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
                         contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                        }`} onClick={() => exportState(state, electrodes, isFunctionalMapping)}>
-                    export
+                        }`} onClick={() => exportState(state, electrodes, isFunctionalMapping, true)}>
+                    Export
                 </button>
             </div>
         </div>
@@ -615,9 +590,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
             // Get user ID from session
             const token = localStorage.getItem('token');
             if (!token) {
-                console.error('No authentication token found');
-                alert('User not authenticated. Please log in to save designations.');
-                return;
+                throw new Error('User not authenticated. Please log in to save designations.');
             }
             
             try {
@@ -645,20 +618,13 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
                 console.log('Save stimulation response:', result);
                 if (!result.success) {
                     console.error('Failed to save stimulation:', result.error);
-                    alert(`Failed to save stimulation: ${result.error}`);
-                    return;
+                    throw new Error(`Failed to save stimulation: ${result.error}`);
                 }
 
                 console.log('Stimulation saved successfully');
             } catch (error) {
                 console.error('Error saving stimulation:', error);
-                console.error('Error details:', {
-                    message: error.message,
-                    stack: error.stack,
-                    cause: error.cause
-                });
-                alert(`Error saving stimulation: ${error.message}`);
-                return;
+                throw new Error(`Error saving stimulation: ${error.message}`);
             }
         }
 
@@ -666,12 +632,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
         saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
     } catch (error) {
         console.error('Error exporting contacts:', error);
-        console.error('Error details:', {
-            message: error.message,
-            stack: error.stack,
-            cause: error.cause
-        });
-        alert(`Error exporting contacts: ${error.message}`);
+        throw new Error(`Error exporting contacts: ${error.message}`);
     }
 };
 

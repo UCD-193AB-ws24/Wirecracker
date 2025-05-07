@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signUp, verifyEmail } from '../auth';
 import { GoogleSignInButton } from '../App';
+import { useError } from '../context/ErrorContext';
 
 const Signup = () => {
     const [email, setEmail] = useState('');
@@ -9,13 +10,15 @@ const Signup = () => {
     const [password, setPassword] = useState('');
     const [code, setCode] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
     const navigate = useNavigate();
+    const { showError } = useError();
 
     const handleSignup = async () => {
         // Email validation regex
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            alert('Please enter a valid email address');
+            showError('Please enter a valid email address');
             return;
         }
 
@@ -23,17 +26,19 @@ const Signup = () => {
             await signUp(email, name, password);
             setIsVerifying(true);
         } catch (error) {
-            alert(error.message);
+            showError(error.message);
         }
     };
 
     const handleVerify = async () => {
         try {
             await verifyEmail(email, code);
-            alert('Verification successful! You can log in now.');
-            navigate('/login');
+            setSuccessMessage('Verification successful! You can log in now.');
+            setTimeout(() => {
+                navigate('/login');
+            }, 1500);
         } catch (error) {
-            alert(error.message);
+            showError(error.message);
         }
     };
 
@@ -130,6 +135,9 @@ const Signup = () => {
                         >
                             Verify Email
                         </button>
+                        {successMessage && (
+                            <p className="mt-2 text-center text-sm font-medium text-green-600">{successMessage}</p>
+                        )}
                     </div>
                 )}
             </div>

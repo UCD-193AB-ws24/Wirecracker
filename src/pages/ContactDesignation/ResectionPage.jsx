@@ -2,6 +2,8 @@ import { parseCSVFile } from '../../utils/CSVParser';
 import load_untouch_nii from '../../utils/Nifti_viewer/load_untouch_nifti.js'
 import nifti_anatomical_conversion from '../../utils/Nifti_viewer/nifti_anatomical_conversion.js'
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useError } from '../../context/ErrorContext';
+import { niftiStorage } from '../../utils/IndexedDBStorage';
 
 const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
     const [imageLoaded, setImageLoaded] = useState(savedState.isLoaded || false);
@@ -10,7 +12,6 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
         onStateChange({
             ...savedState,
             layout: "resection",
-            //isLoaded: imageLoaded,
         });
     }, [imageLoaded]);
 
@@ -53,12 +54,13 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
 };
 
 const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChange, savedState = {} }) => {
+    const { showError } = useError();
     const fixedMainViewSize = 700;
     const fixedSubViewSize = 520;
 
     const [niiData, setNiiData] = useState(null);
-//     const [niiData, setNiiData] = useState(savedState.nii || null);
     const [coordinates, setCoordinates] = useState(savedState.coordinate || []);
+    const [successMessage, setSuccessMessage] = useState('');
     const [markers, setMarkers] = useState([]);
     const [sliceIndex, setSliceIndex] = useState(savedState.canvas_main_slice || 0);
     const [maxSlices, setMaxSlices] = useState(savedState.canvas_main_maxSlice || 0);
@@ -70,6 +72,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     const [subCanvas1SliceIndex, setSubCanvas1SliceIndex] = useState(savedState.canvas_sub0_slice || 0);
     const [maxSubCanvas1Slices, setMaxSubCanvas1Slices] = useState(savedState.canvas_sub0_maxSlice || 0);
     const [hoveredMarker, setHoveredMarker] = useState(savedState.canvas_hoveredMarker || null);
+    const [isLoadingNifti, setIsLoadingNifti] = useState(false);
 
     const [selectedContacts, setSelectedContacts] = useState([]);
     const [isSelecting, setIsSelecting] = useState(false);
@@ -90,6 +93,27 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     const subCanvas1SliceIndexRef = useRef(subCanvas1SliceIndex);
     const maxSubCanvas0SlicesRef = useRef(maxSubCanvas0Slices);
     const maxSubCanvas1SlicesRef = useRef(maxSubCanvas1Slices);
+
+    // Load NIfTI data from IndexedDB on component mount
+    useEffect(() => {
+        const loadSavedNifti = async () => {
+            if (savedState.fileId) {
+                try {
+                    setIsLoadingNifti(true);
+                    const savedNifti = await niftiStorage.getNiftiFile(savedState.fileId);
+                    if (savedNifti) {
+                        setNiiData(savedNifti);
+                        onLoad(true);
+                    }
+                } catch (error) {
+                    console.error('Error loading saved NIfTI file:', error);
+                } finally {
+                    setIsLoadingNifti(false);
+                }
+            }
+        };
+        loadSavedNifti();
+    }, [savedState.fileId]);
 
     // Update refs when state changes
     useEffect(() => { sliceIndexRef.current = sliceIndex; }, [sliceIndex]);
@@ -126,15 +150,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
             canvas_hoveredMarker: hoveredMarker,
         });
     }, [sliceIndex, maxSlices, direction, hoveredMarker, isLoaded]);
-
-//     useEffect(() => {
-//         if (niiData !== null) {
-//             onStateChange({
-//                 ...savedState,
-//                 nii: niiData
-//             });
-//         }
-//     }, [niiData]);
 
     useEffect(() => {
         onStateChange({
@@ -206,7 +221,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
     // Function to draw markers on the canvas
     const drawMarkers = (ctx, dir, slice, viewSize) => {
-
         if (!niiData || coordinates.length === 0) return;
 
         const [cols, rows] = getCanvasDimensions(niiData, dir);
@@ -257,9 +271,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     break;
             }
 
-
             if (canvasX !== undefined && canvasY !== undefined) {
-
                 let targetContact;
 
                 for (let electrode of electrodes) {
@@ -483,7 +495,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                             setSelectedContacts([]);
                         }
 
-
                         break;
                     case 2:
                         // UNDO the first click
@@ -517,7 +528,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
                         break;
                 }
-
 
                 setHoveredMarker(
                     {
@@ -641,6 +651,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         if (!file) return;
 
         try {
+            setIsLoadingNifti(true);
             const arrayBuffer = await file.arrayBuffer();
             let nii = load_untouch_nii(file.name, arrayBuffer);
             nii = nifti_anatomical_conversion(nii);
@@ -651,7 +662,13 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
             const isRGB = (nii.hdr.dime.datatype === 128 && nii.hdr.dime.bitpix === 24) ||
                     (nii.hdr.dime.datatype === 511 && nii.hdr.dime.bitpix === 96);
-            setNiiData({ ...nii, isRGB });
+            const niftiData = { ...nii, isRGB };
+            setNiiData(niftiData);
+
+            // Save NIfTI data to IndexedDB
+            if (savedState.fileId) {
+                await niftiStorage.saveNiftiFile(savedState.fileId, niftiData);
+            }
 
             const slices = nii.hdr.dime.dim[getDirectionDimension()];
             const subCanvas0Slices = nii.hdr.dime.dim[getDirectionDimension(subCanvas0Direction)];
@@ -673,6 +690,9 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
             onLoad(true);
         } catch (error) {
             console.error('Error loading NIfTI file:', error);
+            showError('Error loading NIfTI file: ' + error.message);
+        } finally {
+            setIsLoadingNifti(false);
         }
     };
 
@@ -681,7 +701,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         if (!file) return;
 
         try {
-            const { identifier, data } = await parseCSVFile(file, true);
+            const { identifier, data } = await parseCSVFile(file, true, showError);
             if (identifier === "coordinates") {
                 // Check for columns
                 if (Array.isArray(data)
@@ -692,14 +712,16 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     && data[0].y
                     && data[0].z) {
                     setCoordinates(data); // Store CSV coordinates in state
+                    setSuccessMessage('Coordinates loaded successfully');
+                    setTimeout(() => setSuccessMessage(''), 3000); // Clear message after 3 seconds
                 } else {
-                    alert("Please check the column name of the CSV data. Required: [Electrode,Contact,x,y,z]");
+                    showError("Please check the column name of the CSV data. Required: [Electrode,Contact,x,y,z]");
                 }
             } else {
-                alert("Unknown CSV file format");
+                showError("Unknown CSV file format");
             }
-        } catch (err) {
-            console.error('Error parsing CSV file:', err);
+        } catch (error) {
+            showError("Error parsing CSV file: " + error.message);
         }
         setHoveredMarker(null);
     };
@@ -801,15 +823,19 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     style={{ display: 'none' }}
                     id="coorInput"
                 />
-                <button
-                    className="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 h-8 text-xs hover:bg-sky-800 transition-colors duration-200
-                               md:w-40 md:h-10 md:text-sm
-                               lg:w-48 lg:h-12 lg:text-base
-                               xl:w-64"
-                    onClick={() => document.getElementById('coorInput').click()}
-                >
-                    Open Coordinate File
-                </button>
+                <div className="flex flex-col items-center gap-2">
+                    <button
+                        className="border-solid border-2 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 hover:bg-sky-700 hover:text-white transition-colors duration-200"
+                        onClick={() => document.getElementById('coorInput').click()}
+                    >
+                        Open Coordinate File
+                    </button>
+                    {successMessage && (
+                        <div className="text-green-600 text-sm">
+                            {successMessage}
+                        </div>
+                    )}
+                </div>
                 <input
                     type="file"
                     accept=".nii"
@@ -817,15 +843,24 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     style={{ display: 'none' }}
                     id="niftiInput"
                 />
-                <button
-                    className="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 h-8 text-xs hover:bg-sky-800 hover:text-white transition-colors duration-200
-                               md:w-40 md:h-10 md:text-sm
-                               lg:w-48 lg:h-12 lg:text-base
-                               xl:w-64"
-                    onClick={() => document.getElementById('niftiInput').click()}
-                >
-                    Open NIfTI File
-                </button>
+                <div className="flex flex-col items-center gap-2">
+                    <button
+                        className="border-solid border-2 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 hover:bg-sky-700 hover:text-white transition-colors duration-200"
+                        onClick={() => document.getElementById('niftiInput').click()}
+                        disabled={isLoadingNifti}
+                    >
+                        Open NIfTI File
+                    </button>
+                    {isLoadingNifti && (
+                        <div className="flex items-center text-sky-700 text-sm">
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-sky-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading NIfTI file...
+                        </div>
+                    )}
+                </div>
             </div>
             {isLoaded && (
                 <div className="flex flex-col lg:flex-row gap-3 lg:gap-6">
