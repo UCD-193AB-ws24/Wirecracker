@@ -603,6 +603,7 @@ const HomePage = () => {
                     isFunctionalMapping={false}
                     initialData={{}}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     savedState={currentTab.state}
                 />;
             case 'functional-mapping':
@@ -909,6 +910,7 @@ const HomePage = () => {
                     isFunctionalMapping={false}
                     initialData={{}}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     savedState={currentTab.state}
                 />;
             case 'csv-stimulation':
@@ -917,6 +919,7 @@ const HomePage = () => {
                     isFunctionalMapping={false}
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     savedState={currentTab.state}
                 />;
             case 'functional-mapping':
