@@ -126,8 +126,6 @@ router.get('/get-tests', async (req, res) => {
     const transformed_data = data.map((test) => {
       const tag = test.test_tag.map((tag) => tag.tag?.name);
 
-      console.log(tag)
-
       const region = test.function_test.map((func) => {
         return func.function?.gm_function.map((gm) => gm.gm?.name)
       });
