@@ -516,8 +516,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             );
 
             if (existingTab) {
-                // Check if there are any changes using the existing function
-                await checkForChanges(electrodes);
+                // Compare current electrodes with the designation tab's original data
+                const hasChanges = JSON.stringify(electrodes) !== JSON.stringify(existingTab.data.originalData);
                 
                 if (hasChanges) {
                     // First, remove the tab from localStorage to prevent ghost tabs
@@ -533,15 +533,19 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     // Wait a bit to ensure the tab is fully closed
                     await new Promise(resolve => setTimeout(resolve, 100));
 
+                    // Create deep copies of the data
+                    const originalDataCopy = JSON.parse(JSON.stringify(electrodes));
+                    const localizationDataCopy = JSON.parse(JSON.stringify({
+                        ...electrodes,
+                        patientId: patientId
+                    }));
+
                     // Create a new tab with updated data
                     const event = new CustomEvent('addDesignationTab', {
                         detail: { 
-                            originalData: electrodes,
+                            originalData: originalDataCopy,
                             data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
-                            localizationData: {
-                                ...electrodes,
-                                patientId: patientId
-                            },
+                            localizationData: localizationDataCopy,
                             patientId: patientId,
                             fileId: existingTab.state.fileId
                         }
@@ -568,15 +572,21 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
                 const designationResult = await designationResponse.json();
                 
+                // Create deep copies of the data
+                const originalDataCopy = JSON.parse(JSON.stringify(
+                    designationResult.exists ? designationResult.data.localization_data : electrodes
+                ));
+                const localizationDataCopy = JSON.parse(JSON.stringify({
+                    ...(designationResult.exists ? designationResult.data.localization_data : electrodes),
+                    patientId: patientId
+                }));
+                
                 // Create a new tab
                 const event = new CustomEvent('addDesignationTab', {
                     detail: { 
-                        originalData: designationResult.exists ? designationResult.data.localization_data : electrodes,
+                        originalData: originalDataCopy,
                         data: designationResult.exists ? designationResult.data.designation_data : saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
-                        localizationData: {
-                            ...(designationResult.exists ? designationResult.data.localization_data : electrodes),
-                            patientId: patientId
-                        },
+                        localizationData: localizationDataCopy,
                         patientId: patientId,
                         fileId: designationResult.exists ? designationResult.fileId : null
                     }

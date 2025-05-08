@@ -20,14 +20,14 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     // Store the original localization data if it exists
     const [localizationData, setLocalizationData] = useState(() => {
         if (savedState && savedState.localizationData) {
-            return savedState.localizationData;
+            return JSON.parse(JSON.stringify(savedState.localizationData));
         }
-        return initialData?.originalData || null;
+        return initialData?.originalData ? JSON.parse(JSON.stringify(initialData.originalData)) : null;
     });
 
     const [modifiedElectrodes, setModifiedElectrodes] = useState(() => {
         if (savedState && savedState.electrodes) {
-            return savedState.electrodes;
+            return JSON.parse(JSON.stringify(savedState.electrodes));
         }
 
         if (initialData && Object.keys(initialData).length !== 0) {

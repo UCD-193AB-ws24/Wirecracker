@@ -667,7 +667,20 @@ const HomePage = () => {
         setTabs(prevTabs => 
             prevTabs.map(tab => 
                 tab.id === tabId 
-                    ? { ...tab, state: {...tab.state, ...newState} }
+                    ? { 
+                        ...tab, 
+                        state: {
+                            ...tab.state,
+                            ...Object.fromEntries(
+                                Object.entries(newState).map(([key, value]) => [
+                                    key,
+                                    typeof value === 'object' && value !== null
+                                        ? JSON.parse(JSON.stringify(value))
+                                        : value
+                                ])
+                            )
+                        }
+                    }
                     : tab
             )
         );
