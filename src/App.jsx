@@ -6,7 +6,7 @@ import Dropdown from './utils/Dropdown';
 import PlanTypePage from './pages/StimulationPlanning/PlanTypeSelection'
 import ContactSelection from './pages/StimulationPlanning/ContactSelection'
 import FunctionalTestSelection from './pages/StimulationPlanning/FunctionalTestSelection'
-import UserDocumentation from './pages/UserDocumentation'
+import UserDocumentation from './pages/UserDocumentation';
 import Debug from './pages/Debug';
 import DatabaseTable from "./pages/DatabaseTable";
 import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
@@ -98,7 +98,6 @@ const PatientTabGroup = ({ patientId, tabs, activeTab, onTabClick, onTabClose, o
 
     const handleCloseGroup = (e) => {
         e.stopPropagation();
-        // Close all tabs in the group at once by passing an array of tab IDs
         onTabClose(patientTabs.map(tab => tab.id));
     };
 
@@ -115,18 +114,39 @@ const PatientTabGroup = ({ patientId, tabs, activeTab, onTabClick, onTabClose, o
         };
     }, []);
 
+    // Check if any tab in this group is active
+    const isGroupActive = patientTabs.some(tab => tab.id === activeTab);
+
+    // Get the first three letters of the patient ID and format the creation date
+    const shortPatientId = patientId.substring(0, 3).toUpperCase();
+    const creationDate = new Date(patientTabs[0].state.creationDate).toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: '2-digit'
+    });
+
     return (
         <div className="relative group" ref={groupRef}>
             <div 
-                className="flex items-center px-4 py-2 border-b-2 cursor-pointer hover:bg-gray-50"
-                onClick={() => setIsExpanded(!isExpanded)}
+                className={`flex items-center px-4 py-2 border-b-2 cursor-pointer hover:bg-gray-50 ${
+                    isGroupActive ? 'border-sky-700 text-sky-700' : 'border-transparent'
+                }`}
+                onClick={() => {
+                    if (isGroupActive) {
+                        setIsExpanded(!isExpanded);
+                    } else {
+                        // If clicking on an inactive group, make its first tab active
+                        onTabClick(patientTabs[0].id);
+                        setIsExpanded(true);
+                    }
+                }}
             >
                 <span className="mr-5 text-gray-500 transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="m6 9 6 6 6-6"/>
                     </svg>
                 </span>
-                <span className="font-semibold">Patient {patientId}</span>
+                <span className="font-semibold">Patient {shortPatientId}-{creationDate}</span>
                 
                 <button 
                     className="ml-2 text-gray-500 cursor-pointer hover:text-gray-700"
@@ -135,7 +155,7 @@ const PatientTabGroup = ({ patientId, tabs, activeTab, onTabClick, onTabClose, o
                     ×
                 </button>
             </div>
-            {isExpanded && (
+            {isExpanded && isGroupActive && (
                 <div className="absolute left-0 top-full z-10 bg-white shadow-lg border border-gray-200 min-w-[200px]">
                     {patientTabs.map(tab => (
                         <div 
@@ -592,10 +612,6 @@ const HomePage = () => {
                     }
                 });
                 break;
-            case 'usage-docs':
-                title = `docs - ${data.path}`;
-                // TODO do something about patient ID that is safe
-                break;
             case 'seizure-recreation':
             case 'cceps':
                 return <ContactSelection
@@ -1044,7 +1060,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                                    lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                    xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
                         onClick={onNewLocalization}>
-                        Create New Localization
+                        Create New Patient
                     </button>
                     <input
                         type="file"
