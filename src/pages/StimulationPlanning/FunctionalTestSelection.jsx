@@ -19,7 +19,6 @@ const FunctionalTestSelection = ({
     const [contactPairs, setContactPairs] = useState(() => {
         if (savedState.contactPairs) return savedState.contactPairs;
         if (initialData.data) {
-            console.log(initialData)
             return initialData.data.map(electrode => {
                 return mapConsecutive(electrode.contacts, 2,
                     (contacts) => {return contacts});
@@ -85,7 +84,6 @@ const FunctionalTestSelection = ({
     useEffect(() => {
         setState(() => {
             return {
-                electrodes: electrodes,
                 contactPairs: contactPairs,
                 tests: tests,
                 allTests: allAvailableTests,
@@ -102,7 +100,6 @@ const FunctionalTestSelection = ({
             };
         });
     }, [
-        electrodes,
         contactPairs,
         tests,
         allAvailableTests,
@@ -166,8 +163,8 @@ const FunctionalTestSelection = ({
         setTests(newTests);
     };
 
-    const handleAddTest = (contact) => {
-        setSelectedContact(contact);
+    const handleAddTest = (contactPair) => {
+        setSelectedContact(contactPair[0]);
         setShowPopup(true);
         setSelectedTest(null);
     };
@@ -282,8 +279,6 @@ const FunctionalTestSelection = ({
         }
     };
 
-    console.log(contactPairs)
-
     return (
         <div className="p-12 bg-gray-50 min-h-screen">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">
@@ -304,7 +299,6 @@ const FunctionalTestSelection = ({
                         key={contactPair[0].id}
                         className="border p-4 mb-4 rounded-lg shadow-sm bg-gray-100"
                     >
-                        {console.log(contactPair)}
                         <div className="flex justify-between items-center">
                             <span className="font-semibold text-lg">
                                 {contactPair[0].id}-{contactPair[1].id}
@@ -392,7 +386,7 @@ const FunctionalTestSelection = ({
                         {/* Add test button */}
                         <button
                             className="mt-2 w-full text-blue-600 hover:text-blue-800 text-sm"
-                            onClick={() => handleAddTest(contact)}
+                            onClick={() => handleAddTest(contactPair)}
                         >
                             + Add Test
                         </button>
