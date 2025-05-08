@@ -7,21 +7,30 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
     }, [initialData]);
 
     return (
-        <div className="flex justify-center items-center h-screen bg-gray-100">
-            <div className="grid gap-6">
+        <div className="flex justify-center items-center h-full bg-gray-100">
+            <div className="grid gap-3 lg:gap-6">
                 <button
-                    className="h-16 w-128 bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
+                    className="h-10 w-68 bg-sky-600 hover:bg-sky-700 border border-sky-700 text-white font-semibold rounded cursor-pointer transition-colors duration-200
+                               md:h-11 md:w-80 md:text-lg
+                               lg:h-13 lg:w-96 lg:text-xl
+                               xl:h-16 xl:w-128 xl:text-2xl"
                     onClick={() => switchContent('seizure-recreation')}>
                     Seizure Recreation
                 </button>
                 <button
-                    className="h-16 w-128 bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
+                    className="h-10 w-68 bg-sky-600 hover:bg-sky-700 border border-sky-700 text-white font-semibold rounded cursor-pointer transition-colors duration-200
+                               md:h-11 md:w-80 md:text-lg
+                               lg:h-13 lg:w-96 lg:text-xl
+                               xl:h-16 xl:w-128 xl:text-2xl"
                     onClick={() => switchContent('cceps')}>
                     CCEPs
                 </button>
                 <button
-                    className="h-16 w-128 bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
-                    onClick={() => switchContent('functional-mapping')}>
+                    className="h-10 w-68 bg-sky-600 hover:bg-sky-700 border border-sky-700 text-white font-semibold rounded cursor-pointer transition-colors duration-200
+                               md:h-11 md:w-80 md:text-lg
+                               lg:h-13 lg:w-96 lg:text-xl
+                               xl:h-16 xl:w-128 xl:text-2xl"
+                    onClick={() => switchContent('functional-test')}>
                     Functional Mapping
                 </button>
             </div>

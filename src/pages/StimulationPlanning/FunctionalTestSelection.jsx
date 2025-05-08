@@ -3,24 +3,33 @@ import { demoContactsData, demoTestData } from "./demoContactsData";
 import { saveTestCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
+import mapConsecutive from "../../utils/MapConsecutive";
 
 const backendURL = config.backendURL;
 
 const FunctionalTestSelection = ({
     initialData = {},
     onStateChange,
+    switchContent,
     savedState = {},
 }) => {
     const { showError } = useError();
-
     const [allAvailableTests, setAllAvailableTests] = useState([] || savedState.allTests);
-
-    const [contacts, setContacts] = useState(
-        savedState.contacts || initialData.data.contacts || demoContactsData
-    );
+    
+    const [contactPairs, setContactPairs] = useState(() => {
+        if (savedState.contactPairs) return savedState.contactPairs;
+        if (initialData.data) {
+            return initialData.data.map(electrode => {
+                return mapConsecutive(electrode.contacts, 2,
+                    (contacts) => {return contacts});
+            })
+            .flat()
+            .sort((a, b) => a[0].order - b[0].order);
+        }
+    });
     const [tests, setTests] = useState(() => {
         if (savedState.tests) return savedState.tests;
-        if (initialData.data.tests) {
+        if (initialData.tests) {
             let loadedTests = {};
             Object.entries(initialData.data.tests).map(([contactID, tests]) => { // for each contact
                 loadedTests[contactID] = tests.map(test => {
@@ -75,7 +84,7 @@ const FunctionalTestSelection = ({
     useEffect(() => {
         setState(() => {
             return {
-                contacts: contacts,
+                contactPairs: contactPairs,
                 tests: tests,
                 allTests: allAvailableTests,
                 availableTests: availableTests,
@@ -91,7 +100,7 @@ const FunctionalTestSelection = ({
             };
         });
     }, [
-        contacts,
+        contactPairs,
         tests,
         allAvailableTests,
         availableTests,
@@ -141,20 +150,21 @@ const FunctionalTestSelection = ({
     // Automatically assigns the best test to each contact
     const autoAssignTests = () => {
         const newTests = {};
-        contacts.forEach((contact) => {
+        contactPairs.forEach((contactPair) => {
             const availableTests = allAvailableTests.filter(
-                (test) => test.region.includes(contact.associatedLocation.toLowerCase()),
+                (test) => (test.region.includes(contactPair[0].associatedLocation.toLowerCase()) ||
+                          (test.region.includes(contactPair[1].associatedLocation.toLowerCase())))
             );
             if (availableTests.length > 0) {
                 const bestTest = selectBestTest(availableTests);
-                newTests[contact.id] = [bestTest];
+                newTests[contactPair[0].id] = [bestTest];
             }
         });
         setTests(newTests);
     };
 
-    const handleAddTest = (contact) => {
-        setSelectedContact(contact);
+    const handleAddTest = (contactPair) => {
+        setSelectedContact(contactPair[0]);
         setShowPopup(true);
         setSelectedTest(null);
     };
@@ -195,7 +205,7 @@ const FunctionalTestSelection = ({
         });
     };
 
-    const exportTests = async (tests, contacts, download = true) => {
+    const exportTests = async (tests, contactPairs, download = true) => {
         try {
             // First save to database if we have a file ID
             if (savedState.fileId) {
@@ -223,7 +233,7 @@ const FunctionalTestSelection = ({
                         },
                         body: JSON.stringify({
                             tests: tests,
-                            contacts: contacts,
+                            contactPairs: contactPairs,
                             fileId: savedState.fileId,
                             fileName: savedState.fileName,
                             creationDate: savedState.creationDate,
@@ -260,9 +270,9 @@ const FunctionalTestSelection = ({
             }
 
             // Then export to CSV if download is true
-            if (download) {
-                saveTestCSVFile(tests, contacts, download);
-            }
+            // if (download) {
+            //     saveTestCSVFile(tests, contactPairs, download);
+            // }
         } catch (error) {
             console.error("Error exporting contacts:", error);
             showError(`Error exporting contacts: ${error.message}`);
@@ -284,36 +294,36 @@ const FunctionalTestSelection = ({
             </button>
 
             <div className="bg-white py-4 px-40 shadow-md rounded-lg">
-                {contacts.map((contact) => (
+                {contactPairs.map((contactPair) => (
                     <div
-                        key={contact.id}
+                        key={contactPair[0].id}
                         className="border p-4 mb-4 rounded-lg shadow-sm bg-gray-100"
                     >
                         <div className="flex justify-between items-center">
                             <span className="font-semibold text-lg">
-                                {contact.id}
+                                {contactPair[0].id}-{contactPair[1].id}
                             </span>
                             <span className="text-gray-600 text-sm">
-                                {contact.associatedLocation}
+                                {contactPair[0].associatedLocation} - {contactPair[1].associatedLocation}
                             </span>
                         </div>
                         <div className="text-gray-500 text-sm">
-                            Duration: {contact.duration} sec | Frequency:{" "}
-                            {contact.frequency} Hz | Current: {contact.current}{" "}
+                            Duration: {contactPair[0].duration} sec | Frequency:{" "}
+                            {contactPair[0].frequency} Hz | Current: {contactPair[0].current}{" "}
                             mA
                         </div>
 
                         {/* Display added tests */}
                         <div className="mt-2">
-                            {tests[contact.id]?.map((test, index) => {
-                                const testKey = `${contact.id}-${test.id}`;
+                            {tests[contactPair[0].id]?.map((test, index) => {
+                                const testKey = `${contactPair[0].id} - ${test.id}`;
                                 return (
                                     <div
                                         key={index}
                                         className="bg-blue-100 p-3 rounded mt-1 cursor-pointer"
                                         onClick={() =>
                                             toggleTestDetails(
-                                                contact.id,
+                                                contactPair[0].id,
                                                 test.id,
                                             )
                                         }
@@ -339,7 +349,7 @@ const FunctionalTestSelection = ({
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     removeTest(
-                                                        contact.id,
+                                                        contactPair[0].id,
                                                         index,
                                                     );
                                                 }}
@@ -376,7 +386,7 @@ const FunctionalTestSelection = ({
                         {/* Add test button */}
                         <button
                             className="mt-2 w-full text-blue-600 hover:text-blue-800 text-sm"
-                            onClick={() => handleAddTest(contact)}
+                            onClick={() => handleAddTest(contactPair)}
                         >
                             + Add Test
                         </button>
@@ -506,6 +516,17 @@ const FunctionalTestSelection = ({
                     onClick={() => exportTests(tests, contacts)}
                 >
                     Export
+                </button>
+            </div>
+
+            {/* Floating Back Button at the Bottom Left */}
+            <div className="fixed bottom-2 left-2 z-50
+                            lg:bottom-6 lg:left-6">
+                <button
+                    className="py-1 px-2 border border-sky-800 bg-sky-600 text-white text-sm text-center font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800
+                               lg:py-2 lg:px-4 lg:text-base"
+                    onClick={() => switchContent('stimulation')}>
+                    Back
                 </button>
             </div>
         </div>
