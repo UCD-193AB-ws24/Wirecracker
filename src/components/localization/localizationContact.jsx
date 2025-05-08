@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import Popup from 'reactjs-popup';
+import { useState, useEffect, useRef } from 'react';
 import config from "../../../config.json" with { type: 'json' };
 
 const backendURL = config.backendURL;
@@ -22,6 +21,46 @@ const LocalizationContact = ({
     const [desc1Filter, setDesc1Filter] = useState('');
     const [desc2Filter, setDesc2Filter] = useState('');
     const [showPopup, setShowPopup] = useState(false);
+    const modalRef = useRef(null);
+
+    // Add debug logging for showPopup state changes
+    useEffect(() => {
+        console.log('Modal state changed:', { showPopup, label, number });
+    }, [showPopup, label, number]);
+
+    // Handle clicking outside the modal
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (modalRef.current && !modalRef.current.contains(event.target)) {
+                setShowPopup(false);
+            }
+        };
+
+        if (showPopup) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showPopup]);
+
+    // Handle escape key
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                setShowPopup(false);
+            }
+        };
+
+        if (showPopup) {
+            document.addEventListener('keydown', handleEscape);
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [showPopup]);
 
     useEffect(() => {
         // Fetch region names when component mounts
@@ -97,8 +136,20 @@ const LocalizationContact = ({
         return regionNames.find(name => name.toLowerCase() === lowerInput);
     };
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
+    // Filter region names based on input, case-insensitive
+    const filteredRegions1 = desc1Filter
+        ? regionNames.filter(name => name.toLowerCase().includes(desc1Filter.toLowerCase()))
+        : regionNames;
+
+    const filteredRegions2 = desc2Filter
+        ? regionNames.filter(name => name.toLowerCase().includes(desc2Filter.toLowerCase()))
+        : regionNames;
+
+    const contactTypes = ['GM', 'GM/GM', 'GM/WM', 'WM', 'OOB'];
+
+    const handleSubmit = async (e) => {
+        console.log('Form submission started');
+        e.preventDefault();
         let updatedContact = { ...contactData };
         
         if (selectedValue === 'GM/GM') {
@@ -111,121 +162,145 @@ const LocalizationContact = ({
         }
         
         updatedContact.associatedLocation = selectedValue;
-        onContactUpdate(label, number, updatedContact);
-        setShowPopup(false);
+        console.log('Updating contact:', { label, number, updatedContact });
+        
+        try {
+            await Promise.resolve(onContactUpdate(label, number, updatedContact));
+            console.log('Contact updated, attempting to close modal');
+            setShowPopup(false);
+        } catch (error) {
+            console.error('Error updating contact:', error);
+        }
     };
 
-    // Filter region names based on input, case-insensitive
-    const filteredRegions1 = desc1Filter
-        ? regionNames.filter(name => name.toLowerCase().includes(desc1Filter.toLowerCase()))
-        : regionNames;
-
-    const filteredRegions2 = desc2Filter
-        ? regionNames.filter(name => name.toLowerCase().includes(desc2Filter.toLowerCase()))
-        : regionNames;
-
-    const contactTypes = ['GM', 'GM/GM', 'GM/WM', 'WM', 'OOB'];
-
     return (
-        <Popup
-            trigger={
-                <button
-                    className={`flex flex-col items-center justify-center p-2 border rounded-lg transition-colors duration-200 min-w-[100px] ${
-                        isHighlighted 
-                            ? 'border-blue-500 bg-blue-50 shadow-md' 
-                            : 'border-gray-300 hover:bg-gray-100'
-                    }`}
-                    key={number}
-                    onClick={() => !readOnly && setShowPopup(true)}
-                >
-                    <div className="text-sm font-medium text-gray-700 w-20 h-5">{number}</div>
-                    <div className="text-xs text-gray-500 w-20 h-15">{displayText}</div>
-                </button>
-            }
-            open={showPopup}
-            onClose={() => setShowPopup(false)}
-            modal
-            nested
-            disabled={readOnly}
-        >
-            {close => (
-                <div className="modal bg-white p-6 rounded-lg shadow-lg">
-                    <h4 className="text-lg font-semibold mb-4">
-                        Edit Contact {number}
-                    </h4>
-                    <form onSubmit={handleSubmit}>
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Location Type
-                            </label>
-                            <select
-                                value={selectedValue}
-                                onChange={(e) => setSelectedValue(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            >
-                                <option value="">Select type...</option>
-                                {contactTypes.map(type => (
-                                    <option key={type} value={type}>{type}</option>
-                                ))}
-                            </select>
-                        </div>
+        <div className="relative">
+            <button
+                className={`flex flex-col items-center justify-center p-2 border rounded-lg transition-colors duration-200 min-w-[100px] ${
+                    isHighlighted 
+                        ? 'border-blue-500 bg-blue-50 shadow-md' 
+                        : 'border-gray-300 hover:bg-gray-100'
+                }`}
+                onClick={() => {
+                    console.log('Contact button clicked:', { label, number, readOnly });
+                    if (!readOnly) {
+                        setShowPopup(true);
+                    }
+                }}
+            >
+                <div className="text-sm font-medium text-gray-700 w-20 h-5">{number}</div>
+                <div className="text-xs text-gray-500 w-20 h-15">{displayText}</div>
+            </button>
 
-                        {(selectedValue === 'GM' || selectedValue === 'GM/WM') && (
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Region
-                                </label>
-                                <input
-                                    type="text"
-                                    value={desc1}
-                                    onChange={(e) => {
-                                        setDesc1(e.target.value);
-                                        setDesc1Filter(e.target.value);
-                                    }}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    list="regions1"
-                                />
-                                <datalist id="regions1">
-                                    {filteredRegions1.map(name => (
-                                        <option key={name} value={name} />
-                                    ))}
-                                </datalist>
-                            </div>
-                        )}
-
-                        {selectedValue === 'GM/GM' && (
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Second Region
-                                </label>
-                                <input
-                                    type="text"
-                                    value={desc2}
-                                    onChange={(e) => {
-                                        setDesc2(e.target.value);
-                                        setDesc2Filter(e.target.value);
-                                    }}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    list="regions2"
-                                />
-                                <datalist id="regions2">
-                                    {filteredRegions2.map(name => (
-                                        <option key={name} value={name} />
-                                    ))}
-                                </datalist>
-                            </div>
-                        )}
-
-                        <button
-                            type="submit"
-                            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200"
+            {showPopup && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div ref={modalRef} className="modal bg-white p-6 rounded-lg shadow-lg relative max-w-md w-full mx-4">
+                        <button 
+                            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                            onClick={() => setShowPopup(false)}
+                            type="button"
                         >
-                            Save
+                            ×
                         </button>
-                    </form>
+                        <h4 className="text-lg font-semibold mb-4">
+                            Edit Contact {number}
+                        </h4>
+                        <form onSubmit={handleSubmit}>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Location Type
+                                </label>
+                                <select
+                                    value={selectedValue}
+                                    onChange={(e) => setSelectedValue(e.target.value)}
+                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                >
+                                    <option value="">Select type...</option>
+                                    {contactTypes.map(type => (
+                                        <option key={type} value={type}>{type}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {(selectedValue === 'GM' || selectedValue === 'GM/WM') && (
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Region
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={desc1}
+                                        onChange={(e) => {
+                                            setDesc1(e.target.value);
+                                            setDesc1Filter(e.target.value);
+                                        }}
+                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                        list="regions1"
+                                    />
+                                    <datalist id="regions1">
+                                        {filteredRegions1.map(name => (
+                                            <option key={name} value={name} />
+                                        ))}
+                                    </datalist>
+                                </div>
+                            )}
+
+                            {selectedValue === 'GM/GM' && (
+                                <>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            First Region
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={desc1}
+                                            onChange={(e) => {
+                                                setDesc1(e.target.value);
+                                                setDesc1Filter(e.target.value);
+                                            }}
+                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                            list="regions1"
+                                        />
+                                        <datalist id="regions1">
+                                            {filteredRegions1.map(name => (
+                                                <option key={name} value={name} />
+                                            ))}
+                                        </datalist>
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Second Region
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={desc2}
+                                            onChange={(e) => {
+                                                setDesc2(e.target.value);
+                                                setDesc2Filter(e.target.value);
+                                            }}
+                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                            list="regions2"
+                                        />
+                                        <datalist id="regions2">
+                                            {filteredRegions2.map(name => (
+                                                <option key={name} value={name} />
+                                            ))}
+                                        </datalist>
+                                    </div>
+                                </>
+                            )}
+
+                            <button
+                                type="submit"
+                                className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200"
+                            >
+                                Save
+                            </button>
+                        </form>
+                    </div>
                 </div>
             )}
-        </Popup>
+        </div>
     );
 };
 

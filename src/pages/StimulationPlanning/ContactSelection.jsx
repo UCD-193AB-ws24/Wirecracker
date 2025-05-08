@@ -5,25 +5,26 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import { saveStimulationCSVFile } from "../../utils/CSVParser";
+import mapConsecutive from "../../utils/MapConsecutive";
 import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
 
-const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, isFunctionalMapping = false }) => {
+const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, switchContent, isFunctionalMapping = false }) => {
     const { showError } = useError();
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || demoContactData)
     const [planningContacts, setPlanningContacts] = useState(() => {
         if (savedState.planningContacts) return savedState.planningContacts;
         if (initialData.data) {
             return initialData.data.map(electrode => {
-                return electrode.contacts.filter((contact) => contact.isPlanning);
+                return mapConsecutive(electrode.contacts, 2,
+                    (contacts) => {contacts.filter((contactPair) => contactPair[0].isPlanning)});
             })
             .flat()
-            .sort((a, b) => a.order - b.order);
+            .sort((a, b) => a[0].order - b[0].order);
         }
         return [];
     });
     const [areAllVisible, setAreAllVisible] = useState(savedState.areAllVisible || false);      // Boolean for if all contacts are visible
-    const [isPairing, setIsPairing] = useState(savedState.isPairing || false);
     const [submitPlanning, setSubmitPlanning] = useState(savedState.submitPlanning || false);
 
     const [state, setState] = useState(() => {
@@ -47,30 +48,29 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, is
                 electrodes: electrodes,
                 planningContacts: planningContacts,
                 areAllVisible: areAllVisible,
-                isPairing: isPairing,
                 submitPlanning: submitPlanning,
                 patientId: prevState.patientId // Ensure patientId is preserved
             }
         })
-    }, [electrodes, planningContacts, areAllVisible, isPairing, submitPlanning]);
+    }, [electrodes, planningContacts, areAllVisible, submitPlanning]);
 
     // Function to handle "drop" on planning pane. Takes contact and index, and insert the contact
     // at the index or at the end if index is not specified. If the contact exist already, this function
     // will change the contact's location to index passed (or to the end)
-    const handleDropToPlanning = (contact, index = "") => {
+    const handleDropToPlanning = (contacts, index = "") => {
         setPlanningContacts((prev) => {
             if (index === "") index = prev.length;
             if (index > prev.length) index = prev.length;
             const newContacts = [...prev];
 
-            if (prev.some((c) => c.id === contact.id)) {
+            if (prev.some((c) => c[0].id === contacts[0].id)) {
                 // Move existing one
-                let oldIndex = prev.indexOf(contact);
+                let oldIndex = prev.indexOf(contacts);
                 if (index === oldIndex + 1) return prev; // Ignore if index is one below
                 newContacts.splice(index, 0, newContacts.splice(oldIndex, 1)[0]);
             } else {
                 // Add new one
-                newContacts.splice(index, 0, contact);
+                newContacts.splice(index, 0, contacts);
             }
 
             return newContacts;
@@ -81,7 +81,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, is
                 return {
                     ...electrode,
                     contacts: electrode.contacts.map((c) => {
-                        if (c.id === contact.id) {
+                        if (c.id === contacts[0].id) {
                             return { ...c, isPlanning: true };
                         }
                         return c;
@@ -92,14 +92,14 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, is
     };
 
     // Function to handle "drop" on contact list part. Simply removes contact from the list
-    const handleDropBackToList = (contact) => {
-        setPlanningContacts((prev) => prev.filter((c) => c.id !== contact.id));
+    const handleDropBackToList = (contacts) => {
+        setPlanningContacts((prev) => prev.filter((c) => c[0].id !== contacts[0].id));
         setElectrodes((prevElectrodes) => {
             return prevElectrodes.map((electrode) => {
                 return {
                     ...electrode,
                     contacts: electrode.contacts.map((c) => {
-                        if (c.id === contact.id) {
+                        if (c.id === contacts[0].id) {
                             return { ...c, isPlanning: false };
                         }
                         return c;
@@ -114,6 +114,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, is
         electrode.contacts.map((contact, index) => {
             const contactId = `${electrode.label}${index + 1}`;
             contact.id = contactId;
+            contact.index = index + 1;
             contact.electrodeLabel = electrode.label;
         })
     });
@@ -121,17 +122,11 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, is
     return (
         <DndProvider backend={HTML5Backend}>
             <div className="flex h-screen p-6 space-x-6">
-                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} isPairing={isPairing} submitPlanning={submitPlanning} onStateChange={setState} savedState={state} setElectrodes={setElectrodes}/>
+                <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} submitPlanning={submitPlanning} onStateChange={setState} savedState={state} setElectrodes={setElectrodes}/>
 
-                <PlanningPane state={state} electrodes={electrodes} contacts={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} setElectrodes={setElectrodes} onStateChange={setState} savedState={state} isFunctionalMapping={isFunctionalMapping} />
+                <PlanningPane state={state} electrodes={electrodes} contactPairs={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} setElectrodes={setElectrodes} onStateChange={setState} savedState={state} isFunctionalMapping={isFunctionalMapping} />
             </div>
             <Container className="">
-                <Button
-                    tooltip="Pair contacts"
-                    styles={{backgroundColor: darkColors.lightBlue, color: lightColors.white}}
-                    onClick={() => {setIsPairing(!isPairing)}}>
-                    <div>P</div>
-                </Button>
                 <Button
                     tooltip="Toggle unmarked contacts"
                     styles={{backgroundColor: darkColors.lightBlue, color: lightColors.white}}
@@ -139,12 +134,23 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, is
                     <div>T</div>
                 </Button>
             </Container>
+
+            {/* Floating Back Button at the Bottom Left */}
+            <div className="fixed bottom-2 left-2 z-50
+                            lg:bottom-6 lg:left-6">
+                <button
+                    className="py-1 px-2 border border-sky-800 bg-sky-600 text-white text-sm text-center font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800
+                               lg:py-2 lg:px-4 lg:text-base"
+                    onClick={() => switchContent('stimulation')}>
+                    Back
+                </button>
+            </div>
         </DndProvider>
     );
 };
 
 // Generate list of contacts from list of electrodes
-const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisible, isPairing, submitPlanning, onStateChange, savedState, setElectrodes }) => {
+const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisible, submitPlanning, onStateChange, savedState, setElectrodes }) => {
     const [submitContact, setSubmitContact] = useState(savedState.submitContact || false);
     useEffect(() => {
         onStateChange((prevState) => {
@@ -163,89 +169,28 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
         }),
     }));
 
-    const handleOnClick = (electrode, contact) => {
-        if (isPairing) {
-            changePair(electrode, contact);
-        } else {
-            onClick(contact);
-        }
-        setSubmitContact(!submitContact);
-    }
-
-    const changePair = (electrode, contact) => {
-        // One or fewer contacts in electrode
-        if (electrode.contacts.length <= 1) {
-            return;
-        }
-
-        const updatedElectrode = {
-            ...electrode,
-            contacts: electrode.contacts.map((c) => ({ ...c })),
-        };
-
-        // Reset the saved pair of the current contact's pair
-        var pairedContact = electrode.contacts[contact.pair - 1];
-        electrode.contacts[contact.pair - 1].pair = pairedContact.index;
-
-        // Change the current contact's saved pair
-        if (contact.pair === contact.index - 1) {
-            contact.pair += 2;
-            if (electrode.contacts.length <= contact.index) {
-                contact.pair--;
-            }
-        } else {
-            contact.pair--;
-            if (contact.pair < 1 && contact.index === 2 && electrode.contacts.length > 2) {
-                contact.pair += 3;
-            } else if (contact.pair < 1 && (contact.index === 1 || contact.index === 2)) {
-                contact.pair += 2;
-            }
-        }
-
-        // Reset new pair's previous pairing
-        const newPairedContact = updatedElectrode.contacts[contact.pair - 1];
-        updatedElectrode.contacts[newPairedContact.pair - 1].pair = updatedElectrode.contacts[newPairedContact.pair - 1].index;
-
-        // Change the new pair's pairing
-        updatedElectrode.contacts[contact.pair - 1].pair = contact.index;
-
-        // Update the electrodes state
-        setElectrodes((prevElectrodes) => {
-            return prevElectrodes.map((e) => {
-                if (e.label === updatedElectrode.label) {
-                    return updatedElectrode;
-                }
-                return e;
-            });
-        });
-    }
-
     const showAvailableContacts = (electrode) => {
         if (!electrode || !electrode.contacts) return [];
         
-        return electrode.contacts.map((contact, index) => { // Horizontal list for every contact
-            if (!contact) return null;
-            
-            const pair = contact.pair ? electrode.contacts[contact.pair - 1] : null;
+        return mapConsecutive(electrode.contacts, 2, (contacts) => { // List for every contact pair
+            if (!contacts) return null;
 
             // Filter out the non-marked contacts.
-            const shouldAppear = !(droppedContacts.some((c) => c.id === contact.id)) && 
-                               (contact.mark || contact.surgeonMark);
-            const pairShouldAppear = pair && 
-                                   !(droppedContacts.some((c) => c.id === pair.id)) && 
-                                   (pair.mark || pair.surgeonMark);
+            const shouldAppear1 = !(droppedContacts.some((c) => c.id === contacts[0].id)) && 
+                                  (contacts[0].mark || contacts[1].surgeonMark);
+            const shouldAppear2 = (contacts[1].mark || contacts[1].surgeonMark);
 
             return (
-                !(contact.isPlanning || (pair && pair.isPlanning)) && (
+                !(contacts[0].isPlanning) && (
                     areAllVisible ? (
-                        <Contact key={contact.id}
-                            contact={contact}
-                            onClick={() => handleOnClick(electrode, contact)} />
+                        <Contact key={contacts[0].id}
+                            contacts={contacts}
+                            onClick={() => onClick(contacts)} />
                     ) : (
-                        (shouldAppear || pairShouldAppear) && (
-                            <Contact key={contact.id}
-                                contact={contact}
-                                onClick={() => handleOnClick(electrode, contact)} />
+                        (shouldAppear1 || shouldAppear2) && (
+                            <Contact key={contacts[0].id}
+                                contacts={contacts}
+                                onClick={() => onClick(contacts)} />
                         )
                     )
                 )
@@ -276,11 +221,11 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
 };
 
 // Draggable contact in contact list
-const Contact = ({ contact, onClick }) => {
+const Contact = ({ contacts, onClick }) => {
     // Handle "drag"
     const [{ isDragging }, drag] = useDrag(() => ({
         type: "CONTACT",
-        item: contact,
+        item: contacts,
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),
         }),
@@ -288,31 +233,33 @@ const Contact = ({ contact, onClick }) => {
 
     let classes = `min-w-[100px] p-4 border rounded-lg shadow cursor-pointer ${
                 isDragging ? "opacity-50" : "opacity-100"} `;
-    switch (contact.mark) {
-        case 1:
-            classes += "bg-red-200";
-            break;
-        case 2:
-            classes += "bg-yellow-200";
-            break;
-        default:
-            classes += "bg-slate-200";
+    if (contacts[0].mark == 1 || contacts[1].mark == 1) {
+        classes += "bg-rose-300 ";
+    } else if (contacts[0].mark == 2 || contacts[1].mark == 2) {
+        classes += "bg-amber-300 ";
+    } else {
+        classes += "bg-stone-300 ";
+    }
+    if (contacts[0].surgeonMark || contacts[1].surgeonMark) {
+        classes += "border-2 border-stone-500";
+    } else {
+        classes += "border border-gray-300";
     }
 
     return (
         <li ref={drag}
             className={classes}
             onClick={onClick}
-            key={contact.index}>
-            <p className="text-xl font-semibold">{contact.index}</p>
-            <p className="text-sm font-semibold text-gray-500">{contact.associatedLocation}</p>
-            <p className="text-sm font-semibold text-gray-500">Pair:  {contact.pair}</p>
+            key={contacts[0].id}>
+            <p className="text-xl font-semibold">{contacts[0].index} - {contacts[1].index}</p>
+            <p className="text-sm font-semibold text-gray-500">{contacts[0].associatedLocation}</p>
+            <p className="text-sm font-semibold text-gray-500">{contacts[1].associatedLocation}</p>
         </li>
     );
 };
 
 // Planning pane on the right
-const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitFlag, setSubmitFlag, setElectrodes, onStateChange, savedState, isFunctionalMapping = false }) => {
+const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, submitFlag, setSubmitFlag, setElectrodes, onStateChange, savedState, isFunctionalMapping = false }) => {
     const { showError } = useError();
     const [hoverIndex, setHoverIndex] = useState(null);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
@@ -346,7 +293,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
     }));
 
     const createTestSelectionTab = async () => {
-        if (Object.keys(contacts).length === 0) return;
+        if (Object.keys(contactPairs).length === 0) return;
 
         try {
             console.log('Starting test selection tab creation...');
@@ -527,19 +474,19 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
     return (
         <div ref={drop} className={`p-4 w-1/4 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
             <h2 className="text-2xl font-bold mb-4">Planning Pane</h2>
-            {contacts.length === 0 ? (
+            {contactPairs.length === 0 ? (
                 <p className="text-lg text-gray-500">Drag contacts here</p>
             ) : (
                 <ul className="space-y-2 relative">
-                    {contacts.map((contact, index) => (
-                        <React.Fragment key={contact.id}>
+                    {contactPairs.map((contacts, index) => (
+                        <React.Fragment key={contacts[0].id}>
                             {hoverIndex === index && isOver && (
                                 <div className="h-1 bg-blue-500 w-full my-1"></div>
                             )}
-                            <PlanningContact contact={contact} onDropBack={onDropBack} onStateChange={onStateChange} savedState={savedState} setElectrodes={setElectrodes} />
+                            <PlanningContact contacts={contacts} onDropBack={onDropBack} onStateChange={onStateChange} savedState={savedState} setElectrodes={setElectrodes} />
                         </React.Fragment>
                     ))}
-                    {hoverIndex >= contacts.length && isOver && (
+                    {hoverIndex >= contactPairs.length && isOver && (
                         <div className="h-1 bg-blue-500 w-full my-1"></div>
                     )}
                 </ul>
@@ -547,7 +494,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
             <div className="flex space-x-2 absolute right-10 bottom-10">
                 {isFunctionalMapping ? (
                     <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
-                            contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
+                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
                             }`} onClick={createTestSelectionTab}>
                         select tests
                     </button>
@@ -558,10 +505,10 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
                 <div className="relative">
                     <button
                         className={`py-2 px-4 bg-green-500 text-white font-bold rounded ${
-                            contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700 border border-green-700"
+                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700 border border-green-700"
                         }`}
                         onClick={handleSave}
-                        disabled={contacts.length === 0}
+                        disabled={contactPairs.length === 0}
                     >
                         Save
                     </button>
@@ -573,7 +520,7 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
                 </div>
 
                 <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
-                        contacts.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
+                        contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
                         }`} onClick={() => exportState(state, electrodes, isFunctionalMapping, true)}>
                     Export
                 </button>
@@ -583,16 +530,16 @@ const PlanningPane = ({ state, electrodes, contacts, onDrop, onDropBack, submitF
 };
 
 // Draggable contact in planning pane area
-const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setElectrodes }) => {
+const PlanningContact = ({ contacts, onDropBack, onStateChange, savedState, setElectrodes }) => {
     // To persist between tab switch and reload
-    const [frequency, setFrequency] = useState(savedState.frequency?.[contact.id] || contact.frequency || 0);
-    const [duration, setDuration] = useState(savedState.duration?.[contact.id] || contact.duration || 0);
-    const [current, setCurrent] = useState(savedState.current?.[contact.id] || contact.current || 0);
+    const [frequency, setFrequency] = useState(savedState.frequency?.[contacts[0].id] || contacts[0].frequency || 0);
+    const [duration, setDuration] = useState(savedState.duration?.[contacts[0].id] || contacts[0].duration || 0);
+    const [current, setCurrent] = useState(savedState.current?.[contacts[0].id] || contacts[0].current || 0);
 
     // Handle "Drag"
     const [{ isDragging }, drag] = useDrag(() => ({
         type: "CONTACT",
-        item: contact,
+        item: contacts,
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),
         }),
@@ -605,7 +552,7 @@ const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setEl
                 ...prevState,
                 [field]: {
                     ...prevState[field],
-                    [contact.id]: value,
+                    [contacts[0].id]: value,
                 },
             };
         });
@@ -617,7 +564,7 @@ const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setEl
                 return {
                     ...electrode,
                     contacts: electrode.contacts.map((c) => {
-                        if (c.id === contact.id) {
+                        if (c.id === contacts[0].id) {
                             return { ...c, [field]: value };
                         }
                         return c;
@@ -648,31 +595,28 @@ const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setEl
         updateSavedState("current", value);
     };
 
-    let classes = `min-w-[100px] p-4 border rounded-lg shadow cursor-pointer ${
+    let classes = `planning-contact p-2 border rounded-lg shadow cursor-pointer ${
         isDragging ? "opacity-50" : "opacity-100"} `;
-    switch (contact.mark) {
-    case 1:
-        classes += "bg-red-200";
-        break;
-    case 2:
-        classes += "bg-yellow-200";
-        break;
-    default:
-        classes += "bg-slate-200";
+    if (contacts[0].mark == 1 || contacts[1].mark == 1) {
+        classes += "bg-rose-300 ";
+    } else if (contacts[0].mark == 2 || contacts[1].mark == 2) {
+        classes += "bg-amber-300 ";
+    } else {
+        classes += "bg-stone-300 ";
+    }
+    if (contacts[0].surgeonMark || contacts[1].surgeonMark) {
+        classes += "border-2 border-stone-500";
+    } else {
+        classes += "border border-gray-300";
     }
 
     return (
         <li ref={drag}
-            className={`planning-contact p-2 border rounded bg-white shadow cursor-pointer ${
-                isDragging ? "opacity-50" : "opacity-100"
-            }`}
-            key={contact.id}>
-            {(contact.pair === contact.index) ? (
-                <p className="text-lg font-semibold">{contact.id}</p>
-            ) : (
-                <p className="text-lg font-semibold">{contact.id}-{contact.electrodeLabel + contact.pair}</p>
-            )}
-            <p className="text-sm font-semibold text-gray-500">Location: {contact.associatedLocation}</p>
+            className={classes}
+            key={contacts[0].id}>
+            <p className="text-lg font-semibold">{contacts[0].id}-{contacts[1].index}</p>
+            <p className="text-sm font-semibold text-gray-500">Location: {contacts[0].associatedLocation}</p>
+            <p className="text-sm font-semibold text-gray-500">Location: {contacts[1].associatedLocation}</p>
 
             <div className="flex space-x-2 mt-2">
                 <div className="flex-1">
@@ -681,7 +625,7 @@ const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setEl
                         type="number"
                         value={frequency}
                         onChange={handleFrequencyChange}
-                        className="w-full p-1 border rounded"
+                        className="w-full p-1 border rounded bg-white"
                     />
                 </div>
                 <div className="flex-1">
@@ -690,7 +634,7 @@ const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setEl
                         type="number"
                         value={duration}
                         onChange={handleDurationChange}
-                        className="w-full p-1 border rounded"
+                        className="w-full p-1 border rounded bg-white"
                     />
                 </div>
                 <div className="flex-1">
@@ -699,12 +643,12 @@ const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setEl
                         type="number"
                         value={current}
                         onChange={handleCurrentChange}
-                        className="w-full p-1 border rounded"
+                        className="w-full p-1 border rounded bg-white"
                     />
                 </div>
             </div>
 
-            <button onClick={() => onDropBack(contact)}
+            <button onClick={() => onDropBack(contacts)}
                     className="text-red-500 text-sm mt-2 underline" >
                 Remove
             </button>
@@ -714,7 +658,7 @@ const PlanningContact = ({ contact, onDropBack, onStateChange, savedState, setEl
 
 const exportState = async (state, electrodes, isFunctionalMapping, download = true) => {
     try {
-        let planOrder = state.planningContacts.map(contact => contact.id);
+        let planOrder = state.planningContacts.map(contacts => contacts[0].id);
         // First save to database if we have a file ID
         if (state.fileId) {
             console.log('Saving stimulation plan to database...');

@@ -516,10 +516,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             );
 
             if (existingTab) {
+                console.log("existing tab");
                 // Compare current electrodes with the designation tab's original data
                 const hasChanges = JSON.stringify(electrodes) !== JSON.stringify(existingTab.data.originalData);
                 
                 if (hasChanges) {
+                    console.log("has changed");
                     // First, remove the tab from localStorage to prevent ghost tabs
                     const updatedTabs = tabs.filter(tab => tab.id !== existingTab.id);
                     localStorage.setItem('tabs', JSON.stringify(updatedTabs));
@@ -540,6 +542,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                         patientId: patientId
                     }));
 
+                    console.log("file id: ", existingTab.state.fileId);
                     // Create a new tab with updated data
                     const event = new CustomEvent('addDesignationTab', {
                         detail: { 
@@ -552,6 +555,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     });
                     window.dispatchEvent(event);
                 } else {
+                    console.log("no change");
                     // Just set the existing tab as active
                     const activateEvent = new CustomEvent('setActiveTab', {
                         detail: { tabId: existingTab.id }

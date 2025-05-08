@@ -145,6 +145,57 @@ router.post('/save-test-selection', async (req, res) => {
   }
 });
 
+router.get('/get-tests', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+          .from('test')
+          .select(`
+            *,
+            function_test(
+              function(
+                *,
+                gm_function(
+                  gm(*)
+                )
+              )
+            ),
+            test_tag(
+              tag(*)
+            )
+          `);
+
+    if (error) throw error;
+
+    // Transform the test data here
+    const transformed_data = data.map((test) => {
+      const tag = test.test_tag.map((tag) => tag.tag?.name);
+
+      const region = test.function_test.map((func) => {
+        return func.function?.gm_function.map((gm) => gm.gm?.name)
+      });
+
+      return {
+        id: test.id,
+        name: test.name,
+        description: test.description,
+        population: 20,
+        disruptionRate: 50.5,
+        tag: tag.filter(Boolean),
+        region: region.flat(Infinity).filter(Boolean)
+      }
+    })
+
+    res.json({ data: transformed_data });
+
+  } catch (error) {
+    console.error('Error in get-tests endpoint:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Endpoint to get test selection by patient ID
 router.get('/by-patient-test/:patientId', async (req, res) => {
   try {

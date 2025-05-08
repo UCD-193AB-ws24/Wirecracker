@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Popup from 'reactjs-popup';
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import config from "../../../config.json" with { type: 'json' };
+import ErrorMessage from '../ErrorMessage';
 
 const backendURL = config.backendURL;
 
@@ -57,11 +58,6 @@ const EditElectrodeModal = ({
         return maxContact;
     };
 
-    // Ensure we have valid slider marks based on the selected type
-    const getSliderMarks = (type) => {
-        return electrodeOverviewData[type] || electrodeOverviewData[defaultType];
-    };
-
     // Get the initial slider value based on whether we're editing or adding
     const getInitialSliderValue = () => {
         if (isEditMode && initialData) {
@@ -70,18 +66,21 @@ const EditElectrodeModal = ({
             return contactCount;
         } else {
             // When adding, use the first value from the slider marks
-            const marks = getSliderMarks(selectedElectrodeType);
+            const marks = electrodeOverviewData[selectedElectrodeType];
             return marks[0];
         }
     };
 
-    const [sliderMarks, setSliderMarks] = useState(getSliderMarks(selectedElectrodeType));
-    const [sliderValue, setSliderValue] = useState(getInitialSliderValue());
+    const [sliderValue, setSliderValue] = useState(getInitialSliderValue().toString());
     const [labelInput, setLabelInput] = useState(isEditMode && initialData ? initialData.label || "" : "");
     const [descriptionInput, setDescriptionInput] = useState(isEditMode && initialData ? initialData.description || "" : "");
     const [electrodeLabelDescriptions, setElectrodeLabelDescriptions] = useState([]);
     const [hemisphere, setHemisphere] = useState("Right");
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [descriptionEdited, setDescriptionEdited] = useState(false);
+    const [descDropdownOpen, setDescDropdownOpen] = useState(false);
+    const [error, setError] = useState("");
+    const [contactsEdited, setContactsEdited] = useState(false);
 
     // Fetch electrode label descriptions from endpoint
     useEffect(() => {
@@ -110,33 +109,62 @@ const EditElectrodeModal = ({
 
     // Update description when a suggestion is found
     useEffect(() => {
-        if (showSuggestions && suggestions.length > 0) {
+        if (isEditMode && showSuggestions && suggestions.length > 0) {
             const suggestedDescription = `${hemisphere} ${suggestions[0].description}`;
             setDescriptionInput(suggestedDescription);
         }
-    }, [showSuggestions, suggestions, hemisphere]);
+    }, [isEditMode, showSuggestions, suggestions, hemisphere]);
 
     useEffect(() => {
-        const marks = getSliderMarks(selectedElectrodeType);
-        setSliderMarks(marks);
-    }, [selectedElectrodeType]);
+        setDescriptionEdited(false);
+        setContactsEdited(false);
+    }, [labelInput]);
+
+    useEffect(() => {
+        if (!descriptionEdited && suggestions.length > 0) {
+            setDescriptionInput(`${hemisphere} ${suggestions[0].description}`);
+        }
+    }, [labelInput, hemisphere, suggestions]);
+
+    useEffect(() => {
+        if (trigger && !isEditMode) {
+            setLabelInput("");
+            setDescriptionInput("");
+            setSliderValue("4"); // default to 4 for DIXI
+            setSelectedElectrodeType("DIXI");
+            setDescriptionEdited(false);
+            setContactsEdited(false);
+            setShowSuggestions(false);
+            setDescDropdownOpen(false);
+            setError("");
+        }
+    }, [trigger, isEditMode]);
 
     const handleSliderChange = (e) => {
-        setSliderValue(parseInt(e.target.value, 10));
+        setSliderValue(e.target.value);
+        setContactsEdited(true);
     };
 
     const handleInputChange = (e) => {
-        let value = parseInt(e.target.value, 10);
-        // Allow any positive integer value
-        if (isNaN(value) || value < 1) value = 1;
-        setSliderValue(value);
+        setSliderValue(e.target.value);
+        setContactsEdited(true);
     };
 
-    const minValue = Math.min(...sliderMarks);
-    const maxValue = Math.max(...sliderMarks);
+    // Always use 1 to 20 for slider
+    const minValue = 1;
+    const maxValue = 20;
+    const sliderMarks = Array.from({ length: 20 }, (_, i) => i + 1);
 
     const handleSubmit = (event) => {
         event.preventDefault();
+        if (!isEditMode && labelInput.trim() === "") {
+            setError("Electrode label cannot be blank.");
+            return;
+        }
+        if (sliderValue.trim() === "" || isNaN(Number(sliderValue)) || Number(sliderValue) <= 0) {
+            setError("Number of contacts must be a positive integer.");
+            return;
+        }
         const formData = new FormData();
         formData.set("label", labelInput);
         formData.set("description", descriptionInput);
@@ -169,6 +197,7 @@ const EditElectrodeModal = ({
         >
             {close => (
                 <div className="modal bg-white p-6 rounded-lg shadow-lg">
+                    {error && <ErrorMessage message={error} onClose={() => setError("")} />}
                     <h4 className="text-lg font-semibold mb-4">
                         {isEditMode ? 'Edit Electrode' : 'Add Electrode'}
                     </h4>
@@ -194,16 +223,43 @@ const EditElectrodeModal = ({
                                 </div>
                             )}
                         </div>
-                        <div className="mb-4">
+                        <div className="mb-4 relative">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Description
                             </label>
                             <input 
                                 type="text"
                                 value={descriptionInput}
-                                onChange={(e) => setDescriptionInput(e.target.value)}
+                                onChange={(e) => {
+                                    setDescriptionInput(e.target.value);
+                                    setDescriptionEdited(true);
+                                }}
                                 className="w-full p-2 border border-gray-300 rounded-md"
+                                onFocus={() => setDescDropdownOpen(true)}
+                                onBlur={() => setTimeout(() => setDescDropdownOpen(false), 100)}
                             />
+                            {descDropdownOpen && (
+                                <div className="absolute z-50 bg-white border border-gray-300 rounded shadow max-h-40 overflow-y-auto w-full">
+                                    {electrodeLabelDescriptions
+                                        .filter(item => item.label.toUpperCase() === letterPortion)
+                                        .map((item, idx) => {
+                                            const option = `${hemisphere} ${item.description}`;
+                                            return (
+                                                <div
+                                                    key={option + idx}
+                                                    className="px-3 py-2 hover:bg-blue-100 cursor-pointer"
+                                                    onMouseDown={() => {
+                                                        setDescriptionInput(option);
+                                                        setDescriptionEdited(true);
+                                                        setDescDropdownOpen(false);
+                                                    }}
+                                                >
+                                                    {option}
+                                                </div>
+                                            );
+                                        })}
+                                </div>
+                            )}
                         </div>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -211,12 +267,18 @@ const EditElectrodeModal = ({
                             </label>
                             <select
                                 value={selectedElectrodeType}
-                                onChange={(e) => setSelectedElectrodeType(e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSelectedElectrodeType(val);
+                                    if (!contactsEdited) {
+                                        if (val === 'DIXI') setSliderValue('4');
+                                        else if (val === 'AD-TECH') setSliderValue('5');
+                                    }
+                                }}
                                 className="w-full p-2 border border-gray-300 rounded-md"
                             >
                                 <option value="DIXI">DIXI</option>
                                 <option value="AD-TECH">AD-TECH</option>
-                                <option value="PMT">PMT</option>
                                 <option value="OTHER">OTHER</option>
                             </select>
                         </div>
@@ -224,28 +286,46 @@ const EditElectrodeModal = ({
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Number of Contacts
                             </label>
-                            <div className="flex items-center gap-4">
-                                <input
-                                    type="range"
-                                    min={minValue}
-                                    max={maxValue}
-                                    value={sliderValue}
-                                    onChange={handleSliderChange}
-                                    className="w-full"
-                                    list="contact-marks"
-                                />
-                                <input
-                                    type="number"
-                                    value={sliderValue}
-                                    onChange={handleInputChange}
-                                    className="w-20 p-2 border border-gray-300 rounded-md"
-                                />
+                            <div>
+                                <div className="flex items-center gap-4 w-full">
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="range"
+                                            min={minValue}
+                                            max={maxValue}
+                                            step={1}
+                                            value={sliderValue === "" ? minValue : Math.max(minValue, Math.min(maxValue, Number(sliderValue)))}
+                                            onChange={handleSliderChange}
+                                            className="w-full"
+                                            list="contact-marks"
+                                            style={{ backgroundSize: '100% 2px' }}
+                                        />
+                                        <div
+                                            className="absolute left-0 right-0 -bottom-5 grid"
+                                            style={{
+                                                gridTemplateColumns: 'repeat(20, 1fr)',
+                                                width: '100%',
+                                                pointerEvents: 'none'
+                                            }}
+                                        >
+                                            {sliderMarks.map(mark => (
+                                                <span key={mark} className="text-center text-xs text-gray-500" style={{ pointerEvents: 'none' }}>{mark}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={sliderValue}
+                                        onChange={handleInputChange}
+                                        className="w-20 p-2 border border-gray-300 rounded-md"
+                                    />
+                                    <datalist id="contact-marks">
+                                        {sliderMarks.map(mark => (
+                                            <option key={mark} value={mark} />
+                                        ))}
+                                    </datalist>
+                                </div>
                             </div>
-                            <datalist id="contact-marks">
-                                {sliderMarks.map(mark => (
-                                    <option key={mark} value={mark} />
-                                ))}
-                            </datalist>
                         </div>
                         <button 
                             type="submit" 
