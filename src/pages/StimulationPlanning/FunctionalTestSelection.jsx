@@ -5,6 +5,8 @@ import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
 import mapConsecutive from "../../utils/MapConsecutive";
 
+const backendURL = config.backendURL;
+
 const FunctionalTestSelection = ({
     initialData = {},
     onStateChange,
@@ -12,8 +14,8 @@ const FunctionalTestSelection = ({
     savedState = {},
 }) => {
     const { showError } = useError();
-    const allAvailableTests = demoTestData;
-    const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || null);
+    const [allAvailableTests, setAllAvailableTests] = useState([] || savedState.allTests);
+    
     const [contactPairs, setContactPairs] = useState(() => {
         if (savedState.contactPairs) return savedState.contactPairs;
         if (initialData.data) {
@@ -25,7 +27,7 @@ const FunctionalTestSelection = ({
             .flat()
             .sort((a, b) => a[0].order - b[0].order);
         }
-    })
+    });
     const [tests, setTests] = useState(() => {
         if (savedState.tests) return savedState.tests;
         if (initialData.tests) {
@@ -61,6 +63,22 @@ const FunctionalTestSelection = ({
     const [state, setState] = useState(savedState);
 
     useEffect(() => {
+        // Fetch tests from backend
+        const fetchTests = async () => {
+            try {
+                const res = await fetch(`${backendURL}/api/get-tests`);
+                if (!res.ok) throw new Error(`Error: ${res.status}`);
+                const { data } = await res.json();
+                setAllAvailableTests(data);
+            } catch (err) {
+                console.error("Failed to fetch lobe options:", err);
+            }
+        };
+
+        fetchTests();
+    }, []);
+
+    useEffect(() => {
         onStateChange(state);
     }, [state]);
 
@@ -70,6 +88,7 @@ const FunctionalTestSelection = ({
                 electrodes: electrodes,
                 contactPairs: contactPairs,
                 tests: tests,
+                allTests: allAvailableTests,
                 availableTests: availableTests,
                 showPopup: showPopup,
                 selectedContact: selectedContact,
@@ -86,6 +105,7 @@ const FunctionalTestSelection = ({
         electrodes,
         contactPairs,
         tests,
+        allAvailableTests,
         availableTests,
         showPopup,
         selectedContact,
@@ -113,7 +133,7 @@ const FunctionalTestSelection = ({
             const filteredTests = allAvailableTests
                 .filter(
                     (test) =>
-                        test.region === selectedContact.associatedLocation,
+                        test.region.includes(selectedContact.associatedLocation.toLowerCase()),
                 )
                 .filter(
                     (test) =>
@@ -135,8 +155,8 @@ const FunctionalTestSelection = ({
         const newTests = {};
         contactPairs.forEach((contactPair) => {
             const availableTests = allAvailableTests.filter(
-                (test) => (test.region === contactPair[0].associatedLocation) ||
-                          (test.region === contactPair[1].associatedLocation),
+                (test) => (test.region.includes(contactPair[0].associatedLocation.toLowerCase()) ||
+                          (test.region.includes(contactPair[1].associatedLocation.toLowerCase())))
             );
             if (availableTests.length > 0) {
                 const bestTest = selectBestTest(availableTests);
