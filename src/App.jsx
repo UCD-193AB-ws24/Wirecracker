@@ -664,7 +664,7 @@ const HomePage = () => {
                 return null;
         }
 
-        console.log("fileId from detail: ", data.fileId);
+        console.log("fileId from detail: ", data?.fileId);
         const newTab = {
             id: Date.now().toString(),
             title: title,
@@ -1311,7 +1311,25 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             setIsLoading(true);
             setClickedFileId(clickedButton.fileId);
 
-            // Get all files for each patient
+            // First check if any tabs for this patient and type already exist
+            const existingTabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            const existingTab = existingTabs.find(tab => {
+                // For localization, check both 'localization' and 'csv-localization' types
+                if (clickedButton.type === 'localization') {
+                    return (tab.content === 'localization' || tab.content === 'csv-localization') && 
+                           tab.state?.patientId === patient.patient_id;
+                }
+                return tab.content === clickedButton.type && tab.state?.patientId === patient.patient_id;
+            });
+
+            if (existingTab) {
+                // If tab exists, just switch to it
+                window.dispatchEvent(new CustomEvent('setActiveTab', { detail: { tabId: existingTab.id } }));
+                onClose();
+                return;
+            }
+
+            // If no existing tab found, proceed with loading all files for this patient
             const availableFiles = await Promise.all(
                 buttons
                     .filter(button => button.exists)
@@ -1364,7 +1382,6 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                     if (!localizationResponse.ok) throw new Error('Failed to fetch localization data');
                                     const localizationData = await localizationResponse.json();
                                     const transformedData = FileUtils.transformLocalizationData(localizationData);
-                                    console.log('Transformed localization data:', transformedData);
                                     return {
                                         fileId: button.fileId,
                                         name: button.name,
@@ -1432,8 +1449,12 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                 openSavedFile(file.type, file);
             }
 
+            // After opening all files, switch to the clicked file's tab
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const clickedTab = tabs.find(tab => tab.title === clickedButton.name);
+            const clickedTab = tabs.find(tab => 
+                tab.title === clickedButton.name && 
+                tab.state?.patientId === patient.patient_id
+            );
             if (clickedTab) {
                 const tabId = clickedTab.id;
                 window.dispatchEvent(new CustomEvent('setActiveTab', { detail: { tabId } }));
