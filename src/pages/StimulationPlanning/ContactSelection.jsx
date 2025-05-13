@@ -17,9 +17,12 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
         if (initialData.data) {
             return initialData.data.map(electrode => {
                 return mapConsecutive(electrode.contacts, 2,
-                    (contacts) => {contacts.filter((contactPair) => contactPair[0].isPlanning)});
+                    (contacts) => {
+                        return contacts[0].isPlanning ? contacts : null;
+                    });
             })
             .flat()
+            .filter(Boolean)
             .sort((a, b) => a[0].order - b[0].order);
         }
         return [];

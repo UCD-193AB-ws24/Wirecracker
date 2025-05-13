@@ -93,7 +93,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                                md:h-11 md:w-80 md:text-lg
                                lg:h-13 lg:w-96 lg:text-xl
                                xl:h-16 xl:w-128 xl:text-2xl"
-                    onClick={() => handlePlanTypeSelect('seizure-recreation')}>
+                    onClick={() => switchContent('seizure-recreation')}>
                     Seizure Recreation
                 </button>
                 <button
@@ -101,7 +101,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                                md:h-11 md:w-80 md:text-lg
                                lg:h-13 lg:w-96 lg:text-xl
                                xl:h-16 xl:w-128 xl:text-2xl"
-                    onClick={() => handlePlanTypeSelect('cceps')}>
+                    onClick={() => switchContent('cceps')}>
                     CCEPs
                 </button>
                 <button
@@ -109,7 +109,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                                md:h-11 md:w-80 md:text-lg
                                lg:h-13 lg:w-96 lg:text-xl
                                xl:h-16 xl:w-128 xl:text-2xl"
-                    onClick={() => handlePlanTypeSelect('functional-test')}>
+                    onClick={() => switchContent('functional-test')}>
                     Functional Mapping
                 </button>
             </div>
