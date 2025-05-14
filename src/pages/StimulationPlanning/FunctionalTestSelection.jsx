@@ -205,7 +205,7 @@ const FunctionalTestSelection = ({
         });
     };
 
-    const exportTests = async (tests, contactPairs, download = true) => {
+    const exportTests = async (tests, contacts, download = true) => {
         try {
             // First save to database if we have a file ID
             if (savedState.fileId) {
@@ -233,7 +233,7 @@ const FunctionalTestSelection = ({
                         },
                         body: JSON.stringify({
                             tests: tests,
-                            contactPairs: contactPairs,
+                            contacts: contacts,
                             fileId: savedState.fileId,
                             fileName: savedState.fileName,
                             creationDate: savedState.creationDate,
@@ -270,9 +270,9 @@ const FunctionalTestSelection = ({
             }
 
             // Then export to CSV if download is true
-            // if (download) {
-            //     saveTestCSVFile(tests, contactPairs, download);
-            // }
+            if (download) {
+                saveTestCSVFile(tests, contacts, download);
+            }
         } catch (error) {
             console.error("Error exporting contacts:", error);
             showError(`Error exporting contacts: ${error.message}`);
@@ -501,7 +501,7 @@ const FunctionalTestSelection = ({
                 <div className="relative">
                     <button
                         className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
-                        onClick={() => exportTests(tests, contacts, false)}
+                        onClick={() => exportTests(tests, initialData.data[0].contacts, false)}
                     >
                         Save
                     </button>
@@ -513,7 +513,7 @@ const FunctionalTestSelection = ({
                 </div>
                 <button
                     className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
-                    onClick={() => exportTests(tests, contacts)}
+                    onClick={() => exportTests(tests, initialData.data[0].contacts)}
                 >
                     Export
                 </button>
