@@ -14,8 +14,9 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || demoContactData)
     const [planningContacts, setPlanningContacts] = useState(() => {
         if (savedState.planningContacts) return savedState.planningContacts;
-        if (initialData.data) {
-            return initialData.data.map(electrode => {
+        const contactsData = initialData.data?.data || initialData.data;
+        if (contactsData) {
+            return contactsData.map(electrode => {
                 return mapConsecutive(electrode.contacts, 2,
                     (contacts) => {
                         return contacts[0].isPlanning ? contacts : null;

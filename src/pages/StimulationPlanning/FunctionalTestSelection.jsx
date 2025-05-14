@@ -18,14 +18,31 @@ const FunctionalTestSelection = ({
     
     const [contactPairs, setContactPairs] = useState(() => {
         if (savedState.contactPairs) return savedState.contactPairs;
-        if (initialData.data) {
-            return initialData.data.map(electrode => {
+        let contactsData = initialData.data?.data || initialData.data;
+        if (contactsData && typeof contactsData === 'object' && !Array.isArray(contactsData) && contactsData.contacts) {
+            // Iterate over the contacts and set isPlanning = true, since data from saved CSV is always true
+            if (Array.isArray(contactsData.contacts)) {
+                contactsData.contacts.forEach(contact => {
+                    if (contact) { // Ensure contact is not null/undefined
+                        contact.isPlanning = true;
+                    }
+                });
+            }
+            // Now reformat contactsData
+            contactsData = [{ contacts: contactsData.contacts }];
+        }
+        if (contactsData) {
+            return contactsData.map(electrode => {
                 return mapConsecutive(electrode.contacts, 2,
-                    (contacts) => {return contacts});
+                    (contacts) => {
+                        return contacts[0].isPlanning ? contacts : null;
+                    });
             })
             .flat()
+            .filter(Boolean)
             .sort((a, b) => a[0].order - b[0].order);
         }
+        return [];
     });
     const [tests, setTests] = useState(() => {
         if (savedState.tests) return savedState.tests;
