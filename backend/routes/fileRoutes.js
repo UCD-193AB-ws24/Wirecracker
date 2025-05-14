@@ -307,7 +307,8 @@ router.get("/patients/recent", async (req, res) => {
                     localization_file_id: null,
                     designation_file_id: null,
                     stimulation_file_id: null,
-                    test_selection_file_id: null
+                    test_selection_file_id: null,
+                    localization_creation_date: null
                 };
             }
 
@@ -316,6 +317,7 @@ router.get("/patients/recent", async (req, res) => {
             if (filename.includes('localization')) {
                 acc[curr.patient_id].has_localization = true;
                 acc[curr.patient_id].localization_file_id = curr.file_id;
+                acc[curr.patient_id].localization_creation_date = curr.creation_date;
             } else if (filename.includes('designation')) {
                 acc[curr.patient_id].has_designation = true;
                 acc[curr.patient_id].designation_file_id = curr.file_id;

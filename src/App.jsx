@@ -1087,6 +1087,16 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
     const [selectedPatient, setSelectedPatient] = useState(null);
     const { showError } = useError();
 
+    const formatPatientDisplay = (patient) => {
+        const shortPatientId = patient.patient_id.substring(0, 3).toUpperCase();
+        const creationDate = patient.has_localization ? new Date(patient.localization_creation_date).toLocaleDateString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+            year: '2-digit'
+        }) : 'No files';
+        return `Patient ${shortPatientId}-${creationDate}`;
+    };
+
     const loadPatients = async () => {
         setIsLoading(true);
         try {
@@ -1205,10 +1215,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                                 }}
                                             >
                                                 <div className="flex-1">
-                                                    <div className="font-medium">Patient {patient.patient_id}</div>
-                                                    <div className="text-sm text-gray-500">
-                                                        Last modified: {patient.latest_file ? new Date(patient.latest_file.modified_date).toLocaleDateString() : 'No files'}
-                                                    </div>
+                                                    <div className="font-medium">{formatPatientDisplay(patient)}</div>
                                                 </div>
                                                 <div className="text-sm text-gray-500">
                                                     {patient.has_localization && <span className="mr-2">📍</span>}
@@ -1556,6 +1563,16 @@ const RecentFiles = ({ onOpenFile, className }) => {
     const handlePatientClick = (patient) => {
         setSelectedPatient(patient);
     };
+
+    const formatPatientDisplay = (patient) => {
+        const shortPatientId = patient.patient_id.substring(0, 3).toUpperCase();
+        const creationDate = patient.has_localization ? new Date(patient.localization_creation_date).toLocaleDateString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+            year: '2-digit'
+        }) : 'No files';
+        return `Patient ${shortPatientId}-${creationDate}`;
+    };
     
     return (
         <div className={`justify-center ${className}`}>
@@ -1581,11 +1598,14 @@ const RecentFiles = ({ onOpenFile, className }) => {
                                                 md:max-w-42
                                                 lg:max-w-50 lg:text-sm lg:px-2
                                                 xl:max-w-64">
-                                    Patient {patient.patient_id}
+                                    {formatPatientDisplay(patient)}
                                 </div>
-                                <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                                    {patient.latest_file ? new Date(patient.latest_file.modified_date).toLocaleDateString() : 'No files'}
-                                </span>
+                                <div className="text-xs text-gray-500 ml-2 whitespace-nowrap">
+                                    {patient.has_localization && <span className="mr-2">📍</span>}
+                                    {patient.has_designation && <span className="mr-2">📝</span>}
+                                    {patient.has_stimulation && <span className="mr-2">⚡</span>}
+                                    {patient.has_test_selection && <span>🧪</span>}
+                                </div>
                             </div>
                         ))}
                     </div>
