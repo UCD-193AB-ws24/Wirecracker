@@ -1,4 +1,5 @@
 import { isequal } from "../matlab_functions.js";
+import { describe, test, expect } from 'vitest';
 
 describe("isequal", () => {
     test("should return true for identical arrays", () => {

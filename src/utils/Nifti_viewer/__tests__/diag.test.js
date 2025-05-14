@@ -1,4 +1,5 @@
 import { diag } from '../matlab_functions.js';
+import { describe, test, expect } from 'vitest';
 
 describe('diag function', () => {
     test('create diagonal matrix from a vector', () => {

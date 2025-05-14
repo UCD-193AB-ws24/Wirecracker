@@ -1,4 +1,5 @@
 import { reshape } from "../matlab_functions.js";
+import { describe, test, expect } from 'vitest';
 
 describe("reshape", () => {
     test("should reshape a 1D array into a 2D array", () => {

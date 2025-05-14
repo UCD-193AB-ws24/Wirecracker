@@ -1,4 +1,5 @@
 import { permute } from "../matlab_functions.js";
+import { describe, test, expect } from 'vitest';
 
 describe("permute", () => {
     test("should correctly swap two dimensions of a 2D array", () => {

@@ -1,4 +1,5 @@
 import { flip } from '../matlab_functions.js';
+import { describe, test, expect } from 'vitest';
 
 describe('flip function', () => {
     test('flips a 1D array', () => {

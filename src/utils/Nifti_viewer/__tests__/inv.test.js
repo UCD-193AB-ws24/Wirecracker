@@ -1,4 +1,5 @@
 import { inv } from '../matlab_functions.js';
+import { describe, test, expect } from 'vitest';
 
 describe('inv function', () => {
     test('inverse of a 2x2 matrix', () => {

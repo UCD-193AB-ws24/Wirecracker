@@ -1,4 +1,5 @@
 import { isnumeric } from "../matlab_functions.js";
+import { describe, test, expect } from 'vitest';
 
 describe("isnumeric", () => {
     test("should return true for a single number and NaN (MatLab default)", () => {

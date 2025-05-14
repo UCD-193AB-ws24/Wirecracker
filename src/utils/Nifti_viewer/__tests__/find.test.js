@@ -1,4 +1,5 @@
 import { find } from '../matlab_functions.js';
+import { describe, test, expect } from 'vitest';
 
 describe('find function', () => {
     test('find nonzero elements in a 1D array', () => {

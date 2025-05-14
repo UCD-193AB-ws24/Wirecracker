@@ -1,4 +1,5 @@
 import { det } from '../matlab_functions.js';
+import { describe, test, expect } from 'vitest';
 
 describe('det function', () => {
 
