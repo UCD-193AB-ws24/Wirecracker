@@ -328,47 +328,35 @@ router.post("/search", async (req, res) => {
   }
 });
 
-router.post('/suggest', async (req, res) => {
+router.post("/suggest", async (req, res) => {
     try {
+        // Call the RPC function with fuzzy matching
+
         const { query } = req.body;
 
         if (!query) {
-            return res.status(400).json({ error: 'Query parameters are required' });
+            return res
+                .status(400)
+                .json({ error: "Query parameters are required" });
         }
+        const { data, error } = await supabase
+            .rpc("get_suggestions", {
+                query_text: query,
+            })
+            .order("search_score", { ascending: false })
+            .limit(25);
 
-        const { data: cortData, error: cortError } = await supabase
-            .from('cort')
-            .select('lobe, name, acronym')
-            .or(`lobe.ilike.%${query}%,name.ilike.%${query}%,acronym.ilike.%${query}%`)
-            .limit(15);
+        if (error) throw error;
 
-        if (cortError) throw cortError;
-
-        const { data: gmData, error: gmError } = await supabase
-            .from('gm')
-            .select('name, acronym')
-            .or(`name.ilike.%${query}%,acronym.ilike.%${query}%`)
-            .limit(10);
-
-        if (gmError) throw gmError;
-
-        const suggestions = new Set();
-        cortData.forEach(item => {
-            if (item.lobe?.includes(query)) suggestions.add(item.lobe);
-            if (item.name?.includes(query)) suggestions.add(item.name);
-            if (item.acronym?.includes(query)) suggestions.add(item.acronym);
+        res.json({
+            suggestions: data.map((item) => item.suggestion),
         });
-        gmData.forEach(item => {
-            if (item.name?.includes(query)) suggestions.add(item.name);
-            if (item.acronym?.includes(query)) suggestions.add(item.acronym);
-        });
-
-        res.json({ suggestions: [...suggestions].slice(0, 25) });
     } catch (err) {
         console.error("Suggestion error:", err);
-        res.status(500).json({ error: 'Failed to fetch suggestions' });
+        res.status(500).json({ error: "Failed to fetch suggestions" });
     }
 });
+
 
 router.get("/lobe-options", async (req, res) => {
   try {
