@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 
 // Based off dropdown example from https://www.geeksforgeeks.org/create-dropdowns-ui-using-react-and-tailwind-css/
@@ -26,9 +26,24 @@ const Dropdown = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const optionsList = options.split(" ");
+    const groupRef = useRef(null);
+
+    // Closes dropdown menu when clicking elsewhere
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (groupRef.current && !groupRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     return (
-        <div className="relative inline-block text-left">
+        <div className="relative inline-block text-left" ref={groupRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={isOpen ? openClassName : closedClassName}
