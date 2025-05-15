@@ -20,6 +20,17 @@ import DBLookup from './pages/DatabaseLookup';
 
 const backendURL = config.backendURL;
 
+// Shared utility to format patient display
+const formatPatientDisplay = (patient) => {
+    const shortPatientId = patient.patient_id.substring(0, 3).toUpperCase();
+    const creationDate = patient.has_localization ? new Date(patient.localization_creation_date).toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: '2-digit'
+    }) : 'No files';
+    return `Patient ${shortPatientId}-${creationDate}`;
+};
+
 const Tab = ({ title, isActive, onClick, onClose, onRename }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedTitle, setEditedTitle] = useState(title);
@@ -1087,16 +1098,6 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
     const [selectedPatient, setSelectedPatient] = useState(null);
     const { showError } = useError();
 
-    const formatPatientDisplay = (patient) => {
-        const shortPatientId = patient.patient_id.substring(0, 3).toUpperCase();
-        const creationDate = patient.has_localization ? new Date(patient.localization_creation_date).toLocaleDateString('en-US', {
-            month: '2-digit',
-            day: '2-digit',
-            year: '2-digit'
-        }) : 'No files';
-        return `Patient ${shortPatientId}-${creationDate}`;
-    };
-
     const loadPatients = async () => {
         setIsLoading(true);
         try {
@@ -1485,7 +1486,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-lg shadow-xl w-4/5 max-w-3xl">
                 <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-2xl font-bold">Patient {patient.patient_id}</h2>
+                    <h2 className="text-2xl font-bold">{formatPatientDisplay(patient)}</h2>
                     <button 
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700 text-xl"
@@ -1567,16 +1568,6 @@ const RecentFiles = ({ onOpenFile, className }) => {
     
     const handlePatientClick = (patient) => {
         setSelectedPatient(patient);
-    };
-
-    const formatPatientDisplay = (patient) => {
-        const shortPatientId = patient.patient_id.substring(0, 3).toUpperCase();
-        const creationDate = patient.has_localization ? new Date(patient.localization_creation_date).toLocaleDateString('en-US', {
-            month: '2-digit',
-            day: '2-digit',
-            year: '2-digit'
-        }) : 'No files';
-        return `Patient ${shortPatientId}-${creationDate}`;
     };
     
     return (
