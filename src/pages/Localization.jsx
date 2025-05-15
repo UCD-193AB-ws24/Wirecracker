@@ -24,6 +24,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
     const [hasChanges, setHasChanges] = useState(false);
     const [showElectrodeModal, setShowElectrodeModal] = useState(false);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+    const [hasDesignation, setHasDesignation] = useState(false);
 
     useEffect(() => {
         if (initialData.data && !savedState.electrodes) {
@@ -56,6 +57,45 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             });
         }
     }, [expandedElectrode, submitFlag, electrodes, fileId, fileName, creationDate, modifiedDate, savedState.patientId]);
+
+    useEffect(() => {
+        const checkDesignationExists = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+
+                const response = await fetch(`${backendURL}/api/files/patient/${fileId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch patient ID');
+                }
+
+                const { patientId } = await response.json();
+
+                // Check if designation exists for this patient
+                const designationResponse = await fetch(`${backendURL}/api/by-patient/${patientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!designationResponse.ok) {
+                    throw new Error('Failed to check for existing designation');
+                }
+
+                const designationResult = await designationResponse.json();
+                setHasDesignation(designationResult.exists);
+            } catch (error) {
+                console.error('Error checking designation:', error);
+            }
+        };
+
+        checkDesignationExists();
+    }, [fileId]);
 
     // Generate a unique ID for the file - using integer only for database compatibility
     const generateUniqueId = () => {
@@ -805,7 +845,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     className="py-2 px-4 bg-green-500 text-white font-bold rounded-md hover:bg-green-600 transition-colors duration-200 shadow-lg"
                     onClick={createDesignationTab}
                 >
-                    Open in Designation
+                    {hasDesignation ? 'View Epileptic Network' : 'Open in Designation'}
                 </button>
 
                 {isSharedFile && (
