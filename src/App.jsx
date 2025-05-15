@@ -1248,7 +1248,12 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                         />
                     )}
                 </>
-            ) : <SignInButtons />}
+            ) : (
+                <>
+                    <SignInButtons />
+                    <LandingPage />
+                </>
+            )}
         </div>
     );
 };
@@ -1739,6 +1744,72 @@ const Approved = () => {
                     <div>Approved</div>
                 </>
             )}
+        </div>
+    );
+};
+
+const LandingPage = () => {
+    return (
+        <div className="mt-8 text-center max-w-2xl mx-auto px-4
+                        md:mt-12
+                        lg:mt-16
+                        xl:mt-20">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4
+                           md:text-2xl
+                           lg:text-3xl
+                           xl:text-4xl">
+                Welcome to Wirecracker
+            </h2>
+            <p className="text-gray-600 mb-6
+                          md:text-lg
+                          lg:text-xl
+                          xl:text-2xl">
+                Wirecracker provides an intuitive solution for designing, executing, and managing localization and stimulation plans.
+            </p>
+            <div className="space-y-4 text-left">
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                    <h3 className="text-lg font-semibold text-sky-700 mb-2
+                                  md:text-xl
+                                  lg:text-2xl
+                                  xl:text-3xl">
+                        Modern Interface
+                    </h3>
+                    <p className="text-gray-600
+                                 md:text-lg
+                                 lg:text-xl
+                                 xl:text-2xl">
+                        Replace traditional CSV-based interfaces with a modern, user-friendly GUI for improved usability and efficiency.
+                    </p>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                    <h3 className="text-lg font-semibold text-sky-700 mb-2
+                                  md:text-xl
+                                  lg:text-2xl
+                                  xl:text-3xl">
+                        Team Collaboration
+                    </h3>
+                    <p className="text-gray-600
+                                 md:text-lg
+                                 lg:text-xl
+                                 xl:text-2xl">
+                        Facilitate smooth communication and data sharing between teams to enhance productivity and reduce errors.
+                    </p>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                    <h3 className="text-lg font-semibold text-sky-700 mb-2
+                                  md:text-xl
+                                  lg:text-2xl
+                                  xl:text-3xl">
+                        Centralized Database
+                    </h3>
+                    <p className="text-gray-600
+                                 md:text-lg
+                                 lg:text-xl
+                                 xl:text-2xl">
+                        Build a centralized, well-organized database to store plans, enabling quick retrieval and analysis.
+                    </p>
+                </div>
+            </div>
         </div>
     );
 };

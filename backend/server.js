@@ -54,4 +54,9 @@ app.post('/send-verification-email', async (req, res) => {
 //     console.log(`Server running on ${backendURL}`); 
 // });
 // Vercel's server-less things
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server running on ${backendURL}`); 
+    });
+}
 export default app;
