@@ -19,7 +19,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
             return contactsData.map(electrode => {
                 return mapConsecutive(electrode.contacts, 2,
                     (contacts) => {
-                        return contacts[0].isPlanning ? contacts : null;
+                        return contacts[0].isPlanning ? null : contacts;
                     });
             })
             .flat()
