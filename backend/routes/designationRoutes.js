@@ -40,32 +40,79 @@ router.post('/save-designation', async (req, res) => {
       });
     }
     
-    // Check for existing designation with this file_id
-    const { data: existingData, error: checkError } = await supabase
-      .from('designation')
-      .select('id')
-      .eq('file_id', fileId);
+    // Check for existing designation with this patient_id
+    const { data: existingFile, error: fileError } = await supabase
+      .from('files')
+      .select('file_id')
+      .eq('patient_id', patientId)
+      .ilike('filename', '%designation%')
+      .single();
       
-    if (checkError) {
-      console.error('Error checking existing designation:', checkError);
-    } else if (existingData && existingData.length > 0) {
-      console.log(`Found existing designation with file_id ${fileId}, updating...`);
-      const { error: updateError } = await supabase
+    if (fileError && fileError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+      console.error('Error checking existing designation:', fileError);
+      return res.status(500).json({ 
+        success: false, 
+        error: `Failed to check existing designation: ${fileError.message}`
+      });
+    }
+
+    if (existingFile && existingFile.file_id) {
+      // Get the existing designation data
+      const { data: existingDesignation, error: designationError } = await supabase
         .from('designation')
-        .update({
-          designation_data: designationData,
-          localization_data: localizationData
-        })
-        .eq('file_id', fileId);
-        
-      if (updateError) {
-        console.error('Error updating designation:', updateError);
+        .select('*')
+        .eq('file_id', existingFile.file_id)
+        .single();
+
+      if (designationError && designationError.code !== 'PGRST116') {
+        console.error('Error fetching existing designation:', designationError);
         return res.status(500).json({ 
           success: false, 
-          error: `Failed to update existing designation: ${updateError.message}`
+          error: `Failed to fetch existing designation: ${designationError.message}`
         });
       }
-      console.log('Successfully updated designation');
+
+      if (existingDesignation) {
+        // Compare localization data
+        const isLocalizationDifferent = JSON.stringify(existingDesignation.localization_data) !== JSON.stringify(localizationData);
+
+        // Update the designation record
+        const { error: updateError } = await supabase
+          .from('designation')
+          .update({
+            designation_data: designationData,
+            localization_data: isLocalizationDifferent ? localizationData : existingDesignation.localization_data
+          })
+          .eq('file_id', existingFile.file_id);
+          
+        if (updateError) {
+          console.error('Error updating designation:', updateError);
+          return res.status(500).json({ 
+            success: false, 
+            error: `Failed to update existing designation: ${updateError.message}`
+          });
+        }
+        console.log('Successfully updated designation');
+      } else {
+        // Insert new designation record
+        console.log('Creating new designation record...');
+        const { error: insertError } = await supabase
+          .from('designation')
+          .insert({
+            file_id: existingFile.file_id,
+            designation_data: designationData,
+            localization_data: localizationData
+          });
+          
+        if (insertError) {
+          console.error('Error inserting designation:', insertError);
+          return res.status(500).json({ 
+            success: false, 
+            error: `Failed to save designation: ${insertError.message}`
+          });
+        }
+        console.log('Successfully created new designation');
+      }
     } else {
       // Insert new designation record
       console.log('Creating new designation record...');
@@ -90,10 +137,79 @@ router.post('/save-designation', async (req, res) => {
     res.status(200).json({ 
       success: true,
       message: 'Designation data saved successfully',
-      fileId: fileId
+      fileId: existingFile ? existingFile.file_id : fileId
     });
   } catch (error) {
     console.error('Error in save-designation endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message
+    });
+  }
+});
+
+// Endpoint to get designation by patient ID
+router.get('/by-patient/:patientId', async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    
+    if (!patientId) {
+      return res.status(400).json({ success: false, error: 'Missing patient ID' });
+    }
+
+    // Get the file ID for this patient's designation
+    const { data: fileData, error: fileError } = await supabase
+      .from('files')
+      .select('file_id')
+      .eq('patient_id', patientId)
+      .ilike('filename', '%designation%')
+      .single();
+
+    if (fileError && fileError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+      console.error('Error fetching file:', fileError);
+      return res.status(500).json({ 
+        success: false, 
+        error: `Failed to fetch file: ${fileError.message}`
+      });
+    }
+
+    if (!fileData || !fileData.file_id) {
+      return res.status(200).json({ 
+        success: true,
+        exists: false
+      });
+    }
+
+    // Get the designation data
+    const { data: designationData, error: designationError } = await supabase
+      .from('designation')
+      .select('*')
+      .eq('file_id', fileData.file_id)
+      .single();
+
+    if (designationError && designationError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+      console.error('Error fetching designation:', designationError);
+      return res.status(500).json({ 
+        success: false, 
+        error: `Failed to fetch designation: ${designationError.message}`
+      });
+    }
+
+    if (!designationData) {
+      return res.status(200).json({ 
+        success: true,
+        exists: false
+      });
+    }
+
+    res.status(200).json({ 
+      success: true,
+      exists: true,
+      data: designationData,
+      fileId: fileData.file_id
+    });
+  } catch (error) {
+    console.error('Error in get-designation-by-patient endpoint:', error);
     res.status(500).json({ 
       success: false, 
       error: error.message

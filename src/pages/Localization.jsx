@@ -506,28 +506,97 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
             const { patientId } = await response.json();
             
-            console.log('Creating designation tab with patientId:', {
-                fromSavedState: savedState.patientId,
-                fromFileData: patientId,
-                fileId: fileId
-            });
+            // Get current tabs from localStorage
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
             
-            // Get designation data from the current localization
-            const designationData = saveCSVFile(Identifiers.LOCALIZATION, electrodes, false);
-            
-            // Create a new tab with the designation data
-            const event = new CustomEvent('addDesignationTab', {
-                detail: { 
-                    originalData: electrodes,
-                    data: designationData,
-                    localizationData: {
+            // Find any existing designation tab for this patient
+            const existingTab = tabs.find(tab => 
+                tab.content === 'designation' && 
+                tab.state?.patientId === patientId
+            );
+
+            if (existingTab) {
+                console.log("existing tab");
+                // Compare current electrodes with the designation tab's original data
+                const hasChanges = JSON.stringify(electrodes) !== JSON.stringify(existingTab.data.originalData);
+                
+                if (hasChanges) {
+                    console.log("has changed");
+                    // First, remove the tab from localStorage to prevent ghost tabs
+                    const updatedTabs = tabs.filter(tab => tab.id !== existingTab.id);
+                    localStorage.setItem('tabs', JSON.stringify(updatedTabs));
+
+                    // Then close the existing tab
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(closeEvent);
+
+                    // Wait a bit to ensure the tab is fully closed
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    // Create deep copies of the data
+                    const originalDataCopy = JSON.parse(JSON.stringify(electrodes));
+                    const localizationDataCopy = JSON.parse(JSON.stringify({
                         ...electrodes,
                         patientId: patientId
-                    },
-                    patientId: patientId // Pass patientId directly
+                    }));
+
+                    console.log("file id: ", existingTab.state.fileId);
+                    // Create a new tab with updated data
+                    const event = new CustomEvent('addDesignationTab', {
+                        detail: { 
+                            originalData: originalDataCopy,
+                            data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
+                            localizationData: localizationDataCopy,
+                            patientId: patientId,
+                            fileId: existingTab.state.fileId
+                        }
+                    });
+                    window.dispatchEvent(event);
+                } else {
+                    console.log("no change");
+                    // Just set the existing tab as active
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
                 }
-            });
-            window.dispatchEvent(event);
+            } else {
+                // Only make database calls when creating a new tab
+                const designationResponse = await fetch(`${backendURL}/api/by-patient/${patientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!designationResponse.ok) {
+                    throw new Error('Failed to check for existing designation');
+                }
+
+                const designationResult = await designationResponse.json();
+                
+                // Create deep copies of the data
+                const originalDataCopy = JSON.parse(JSON.stringify(
+                    designationResult.exists ? designationResult.data.localization_data : electrodes
+                ));
+                const localizationDataCopy = JSON.parse(JSON.stringify({
+                    ...(designationResult.exists ? designationResult.data.localization_data : electrodes),
+                    patientId: patientId
+                }));
+                
+                // Create a new tab
+                const event = new CustomEvent('addDesignationTab', {
+                    detail: { 
+                        originalData: originalDataCopy,
+                        data: designationResult.exists ? designationResult.data.designation_data : saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
+                        localizationData: localizationDataCopy,
+                        patientId: patientId,
+                        fileId: designationResult.exists ? designationResult.fileId : null
+                    }
+                });
+                window.dispatchEvent(event);
+            }
         } catch (error) {
             console.error('Error creating designation tab:', error);
             showError('Failed to create designation tab. Please try again.');

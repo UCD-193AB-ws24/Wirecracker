@@ -20,14 +20,14 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
     // Store the original localization data if it exists
     const [localizationData, setLocalizationData] = useState(() => {
         if (savedState && savedState.localizationData) {
-            return savedState.localizationData;
+            return JSON.parse(JSON.stringify(savedState.localizationData));
         }
-        return initialData?.originalData || null;
+        return initialData?.originalData ? JSON.parse(JSON.stringify(initialData.originalData)) : null;
     });
 
     const [modifiedElectrodes, setModifiedElectrodes] = useState(() => {
         if (savedState && savedState.electrodes) {
-            return savedState.electrodes;
+            return JSON.parse(JSON.stringify(savedState.electrodes));
         }
 
         if (initialData && Object.keys(initialData).length !== 0) {
@@ -240,6 +240,112 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
         }
     };
 
+    const handleOpenStimulation = async () => {
+        try {
+            await handleSave();
+
+            let stimulationData = modifiedElectrodes.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map((contact, index) => {
+                    let pair = index;
+                    if (index == 0) pair = 2;
+                    return {
+                        ...contact,
+                        pair: pair,
+                        isPlanning: false,
+                        duration: 3.0,
+                        frequency: 105.225,
+                        current: 2.445,
+                    }
+                }),
+            }));
+
+            // Check for existing stimulation tabs
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            const existingTab = tabs.find(tab => 
+                (tab.content === 'csv-stimulation' || tab.content === 'stimulation') && 
+                tab.state?.patientId === state.patientId
+            );
+
+            if (existingTab) {
+                // Compare the current stimulation data with the existing tab's data
+                const currentStimulationData = stimulationData;
+                const existingStimulationData = existingTab.state.electrodes;
+                
+                // Check if the stimulation data has changed
+                const hasStimulationChanged = JSON.stringify(currentStimulationData) !== JSON.stringify(existingStimulationData);
+                
+                if (hasStimulationChanged) {
+                    // Close the existing tab
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(closeEvent);
+
+                    // Create a new tab with updated data
+                    const event = new CustomEvent('addStimulationTab', {
+                        detail: { 
+                            data: stimulationData, 
+                            patientId: state.patientId,
+                            state: {
+                                patientId: state.patientId,
+                                fileId: state.fileId,
+                                fileName: state.fileName,
+                                creationDate: state.creationDate,
+                                modifiedDate: new Date().toISOString()
+                            }
+                        }
+                    });
+                    window.dispatchEvent(event);
+                } else {
+                    // Just set the existing tab as active
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
+                }
+            } else {
+                // Check if stimulation data exists in the database for this patient
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showError('User not authenticated. Please log in to open stimulation.');
+                    return;
+                }
+
+                const response = await fetch(`${backendURL}/api/by-patient-stimulation/${state.patientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to check for existing stimulation data');
+                }
+
+                const result = await response.json();
+                
+                // Create a new tab with the stimulation data
+                const event = new CustomEvent('addStimulationTab', {
+                    detail: { 
+                        data: result.exists ? result.data.stimulation_data : stimulationData,
+                        patientId: state.patientId,
+                        state: {
+                            patientId: state.patientId,
+                            fileId: result.exists ? result.fileId : state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString()
+                        }
+                    }
+                });
+                window.dispatchEvent(event);
+            }
+        } catch (error) {
+            console.error('Error opening stimulation:', error);
+            showError('Failed to open stimulation. Please try again.');
+        }
+    };
+
     return (
         <div className="flex flex-col h-9/10 p-2 lg:p-4">
             {/* Tab Navigation */}
@@ -310,29 +416,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     <button
                         className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
                                     lg:py-2 lg:px-4 lg:text-base"
-                        onClick={() => {
-                            let stimulationData = modifiedElectrodes.map(electrode => ({
-                                ...electrode,
-                                contacts: electrode.contacts.map((contact, index) => {
-                                    let pair = index;
-                                    if (index == 0) pair = 2;
-                                    return {
-                                        ...contact,
-                                        pair: pair,
-                                        isPlanning: false,
-                                        duration: 3.0, // TODO : ask what default value should be
-                                        frequency: 105.225,
-                                        current: 2.445,
-                                    }
-                                }),
-                            }));
-                            // Create a new tab with the designation data
-                            const event = new CustomEvent('addStimulationTab', {
-                                detail: { data: stimulationData, patientId : state.patientId }
-                            });
-                            window.dispatchEvent(event);
-                        }}
-                    >
+                        onClick={handleOpenStimulation}>
                         Open in Stimulation Plan
                     </button>
                 )}

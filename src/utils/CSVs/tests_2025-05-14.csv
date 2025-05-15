@@ -1,0 +1,7 @@
+### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR TEST PLANNING ###
+### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###
+Label,ContactNumber,ElectrodeDescription,ContactDescription,AssociatedLocation,Mark,SurgeonMark,Pair,Frequency,Duration,Current,TestID
+n,1,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,1,true,2,104.225,3,2.445,
+n,2,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,1,true,1,105.225,4,2.445,
+n,3,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,1,true,2,105.225,2,2.445,
+n,4,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus/WM,1,true,3,105.225,3,2.445,

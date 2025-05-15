@@ -14,12 +14,16 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || demoContactData)
     const [planningContacts, setPlanningContacts] = useState(() => {
         if (savedState.planningContacts) return savedState.planningContacts;
-        if (initialData.data) {
-            return initialData.data.map(electrode => {
+        const contactsData = initialData.data?.data || initialData.data;
+        if (contactsData) {
+            return contactsData.map(electrode => {
                 return mapConsecutive(electrode.contacts, 2,
-                    (contacts) => {contacts.filter((contactPair) => contactPair[0].isPlanning)});
+                    (contacts) => {
+                        return contacts[0].isPlanning ? null : contacts;
+                    });
             })
             .flat()
+            .filter(Boolean)
             .sort((a, b) => a[0].order - b[0].order);
         }
         return [];
@@ -31,6 +35,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
         if (!savedState.frequency) savedState.frequency = [];
         if (!savedState.duration) savedState.duration = [];
         if (!savedState.current) savedState.current = [];
+        if (!savedState.patientId) savedState.patientId = initialData.patientId || null;
 
         return savedState;
     });
@@ -40,7 +45,6 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
         onStateChange(state);
     }, [state]);
 
-
     useEffect(() => {
         setState((prevState) => {
             return {
@@ -49,6 +53,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
                 planningContacts: planningContacts,
                 areAllVisible: areAllVisible,
                 submitPlanning: submitPlanning,
+                patientId: prevState.patientId // Ensure patientId is preserved
             }
         })
     }, [electrodes, planningContacts, areAllVisible, submitPlanning]);
@@ -294,7 +299,6 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
     const createTestSelectionTab = async () => {
         if (Object.keys(contactPairs).length === 0) return;
 
-        
         try {
             console.log('Starting test selection tab creation...');
             console.log('Current state:', {
@@ -310,27 +314,35 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
                 return;
             }
 
-            // Fetch patient_id from the parent file
-            console.log('Fetching patient_id from parent file...');
-            const parentFileResponse = await fetch(`${config.backendURL}/api/files/patient/${state.fileId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+            // Fetch patient_id from the parent file if not already in state
+            if (!state.patientId) {
+                console.log('Fetching patient_id from parent file...');
+                const parentFileResponse = await fetch(`${config.backendURL}/api/files/patient/${state.fileId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const parentFileData = await parentFileResponse.json();
+                console.log('Parent file metadata response:', parentFileData);
+
+                if (!parentFileData.patientId) {
+                    console.error('Failed to fetch parent file metadata:', parentFileData.error);
+                    showError('Failed to fetch parent file metadata. Please try again.');
+                    return;
                 }
-            });
 
-            const parentFileData = await parentFileResponse.json();
-            console.log('Parent file metadata response:', parentFileData);
-
-            if (!parentFileData.patientId) {
-                console.error('Failed to fetch parent file metadata:', parentFileData.error);
-                showError('Failed to fetch parent file metadata. Please try again.');
-                return;
+                // Update state with the patient ID
+                onStateChange({
+                    ...state,
+                    patientId: parentFileData.patientId
+                });
             }
 
-            const parentPatientId = parentFileData.patientId;
-            console.log('Retrieved patient_id from parent file:', parentPatientId);
+            const parentPatientId = state.patientId;
+            console.log('Using patient_id:', parentPatientId);
 
             await handleSave();
 
@@ -360,24 +372,86 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
                 }
             });
 
-            console.log('Creating new tab with patient_id:', parentPatientId);
-            // Create a new tab with the designation data
-            const event = new CustomEvent('addFunctionalTestTab', {
-                detail: { 
-                    data: { 
-                        contacts: functionalTestData, 
-                        tests: {} 
-                    },
-                    patientId: parentPatientId, // Pass patientId directly
-                    state: {
-                        patientId: parentPatientId // Also include in state
-                    },
-                    originalData: {
-                        patientId: parentPatientId // And in originalData
-                    }
+            // Check if a test selection tab already exists in the UI
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            const existingTab = tabs.find(tab => 
+                tab.content === 'functional-test' && 
+                tab.state?.patientId === parentPatientId
+            );
+            
+            if (existingTab) {
+                // Compare the current stimulation data with the existing tab's data
+                const currentStimulationData = functionalTestData;
+                const existingStimulationData = existingTab.state.contacts;
+                
+                // Check if the stimulation data has changed
+                const hasStimulationChanged = JSON.stringify(currentStimulationData) !== JSON.stringify(existingStimulationData);
+                
+                if (hasStimulationChanged) {
+                    // Close the existing tab
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(closeEvent);
+
+                    // Create a new tab with updated data
+                    const event = new CustomEvent('addFunctionalTestTab', {
+                        detail: { 
+                            data: { 
+                                contacts: functionalTestData, 
+                                tests: existingTab.state.tests || {} // Preserve existing tests
+                            },
+                            patientId: parentPatientId,
+                            state: {
+                                patientId: parentPatientId,
+                                fileId: existingTab.state.fileId,
+                                fileName: existingTab.state.fileName,
+                                creationDate: existingTab.state.creationDate,
+                                modifiedDate: new Date().toISOString()
+                            },
+                            originalData: {
+                                patientId: parentPatientId
+                            }
+                        }
+                    });
+                    window.dispatchEvent(event);
+                } else {
+                    // Just set the existing tab as active
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
                 }
-            });
-            window.dispatchEvent(event);
+            } else {
+                // Check if test data exists in the database for this patient
+                const testResponse = await fetch(`${config.backendURL}/api/by-patient-test/${parentPatientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!testResponse.ok) {
+                    throw new Error('Failed to check for existing test data');
+                }
+
+                const testResult = await testResponse.json();
+                
+                // Create a new tab with the test selection data
+                const event = new CustomEvent('addFunctionalTestTab', {
+                    detail: { 
+                        data: { 
+                            contacts: functionalTestData, 
+                            tests: testResult.exists ? testResult.data.tests : {}
+                        },
+                        patientId: parentPatientId,
+                        state: {
+                            patientId: parentPatientId,
+                            fileId: testResult.exists ? testResult.fileId : null
+                        }
+                    }
+                });
+                window.dispatchEvent(event);
+            }
             console.log('Test selection tab creation completed successfully');
         } catch (error) {
             console.error('Error creating test selection tab:', error);
