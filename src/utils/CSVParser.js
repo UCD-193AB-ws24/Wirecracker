@@ -581,7 +581,7 @@ export function saveTestCSVFile(testData, contacts, download = true) {
                     contact.associatedLocation, // AssociatedLocation
                     contact.mark, // Mark
                     contact.surgeonMark, // SurgeonMark
-                    contact.pair.index, // Pair
+                    contact.pair, // Pair
                     contact.frequency, // Frequency
                     contact.duration, // Duration
                     contact.current, // Current
@@ -596,7 +596,7 @@ export function saveTestCSVFile(testData, contacts, download = true) {
                 contact.associatedLocation, // AssociatedLocation
                 contact.mark, // Mark
                 contact.surgeonMark, // SurgeonMark
-                contact.pair.index, // Pair
+                contact.pair, // Pair
                 contact.frequency, // Frequency
                 contact.duration, // Duration
                 contact.current, // Current

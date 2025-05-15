@@ -18,14 +18,28 @@ const FunctionalTestSelection = ({
     
     const [contactPairs, setContactPairs] = useState(() => {
         if (savedState.contactPairs) return savedState.contactPairs;
-        if (initialData.data) {
-            return initialData.data.map(electrode => {
+        let contactsData = initialData.data?.data || initialData.data;
+        if (contactsData && typeof contactsData === 'object' && !Array.isArray(contactsData) && contactsData.contacts) {
+            // Iterate over the contacts and set isPlanning = true, since data from saved CSV is always true
+            if (Array.isArray(contactsData.contacts)) {
+                contactsData.contacts.forEach(contact => {
+                    if (contact) { // Ensure contact is not null/undefined
+                        contact.isPlanning = true;
+                    }
+                });
+            }
+            // Now reformat contactsData
+            contactsData = [{ contacts: contactsData.contacts }];
+        }
+        if (contactsData) {
+            return contactsData.map(electrode => {
                 return mapConsecutive(electrode.contacts, 2,
-                    (contacts) => {return contacts});
+                    (contacts) => { return contacts; });
             })
             .flat()
             .sort((a, b) => a[0].order - b[0].order);
         }
+        return [];
     });
     const [tests, setTests] = useState(() => {
         if (savedState.tests) return savedState.tests;
@@ -205,7 +219,7 @@ const FunctionalTestSelection = ({
         });
     };
 
-    const exportTests = async (tests, contactPairs, download = true) => {
+    const exportTests = async (tests, contacts, download = true) => {
         try {
             // First save to database if we have a file ID
             if (savedState.fileId) {
@@ -233,7 +247,7 @@ const FunctionalTestSelection = ({
                         },
                         body: JSON.stringify({
                             tests: tests,
-                            contactPairs: contactPairs,
+                            contacts: contacts,
                             fileId: savedState.fileId,
                             fileName: savedState.fileName,
                             creationDate: savedState.creationDate,
@@ -270,9 +284,9 @@ const FunctionalTestSelection = ({
             }
 
             // Then export to CSV if download is true
-            // if (download) {
-            //     saveTestCSVFile(tests, contactPairs, download);
-            // }
+            if (download) {
+                saveTestCSVFile(tests, contacts, download);
+            }
         } catch (error) {
             console.error("Error exporting contacts:", error);
             showError(`Error exporting contacts: ${error.message}`);
@@ -502,7 +516,7 @@ const FunctionalTestSelection = ({
                 <div className="relative">
                     <button
                         className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
-                        onClick={() => exportTests(tests, contacts, false)}
+                        onClick={() => exportTests(tests, initialData.data[0].contacts, false)}
                     >
                         Save
                     </button>
@@ -514,7 +528,7 @@ const FunctionalTestSelection = ({
                 </div>
                 <button
                     className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
-                    onClick={() => exportTests(tests, contacts)}
+                    onClick={() => exportTests(tests, initialData.data[0].contacts)}
                 >
                     Export
                 </button>

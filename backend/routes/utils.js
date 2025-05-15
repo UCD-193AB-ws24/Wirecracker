@@ -247,7 +247,7 @@ export async function saveLocalizationToDatabase(data, fileId) {
            uniqueRegions.add(desc1);
            uniqueRegions.add(desc2);
          }
-         else if (contactData.associatedLocation === 'GM' || contactData.associatedLocation === 'GM/WM') {
+         else if (contactData.associatedLocation === 'GM' || contactData.associatedLocation === 'GM/WM' || contactData.associatedLocation === 'WM' || contactData.associatedLocation === 'OOB') {
            uniqueRegions.add(contactData.contactDescription);
          }
        }
