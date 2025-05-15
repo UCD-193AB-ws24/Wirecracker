@@ -120,7 +120,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
 
     return (
         <DndProvider backend={HTML5Backend}>
-            <div className="flex h-screen p-6 space-x-6">
+            <div className="flex min-h-screen p-6 space-x-6">
                 <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} submitPlanning={submitPlanning} onStateChange={setState} savedState={state} setElectrodes={setElectrodes}/>
 
                 <PlanningPane state={state} electrodes={electrodes} contactPairs={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} setElectrodes={setElectrodes} onStateChange={setState} savedState={state} isFunctionalMapping={isFunctionalMapping} />
@@ -138,7 +138,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
             <div className="fixed bottom-2 left-2 z-50
                             lg:bottom-6 lg:left-6">
                 <button
-                    className="py-1 px-2 border border-sky-800 bg-sky-600 text-white text-sm text-center font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800
+                    className="py-1 px-2 border border-sky-800 bg-sky-600 text-white text-sm text-center font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800
                                lg:py-2 lg:px-4 lg:text-base"
                     onClick={() => switchContent('stimulation')}>
                     Back
@@ -230,7 +230,7 @@ const Contact = ({ contacts, onClick }) => {
         }),
     }));
 
-    let classes = `min-w-[100px] p-4 border rounded-lg shadow cursor-pointer ${
+    let classes = `w-[100px] p-4 border rounded-lg shadow cursor-pointer ${
                 isDragging ? "opacity-50" : "opacity-100"} `;
     if (contacts[0].mark == 1 || contacts[1].mark == 1) {
         classes += "bg-rose-300 ";

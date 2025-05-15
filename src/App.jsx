@@ -620,7 +620,7 @@ const HomePage = () => {
                     initialData={{}}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    savedState={currentTab.state}
+                    savedState={ currentTab.state}
                 />;
             case 'functional-mapping':
                 return <ContactSelection
@@ -854,7 +854,7 @@ const HomePage = () => {
         switch (currentTab.content) {
             case 'home':
                 return (
-                    <div className="bg-sky-50 h-full px-2 flex flex-col-reverse items-center
+                    <div className="bg-gray-100 h-full px-2 flex flex-col-reverse items-center
                                     md:px-5
                                     lg:px-10 lg:flex-row lg:items-baseline
                                     xl:px-15">
@@ -1036,16 +1036,22 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
             <Logo />
             {token ? (
                 <>
-                    <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3"
-                            onClick={() => window.dispatchEvent(new CustomEvent('addDatabaseLookupTab'))}>
-                        Search the Database
-                    </button>
                     <button
-                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                        className="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-800
                                    md:w-40 md:text-sm
                                    lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                    xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
-                        onClick={onNewLocalization}>
+                        onClick={() => window.dispatchEvent(new CustomEvent('addDatabaseLookupTab'))}
+                    >
+                        Search the Database
+                    </button>
+                    <button
+                        className="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-800
+                                   md:w-40 md:text-sm
+                                   lg:w-48 lg:mt-4 lg:py-2 lg:text-md
+                                   xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
+                        onClick={onNewLocalization}
+                    >
                         Create New Patient
                     </button>
                     <input
@@ -1055,14 +1061,14 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                         style={{ display: 'none' }}
                         id="fileInput"
                     />
-                    <Dropdown 
+                    <Dropdown
                         closedText="Open File"
                         openText="Open File ▾"
-                        closedClassName="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                        closedClassName="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-800
                                          md:w-40 md:text-sm
                                          lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                          xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
-                        openClassName="border-solid border-1 border-sky-700 bg-sky-100 text-sky-700 font-semibold rounded-xl w-64 mt-3 py-1 text-xs cursor-pointer
+                        openClassName="border-solid border border-sky-800 bg-sky-800 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-700
                                        md:w-40 md:text-sm
                                        lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                        xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
@@ -1104,11 +1110,11 @@ const Center = ({ token, onNewLocalization, onFileUpload, error }) => {
                                 </div>
                                 
                                 {isLoading ? (
-                                    <div className="text-center py-8">
+                                    <div className="text-center py-3 md:py-4 lg:py-6 xl:py-8">
                                         <p className="text-gray-600">Loading your files...</p>
                                     </div>
                                 ) : databaseFiles.length === 0 ? (
-                                    <div className="text-center py-8">
+                                    <div className="text-center py-3 md:py-4 lg:py-6 xl:py-8">
                                         <p className="text-gray-600">No files found. Create a new file to get started.</p>
                                     </div>
                                 ) : (
@@ -1211,9 +1217,9 @@ const RecentFiles = ({ onOpenFile, className }) => {
                            xl:text-4xl">
                 Recent Files
             </h3>
-            <div className="bg-sky-200 rounded-xl p-2 mt-2">
+            <div className="bg-slate-200 rounded-xl p-2 mt-2">
                 {isLoading ? (
-                    <div className="text-gray-500">Loading...</div>
+                    <div className="text-gray-600">Loading...</div>
                 ) : recentLocalizations.length > 0 ? (
                     <div>
                         {recentLocalizations.map((file) => (
@@ -1229,14 +1235,14 @@ const RecentFiles = ({ onOpenFile, className }) => {
                                                 xl:max-w-64">
                                     {file.filename || 'Unnamed Localization'}
                                 </div>
-                                <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
+                                <span className="text-xs text-gray-600 ml-2 whitespace-nowrap">
                                     {new Date(file.modified_date).toLocaleDateString()}
                                 </span>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="text-gray-500">No files available</div>
+                    <div className="text-gray-600">No files available</div>
                 )}
             </div>
         </div>
@@ -1281,7 +1287,7 @@ const SignInButtons = () => {
                             xl:m-10">
                 <Link to="/signup">
                     <button
-                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 mr-2 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                        className="border-solid border border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 mr-2 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
                                    md:w-28 md:mr-3 md:text-sm
                                    lg:w-32 lg:py-2 lg:mr-4 lg:text-md
                                    xl:w-40 xl:py-3 xl:mr-5 xl:text-xl"
@@ -1291,7 +1297,7 @@ const SignInButtons = () => {
                 </Link>
                 <Link to="/login">
                     <button
-                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                        className="border-solid border border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
                                    md:w-28 md:text-sm
                                    lg:w-32 lg:py-2 lg:text-md
                                    xl:w-40 xl:py-3 xl:text-xl"
@@ -1318,7 +1324,7 @@ const ToReview = () => {
             {isReviewOpen ? (
                 <>
                     <div className="before:content-['▾']"></div>
-                    <div className="mb-5 whitespace-nowrap">
+                    <div className="mb-2 lg:mb-4 xl:mb-5 whitespace-nowrap">
                         <div>To Review</div>
                     </div>
                 </>
@@ -1347,7 +1353,7 @@ const Approved = () => {
             {isApprovedOpen ? (
                 <>
                     <div className="before:content-['▾']"></div>
-                    <div className="mb-5">
+                    <div className="mb-2 lg:mb-4 xl:mb-5 whitespace-nowrap">
                         <div>Approved</div>
                     </div>
                 </>
