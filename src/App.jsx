@@ -1063,12 +1063,12 @@ const HomePage = () => {
                         ))
                     }
                     
-                    <button 
+                    {token && <button 
                         className="px-4 py-2 text-gray-600 cursor-pointer hover:text-gray-800"
                         onClick={() => addTab('localization')}
                     >
                         +
-                    </button>
+                    </button> }
                 </div>
             </div>
             {token && <UserProfile onSignOut={handleSignOut} />}
