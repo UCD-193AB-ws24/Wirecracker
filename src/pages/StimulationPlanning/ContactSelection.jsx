@@ -19,7 +19,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
             return contactsData.map(electrode => {
                 return mapConsecutive(electrode.contacts, 2,
                     (contacts) => {
-                        return contacts[0].isPlanning ? null : contacts;
+                        return contacts;
                     });
             })
             .flat()
@@ -347,30 +347,29 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
             await handleSave();
 
             // Clean up the contacts
-            const functionalTestData = contacts.map(contact => {
-                const updatedContact = electrodes
-                    .flatMap(electrode => electrode.contacts)
-                    .find(c => c.id === contact.id);
+            const functionalTestData = contactPairs
+                .flat() // flatten pairs into individual contacts
+                .map(contact => {
+                    const updatedContact = electrodes
+                        .flatMap(electrode => electrode.contacts)
+                        .find(c => c.id === contact.id);
 
-                const pair = electrodes
-                    .find(electrode => electrode.label === contact.electrodeLabel)
-                    ?.contacts.find(c => c.index === contact.pair);
-
-                return {
-                    __contactDescription__: contact.__contactDescription__,
-                    __electrodeDescription__: contact.__electrodeDescription__,
-                    associatedLocation: contact.associatedLocation,
-                    electrodeLabel: contact.electrodeLabel,
-                    id: contact.id,
-                    index: contact.index,
-                    mark: contact.mark,
-                    pair: pair,
-                    surgeonMark: contact.surgeonMark,
-                    duration: updatedContact?.duration,
-                    frequency: updatedContact?.frequency,
-                    current: updatedContact?.current,
-                }
-            });
+                    return {
+                        __contactDescription__: contact.__contactDescription__,
+                        __electrodeDescription__: contact.__electrodeDescription__,
+                        associatedLocation: contact.associatedLocation,
+                        electrodeLabel: contact.electrodeLabel,
+                        id: contact.id,
+                        index: contact.index,
+                        mark: contact.mark,
+                        pair: contact.pair,
+                        isPlanning: contact.isPlanning,
+                        surgeonMark: contact.surgeonMark,
+                        duration: updatedContact?.duration,
+                        frequency: updatedContact?.frequency,
+                        current: updatedContact?.current,
+                    }
+                });
 
             // Check if a test selection tab already exists in the UI
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');

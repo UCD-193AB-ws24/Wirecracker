@@ -34,9 +34,12 @@ const FunctionalTestSelection = ({
         if (contactsData) {
             return contactsData.map(electrode => {
                 return mapConsecutive(electrode.contacts, 2,
-                    (contacts) => { return contacts; });
+                    (contacts) => {
+                        return contacts[0].isPlanning ? contacts : null;
+                    });
             })
             .flat()
+            .filter(Boolean)
             .sort((a, b) => a[0].order - b[0].order);
         }
         return [];

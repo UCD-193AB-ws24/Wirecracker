@@ -109,7 +109,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                                md:h-11 md:w-80 md:text-lg
                                lg:h-13 lg:w-96 lg:text-xl
                                xl:h-16 xl:w-128 xl:text-2xl"
-                    onClick={() => switchContent('functional-test')}>
+                    onClick={() => switchContent('functional-mapping')}>
                     Functional Mapping
                 </button>
             </div>
