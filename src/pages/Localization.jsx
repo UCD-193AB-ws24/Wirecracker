@@ -627,18 +627,26 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
 
                 // Find all existing designation tab(s) for this patient
-                const existingTabs = tabs.filter(tab =>
+                const existingTab = tabs.find(tab =>
                     tab.content === 'designation' &&
                     tab.state?.patientId === savedState.patientId
                 );
 
-                // Check against all of the tabs found. If any of them are the same, just open that.
-                const hasNoChanges = existingTabs.some(existingTab => JSON.stringify(electrodes) === JSON.stringify(existingTab.data.originalData));
+                // Check if there's any changes'
+                const hasChanges = JSON.stringify(electrodes) !== JSON.stringify(existingTab?.data.originalData);
 
-                if (!hasNoChanges) {
-                    // New modification we never seen before
+                // There's change or there were no designation tab before for this patient'
+                if (!existingTab || hasChanges) {
                     const updatedTabs = tabs.filter(tab => tab.state?.patientId !== savedState.patientId);
                     localStorage.setItem('tabs', JSON.stringify(updatedTabs));
+
+                    // Close out existing designation tab
+                    if (existingTab) {
+                        const closeEvent = new CustomEvent('closeTab', {
+                            detail: { tabId: existingTab.id }
+                        });
+                        window.dispatchEvent(closeEvent);
+                    }
 
                     // Create deep copies of the data
                     const originalDataCopy = JSON.parse(JSON.stringify(electrodes));
