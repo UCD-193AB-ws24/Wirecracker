@@ -16,6 +16,7 @@ import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
 import { FcGoogle } from 'react-icons/fc';
 import config from '../config.json' with { type: 'json' };
 import { ErrorProvider, useError } from './context/ErrorContext';
+import { WarningProvider, useWarning } from './context/WarningContext';
 import DBLookup from './pages/DatabaseLookup';
 
 const backendURL = config.backendURL;
@@ -1737,6 +1738,7 @@ const Approved = () => {
 const App = () => {
     return (
         <ErrorProvider>
+        <WarningProvider>
             <Router>
                 <Routes>
                     <Route path="/" element={<HomePage />} />
@@ -1752,6 +1754,7 @@ const App = () => {
                     <Route path="/usage-docs/:path" element={<UserDocumentation/>} />
                 </Routes>
             </Router>
+        </WarningProvider>
         </ErrorProvider>
     );
 };
