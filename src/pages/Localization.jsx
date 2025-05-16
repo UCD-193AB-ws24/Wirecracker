@@ -640,15 +640,6 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     const updatedTabs = tabs.filter(tab => tab.state?.patientId !== savedState.patientId);
                     localStorage.setItem('tabs', JSON.stringify(updatedTabs));
 
-                    // Then close the existing tab
-                    const closeEvent = new CustomEvent('closeTab', {
-                        detail: { tabId: savedState.id }
-                    });
-                    window.dispatchEvent(closeEvent);
-
-                    // Wait a bit to ensure the tab is fully closed
-                    await new Promise(resolve => setTimeout(resolve, 100));
-
                     // Create deep copies of the data
                     const originalDataCopy = JSON.parse(JSON.stringify(electrodes));
                     const localizationDataCopy = JSON.parse(JSON.stringify({
