@@ -623,18 +623,20 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                 showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
 
-                // First, remove the tab from localStorage to prevent ghost tabs
+                // Get the tabs to compare
                 const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
 
-                // Find any existing designation tab for this patient
+                // Find all existing designation tab(s) for this patient
                 const existingTabs = tabs.filter(tab =>
                     tab.content === 'designation' &&
                     tab.state?.patientId === savedState.patientId
                 );
 
+                // Check against all of the tabs found. If any of them are the same, just open that.
                 const hasNoChanges = existingTabs.some(existingTab => JSON.stringify(electrodes) === JSON.stringify(existingTab.data.originalData));
 
                 if (!hasNoChanges) {
+                    // New modification we never seen before
                     const updatedTabs = tabs.filter(tab => tab.state?.patientId !== savedState.patientId);
                     localStorage.setItem('tabs', JSON.stringify(updatedTabs));
 
@@ -667,7 +669,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     });
                     window.dispatchEvent(event);
                 } else {
-                    // Just set the existing tab as active
+                    // We saw the content before. Just set the existing tab as active
                     const existingTab = tabs.find(tab =>
                         tab.content === 'designation' &&
                         tab.state?.patientId === savedState.patientId &&
