@@ -729,17 +729,13 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
                 throw error;
             }
         }
-
-        // Then export to CSV as before
-        saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
     } catch (error) {
-        if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
-            if (download) {
-                saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
-            }
-        }
         console.error('Error exporting contacts:', error);
         throw error;
+    } finally {
+        if (download) {
+            saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
+        }
     }
 };
 
