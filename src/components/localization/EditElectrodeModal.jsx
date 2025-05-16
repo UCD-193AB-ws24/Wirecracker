@@ -3,6 +3,7 @@ import Popup from 'reactjs-popup';
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import config from "../../../config.json" with { type: 'json' };
 import ErrorMessage from '../ErrorMessage';
+import { useWarning } from '../../context/WarningContext';
 
 const backendURL = config.backendURL;
 
@@ -14,6 +15,8 @@ const EditElectrodeModal = ({
     isEditMode = false,
     setElectrodes = null
 }) => {
+    const { showWarning } = useWarning();
+
     // Default to DIXI if no type is provided
     const defaultType = 'DIXI';
     const [selectedElectrodeType, setSelectedElectrodeType] = useState(
@@ -91,7 +94,12 @@ const EditElectrodeModal = ({
                 setElectrodeLabelDescriptions(data.electrodeLabelDescriptions);
             }
         })
-        .catch(error => console.error("Error fetching electrode label descriptions:", error));
+        .catch(error => {
+            console.error("Error fetching electrode label descriptions:", error)
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. Make sure to download your progress.");
+            }
+        });
     }, []);
 
     // Update hemisphere based on the label input: if it ends with an apostrophe, use left; otherwise, right.

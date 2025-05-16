@@ -8,11 +8,13 @@ import LocalizationContact from '../components/localization/localizationContact'
 import EditElectrodeModal from '../components/localization/EditElectrodeModal';
 import Electrodes from '../components/localization/Electrodes';
 import { useError } from '../context/ErrorContext';
+import { useWarning } from '../context/WarningContext.jsx';
 
 const backendURL = config.backendURL;
 
 const Localization = ({ initialData = {}, onStateChange, savedState = {}, isSharedFile = false, readOnly = false, changesData = null, highlightedChange = null, onHighlightChange = () => {}, expandedElectrode: initialExpandedElectrode = null }) => {
     const { showError } = useError();
+    const { showWarning } = useWarning();
     const [expandedElectrode, setExpandedElectrode] = useState(initialExpandedElectrode || '');
     const [submitFlag, setSubmitFlag] = useState(savedState.submitFlag || false);
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || {});
@@ -251,8 +253,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
             return await response.json();
         } catch (error) {
-            console.error('Error saving file metadata:', error);
-            throw error;
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved. Make sure to download your progress.");
+            } else {
+                console.error('Error saving file metadata:', error);
+                throw error;
+            }
         }
     };
 
@@ -353,8 +359,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     await saveFileMetadata();
                     console.log('File metadata saved successfully');
                 } catch (metadataError) {
-                    console.error('Error saving file metadata:', metadataError);
-                    showError(`File metadata error: ${metadataError.message}`);
+                    if (metadataError.name === "NetworkError" || metadataError.message.toString().includes("NetworkError")) {
+                        showWarning("No internet connection. The progress is not saved. Make sure to download your progress.");
+                    } else {
+                        console.error('Error saving file metadata:', metadataError);
+                        showError(`File metadata error: ${metadataError.message}`);
+                    }
                     return;
                 }
             }
@@ -406,8 +416,19 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
         }
         catch (error) {
-            console.error('Error saving localization:', error);
-            showError(`Failed to save localization. ${error.message}`);
+            // Only thing that can cause code to be inside of if statement happens before downloading the CSV.
+            // Download here if it was network error
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                if (download) {
+                    showWarning("No internet connection. The progress is not saved on the database.");
+                } else {
+                    showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+                }
+                saveCSVFile(Identifiers.LOCALIZATION, electrodes, download);
+            } else {
+                console.error('Error saving localization:', error);
+                showError(`Failed to save localization. ${error.message}`);
+            }
         }
     };
 
@@ -598,8 +619,65 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 window.dispatchEvent(event);
             }
         } catch (error) {
-            console.error('Error creating designation tab:', error);
-            showError('Failed to create designation tab. Please try again.');
+
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+
+                // First, remove the tab from localStorage to prevent ghost tabs
+                const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+
+                // Find any existing designation tab for this patient
+                const existingTab = tabs.find(tab =>
+                    tab.content === 'designation' &&
+                    tab.state?.patientId === savedState.patientId
+                );
+
+                // No existing tab or content modified will evaluate to true
+                const hasChanges = JSON.stringify(electrodes) !== JSON.stringify(existingTab?.data.originalData);
+
+                if (hasChanges) {
+                    const updatedTabs = tabs.filter(tab => tab.state?.patientId !== savedState.patientId);
+                    localStorage.setItem('tabs', JSON.stringify(updatedTabs));
+
+                    // Then close the existing tab
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: savedState.id }
+                    });
+                    window.dispatchEvent(closeEvent);
+
+                    // Wait a bit to ensure the tab is fully closed
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    // Create deep copies of the data
+                    const originalDataCopy = JSON.parse(JSON.stringify(electrodes));
+                    const localizationDataCopy = JSON.parse(JSON.stringify({
+                        ...electrodes,
+                        patientId: savedState.patientId
+                    }));
+
+                    console.log("file id: ", savedState.fileId);
+                    // Create a new tab with updated data
+                    const event = new CustomEvent('addDesignationTab', {
+                        detail: {
+                            originalData: originalDataCopy,
+                            data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
+                            localizationData: localizationDataCopy,
+                            patientId: savedState.patientId,
+                            fileId: savedState.fileId
+                        }
+                    });
+                    window.dispatchEvent(event);
+                } else {
+                    // Just set the existing tab as active
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
+                }
+            } else {
+                console.error('Error creating designation tab:', error);
+                showError('Failed to create designation tab. Please try again.');
+            }
         }
     };
 
