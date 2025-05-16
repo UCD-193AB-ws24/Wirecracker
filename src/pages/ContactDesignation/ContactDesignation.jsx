@@ -5,6 +5,7 @@ import Designation from "./DesignationPage";
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
+import { useWarning } from '../../context/WarningContext.jsx';
 
 const PAGE_NAME = ["designation", "resection"];
 
@@ -12,6 +13,7 @@ const backendURL = config.backendURL;
 
 const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const { showError } = useError();
+    const { showWarning } = useWarning();
     const [state, setState] = useState(savedState);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
     const [activeTab, setActiveTab] = useState('designation');
@@ -143,8 +145,12 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     
                     console.log('Designation saved successfully');
                 } catch (error) {
-                    console.error('Error saving designation:', error);
-                    showError(`Error saving designation: ${error.message}`);
+                    if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                        showWarning("No internet connection. The progress is not saved. Make sure to download your progress.");
+                    } else {
+                        console.error('Error saving designation:', error);
+                        showError(`Error saving designation: ${error.message}`);
+                    }
                     return;
                 }
             }
@@ -162,7 +168,11 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 }
             }
         } catch (error) {
-            showError('Error saving data on database. Changes are not saved');
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved. Make sure to download your progress.");
+            } else {
+                showError('Error saving data on database. Changes are not saved');
+            }
         }
     };
 
@@ -202,7 +212,7 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     if (!result.success) {
                         console.error('Failed to save designation:', result.error);
                         showError(`Failed to save designation: ${result.error}`);
-                        return;
+                        throw result.error;
                     }
                     
                     // Update the state with new modified date
@@ -212,13 +222,17 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                     }));
                     
                     // Show success feedback if this was a save operation
-                        setShowSaveSuccess(true);
+                    setShowSaveSuccess(true);
                     
                     console.log('Designation saved successfully');
                 } catch (error) {
-                    console.error('Error saving designation:', error);
-                    showError(`Error saving designation: ${error.message}`);
-                    return;
+                    if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                        showWarning("No internet connection. The progress is not saved on the database.");
+                    } else {
+                        console.error('Error saving designation:', error);
+                        showError(`Error saving designation: ${error.message}`);
+                        return;
+                    }
                 }
             }
 
@@ -235,8 +249,14 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 }
             }
         } catch (error) {
-            console.error('Error exporting contacts:', error);
-            showError(`Error exporting contacts: ${error.message}`);
+            // Somehow got here? Well lets just download it anyways
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database.");
+                saveDesignationCSVFile(modifiedElectrodes, localizationData, true);
+            } else {
+                console.error('Error exporting contacts:', error);
+                showError(`Error exporting contacts: ${error.message}`);
+            }
         }
     };
 
@@ -341,8 +361,68 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 window.dispatchEvent(event);
             }
         } catch (error) {
-            console.error('Error opening stimulation:', error);
-            showError('Failed to open stimulation. Please try again.');
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+
+                let stimulationData = modifiedElectrodes.map(electrode => ({
+                    ...electrode,
+                    contacts: electrode.contacts.map((contact, index) => {
+                        let pair = index;
+                        if (index == 0) pair = 2;
+                        return {
+                            ...contact,
+                            pair: pair,
+                            isPlanning: false,
+                            duration: 3.0,
+                            frequency: 105.225,
+                            current: 2.445,
+                        }
+                    }),
+                }));
+
+                // Check for existing stimulation tabs
+                const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+                const existingTabs = tabs.filter(tab =>
+                    (tab.content === 'csv-stimulation' || tab.content === 'stimulation') &&
+                    tab.state?.patientId === state.patientId
+                );
+
+                // Check if the stimulation data has changed
+                // NOTE This does not quite work as checker. Always evaluate to false
+                const hasNoStimulationChanged = existingTabs.some(existingTab => JSON.stringify(stimulationData) !== JSON.stringify(existingTab.state.electrodes));
+
+                if (!hasNoStimulationChanged) {
+                    // Create a new tab with updated data
+                    const event = new CustomEvent('addStimulationTab', {
+                        detail: {
+                            data: stimulationData,
+                            patientId: state.patientId,
+                            state: {
+                                patientId: state.patientId,
+                                fileId: state.fileId,
+                                fileName: state.fileName,
+                                creationDate: state.creationDate,
+                                modifiedDate: new Date().toISOString()
+                            }
+                        }
+                    });
+                    window.dispatchEvent(event);
+                } else {
+                    // Just set the existing tab as active
+                    const existingTab = tabs.find(tab =>
+                        tab.content === 'designation' &&
+                        tab.state?.patientId === savedState.patientId &&
+                        JSON.stringify(stimulationData) === JSON.stringify(tab.state.electrodes)
+                    );
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
+                }
+            } else {
+                console.error('Error opening stimulation:', error);
+                showError('Failed to open stimulation. Please try again.');
+            }
         }
     };
 
