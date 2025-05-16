@@ -531,7 +531,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
             
             // Find any existing designation tab for this patient
-            const existingTab = tabs.find(tab => 
+            const existingTab = tabs.find(tab =>
                 tab.content === 'designation' && 
                 tab.state?.patientId === patientId
             );
@@ -627,15 +627,14 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
 
                 // Find any existing designation tab for this patient
-                const existingTab = tabs.find(tab =>
+                const existingTabs = tabs.filter(tab =>
                     tab.content === 'designation' &&
                     tab.state?.patientId === savedState.patientId
                 );
 
-                // No existing tab or content modified will evaluate to true
-                const hasChanges = JSON.stringify(electrodes) !== JSON.stringify(existingTab?.data.originalData);
+                const hasNoChanges = existingTabs.some(existingTab => JSON.stringify(electrodes) === JSON.stringify(existingTab.data.originalData));
 
-                if (hasChanges) {
+                if (!hasNoChanges) {
                     const updatedTabs = tabs.filter(tab => tab.state?.patientId !== savedState.patientId);
                     localStorage.setItem('tabs', JSON.stringify(updatedTabs));
 
@@ -669,6 +668,11 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     window.dispatchEvent(event);
                 } else {
                     // Just set the existing tab as active
+                    const existingTab = tabs.find(tab =>
+                        tab.content === 'designation' &&
+                        tab.state?.patientId === savedState.patientId &&
+                        JSON.stringify(electrodes) === JSON.stringify(tab.data.originalData)
+                    );
                     const activateEvent = new CustomEvent('setActiveTab', {
                         detail: { tabId: existingTab.id }
                     });
