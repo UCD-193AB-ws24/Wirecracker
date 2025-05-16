@@ -200,6 +200,7 @@ const PatientTabGroup = ({ patientId, tabs, activeTab, onTabClick, onTabClose, o
 const UserProfile = ({ onSignOut }) => {
     const navigate = useNavigate();
     const [userName, setUserName] = useState('');
+    const { showWarning } = useWarning();
     
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -1098,6 +1099,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
     const [isLoading, setIsLoading] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState(null);
     const { showError } = useError();
+    const { showWarning } = useWarning();
 
     const loadPatients = async () => {
         setIsLoading(true);
@@ -1115,8 +1117,12 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
             const data = await response.json();
             setPatients(data);
         } catch (error) {
-            console.error('Error loading patients:', error);
-            showError('Failed to load patients');
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. Failed to load patients");
+            } else {
+                console.error('Error loading patients:', error);
+                showError('Failed to load patients');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -1274,6 +1280,7 @@ const Activity = () => {
 
 const PatientDetails = ({ patient, onClose, openSavedFile }) => {
     const { showError } = useError();
+    const { showWarning } = useWarning();
     const [clickedFileId, setClickedFileId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const buttons = [
@@ -1525,6 +1532,7 @@ const RecentFiles = ({ onOpenFile, className }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedPatient, setSelectedPatient] = useState(null);
     const { showError } = useError();
+    const { showWarning } = useWarning();
     
     // Get addTab from HomePage context
     const addTab = window.addTab;
@@ -1552,8 +1560,12 @@ const RecentFiles = ({ onOpenFile, className }) => {
                 const patients = await response.json();
                 setRecentPatients(patients.slice(0, 7));
             } catch (error) {
-                console.error('Error fetching recent patients:', error);
-                showError('Failed to load recent patients');
+                if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                    showWarning("No internet connection. Failed to load recent patients");
+                } else {
+                    console.error('Error fetching recent patients:', error);
+                    showError('Failed to load recent patients');
+                }
             } finally {
                 setIsLoading(false);
             }
