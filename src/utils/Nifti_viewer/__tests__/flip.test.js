@@ -62,6 +62,12 @@ describe('flip function', () => {
         expect(input).toEqual([3, 2, 1]);
     });
 
+    test('flip with non-array object', () => {
+        const input = {tired: true, sleep: 4};
+        flip(input, 1);
+        expect(input).toEqual(input);
+    });
+
     test('flips with n = 0 (reverse the whole array)', () => {
         const input = [1, 2, 3];
         flip(input, 0);  // This should reverse the array

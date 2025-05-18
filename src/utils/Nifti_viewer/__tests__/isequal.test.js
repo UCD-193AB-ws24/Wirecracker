@@ -7,6 +7,11 @@ describe("isequal", () => {
         expect(isequal([], [])).toBe(true);
     });
 
+    test("should return true for same object", () => {
+        const arr = [6, 5, 4];
+        expect(isequal(arr, arr)).toBe(true);
+    })
+
     test("should return false for arrays with different lengths", () => {
         expect(isequal([1, 2, 3], [1, 2])).toBe(false);
     });

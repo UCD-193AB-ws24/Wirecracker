@@ -46,4 +46,10 @@ describe('find function', () => {
         const result = find(input);
         expect(result).toEqual([]);  // All elements are zero, so result should be empty
     });
+
+    test('should return the indices array as-is when vector length equals found count (false case)', () => {
+      const input = [1, 1]; // Vector with all elements non-zero
+      const result = find(input);
+      expect(result).toEqual([0, 1]);
+    });
 });
