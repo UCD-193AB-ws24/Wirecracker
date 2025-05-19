@@ -8,6 +8,7 @@ import { saveStimulationCSVFile } from "../../utils/CSVParser";
 import mapConsecutive from "../../utils/MapConsecutive";
 import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
+import { useWarning } from '../../context/WarningContext';
 
 const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, switchContent, isFunctionalMapping = false }) => {
     const { showError } = useError();
@@ -267,6 +268,7 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
     const { showError } = useError();
     const [hoverIndex, setHoverIndex] = useState(null);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+    const { showWarning } = useWarning();
 
     let index = hoverIndex; // For synchronization between hover and drop
 
@@ -469,8 +471,12 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
             setShowSaveSuccess(true);
             setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
         } catch (error) {
-            console.error('Error saving:', error);
-            showError(error.message);
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+            } else {
+                console.error('Error saving:', error);
+                showError(error.message);
+            }
         }
     };
 
@@ -524,7 +530,18 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
 
                 <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
                         contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                        }`} onClick={() => exportState(state, electrodes, isFunctionalMapping, true)}>
+                        }`} onClick={async () => {
+                            try {
+                                await exportState(state, electrodes, isFunctionalMapping, true);
+                            } catch (error) {
+                                if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                                    showWarning("No internet connection. The progress is not saved on the database.");
+                                } else {
+                                    console.error('Error exporting:', error);
+                                    showError(error.message);
+                                }
+                            }
+                        }}>
                     Export
                 </button>
             </div>
@@ -660,8 +677,8 @@ const PlanningContact = ({ contacts, onDropBack, onStateChange, savedState, setE
 };
 
 const exportState = async (state, electrodes, isFunctionalMapping, download = true) => {
+    let planOrder = state.planningContacts.map(contacts => contacts[0].id);
     try {
-        let planOrder = state.planningContacts.map(contacts => contacts[0].id);
         // First save to database if we have a file ID
         if (state.fileId) {
             console.log('Saving stimulation plan to database...');
@@ -702,21 +719,22 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
                 console.log('Save stimulation response:', result);
                 if (!result.success) {
                     console.error('Failed to save stimulation:', result.error);
-                    throw new Error(`Failed to save stimulation: ${result.error}`);
+                    throw error;
                 }
 
                 console.log('Stimulation saved successfully');
             } catch (error) {
                 console.error('Error saving stimulation:', error);
-                throw new Error(`Error saving stimulation: ${error.message}`);
+                throw error;
             }
         }
-
-        // Then export to CSV as before
-        saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
     } catch (error) {
         console.error('Error exporting contacts:', error);
-        throw new Error(`Error exporting contacts: ${error.message}`);
+        throw error;
+    } finally {
+        if (download) {
+            saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
+        }
     }
 };
 

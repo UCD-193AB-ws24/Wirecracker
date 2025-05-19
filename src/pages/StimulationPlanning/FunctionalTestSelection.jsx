@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { demoContactsData, demoTestData } from "./demoContactsData";
 import { saveTestCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
+import { useWarning } from "../../context/WarningContext";
 import mapConsecutive from "../../utils/MapConsecutive";
 
 const backendURL = config.backendURL;
@@ -14,6 +14,7 @@ const FunctionalTestSelection = ({
     savedState = {},
 }) => {
     const { showError } = useError();
+    const { showWarning } = useWarning();
     const [allAvailableTests, setAllAvailableTests] = useState([] || savedState.allTests);
     
     const [contactPairs, setContactPairs] = useState(() => {
@@ -87,7 +88,10 @@ const FunctionalTestSelection = ({
                 const { data } = await res.json();
                 setAllAvailableTests(data);
             } catch (err) {
-                console.error("Failed to fetch lobe options:", err);
+                if (err.name === "NetworkError" || err.message.toString().includes("NetworkError")) {
+                    showError("No internet connection. Unable to load tests");
+                }
+                console.error("Failed to fetch tests:", err);
             }
         };
 
@@ -262,8 +266,7 @@ const FunctionalTestSelection = ({
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save test selection:', result.error);
-                        showError(`Failed to save test selection: ${result.error}`);
-                        return;
+                        throw result.error; // Let error bubble up
                     }
 
                     // Update the state with new modified date
@@ -281,18 +284,25 @@ const FunctionalTestSelection = ({
                     console.log('Test selection saved successfully');
                 } catch (error) {
                     console.error('Error saving test selection:', error);
-                    showError(`Error saving test selection: ${error.message}`);
-                    return;
+                    throw error;
                 }
             }
-
+        } catch (error) {
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                if (download) {
+                    showWarning("No internet connection. The progress is not saved on the database.");
+                } else {
+                    showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+                }
+            } else {
+                console.error("Error exporting contacts:", error);
+                showError(`Error exporting contacts: ${error.message}`);
+            }
+        } finally {
             // Then export to CSV if download is true
             if (download) {
                 saveTestCSVFile(tests, contacts, download);
             }
-        } catch (error) {
-            console.error("Error exporting contacts:", error);
-            showError(`Error exporting contacts: ${error.message}`);
         }
     };
 
