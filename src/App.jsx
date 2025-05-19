@@ -1118,6 +1118,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
     const [patients, setPatients] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const [showLegend, setShowLegend] = useState(false);
     const { showError } = useError();
     const { showWarning } = useWarning();
 
@@ -1214,7 +1215,16 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                             <div className="bg-white p-6 rounded-lg shadow-xl w-4/5 max-w-3xl max-h-[80vh] overflow-y-auto">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-2xl font-bold">Select Patient</h2>
+                                    <div className="flex items-center">
+                                        <h2 className="text-2xl font-bold">Select Patient</h2>
+                                        <button 
+                                            onClick={() => setShowLegend(true)}
+                                            className="ml-3 text-gray-500 hover:text-gray-700 text-xl cursor-pointer"
+                                            title="Show Legend"
+                                        >
+                                            ?
+                                        </button>
+                                    </div>
                                     <button 
                                         onClick={() => setShowDatabaseModal(false)}
                                         className="text-gray-500 transition-colors duration-200 cursor-pointer hover:text-gray-700 text-xl"
@@ -1246,10 +1256,18 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                                     <div className="font-medium">{formatPatientDisplay(patient)}</div>
                                                 </div>
                                                 <div className="text-sm text-gray-500">
-                                                    {patient.has_localization && <span className="mr-2">📍</span>}
-                                                    {patient.has_designation && <span className="mr-2">📝</span>}
-                                                    {patient.has_stimulation && <span className="mr-2">⚡</span>}
-                                                    {patient.has_test_selection && <span>🧪</span>}
+                                                    {patient.has_localization && (
+                                                        <span className="mr-2 cursor-help" title="Localization File">📍</span>
+                                                    )}
+                                                    {patient.has_designation && (
+                                                        <span className="mr-2 cursor-help" title="Designation File">📝</span>
+                                                    )}
+                                                    {patient.has_stimulation && (
+                                                        <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
+                                                    )}
+                                                    {patient.has_test_selection && (
+                                                        <span className="cursor-help" title="Test Selection File">🧪</span>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -1275,6 +1293,8 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                             openSavedFile={openSavedFile}
                         />
                     )}
+
+                    <Legend isOpen={showLegend} onClose={() => setShowLegend(false)} />
                 </>
             ) : <SignInButtons />}
         </div>
@@ -1298,39 +1318,82 @@ const Activity = () => {
     );
 };
 
+const Legend = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold">File Type Legend</h2>
+                    <button 
+                        onClick={onClose}
+                        className="text-gray-500 hover:text-gray-700 text-xl"
+                    >
+                        ×
+                    </button>
+                </div>
+                <div className="space-y-3">
+                    <div className="flex items-center">
+                        <span className="text-xl mr-3">📍</span>
+                        <span>Localization File</span>
+                    </div>
+                    <div className="flex items-center">
+                        <span className="text-xl mr-3">📝</span>
+                        <span>Designation File</span>
+                    </div>
+                    <div className="flex items-center">
+                        <span className="text-xl mr-3">⚡</span>
+                        <span>Stimulation File</span>
+                    </div>
+                    <div className="flex items-center">
+                        <span className="text-xl mr-3">🧪</span>
+                        <span>Test Selection File</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const PatientDetails = ({ patient, onClose, openSavedFile }) => {
     const { showError } = useError();
     const { showWarning } = useWarning();
     const [clickedFileId, setClickedFileId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [showLegend, setShowLegend] = useState(false);
     const buttons = [
         {
             name: 'Localization',
             type: 'localization',
             exists: patient.has_localization,
             fileId: patient.localization_file_id,
-            message: 'No localization file created yet'
+            message: 'No localization file created yet',
+            icon: '📍'
         },
         {
             name: 'Designation',
             type: 'designation',
             exists: patient.has_designation,
             fileId: patient.designation_file_id,
-            message: 'No designation file created yet'
+            message: 'No designation file created yet',
+            icon: '📝'
         },
         {
             name: 'Stimulation',
             type: 'stimulation',
             exists: patient.has_stimulation,
             fileId: patient.stimulation_file_id,
-            message: 'No stimulation file created yet'
+            message: 'No stimulation file created yet',
+            icon: '⚡'
         },
         {
             name: 'Test Selection',
             type: 'functional-test',
             exists: patient.has_test_selection,
             fileId: patient.test_selection_file_id,
-            message: 'No test selection file created yet'
+            message: 'No test selection file created yet',
+            icon: '🧪'
         }
     ];
 
@@ -1467,8 +1530,10 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                     patientId: patient.patient_id,
                                     type: 'csv-functional-test',
                                     data: {
-                                        tests: fileTypeData.testSelectionData.tests,
-                                        contacts: fileTypeData.testSelectionData.contacts
+                                        data : {
+                                            tests: fileTypeData.testSelectionData.tests,
+                                            contacts: fileTypeData.testSelectionData.contacts
+                                        }
                                     }
                                 };
                             }
@@ -1509,7 +1574,16 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-lg shadow-xl w-4/5 max-w-3xl">
                 <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-2xl font-bold">{formatPatientDisplay(patient)}</h2>
+                    <div className="flex items-center">
+                        <h2 className="text-2xl font-bold">{formatPatientDisplay(patient)}</h2>
+                        <button 
+                            onClick={() => setShowLegend(true)}
+                            className="ml-3 text-gray-500 hover:text-gray-700 text-xl cursor-pointer"
+                            title="Show Legend"
+                        >
+                            ?
+                        </button>
+                    </div>
                     <button 
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700 text-xl"
@@ -1529,6 +1603,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                         : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
                                 disabled={!button.exists || isLoading}
                             >
+                                <span className="mr-2">{button.icon}</span>
                                 {button.name}
                             </button>
                             {!button.exists && (
@@ -1543,6 +1618,8 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                     </div>
                 )}
             </div>
+
+            <Legend isOpen={showLegend} onClose={() => setShowLegend(false)} />
         </div>
     );
 };
@@ -1551,6 +1628,7 @@ const RecentFiles = ({ onOpenFile, className }) => {
     const [recentPatients, setRecentPatients] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const [showLegend, setShowLegend] = useState(false);
     const { showError } = useError();
     const { showWarning } = useWarning();
     
@@ -1600,12 +1678,21 @@ const RecentFiles = ({ onOpenFile, className }) => {
     
     return (
         <div className={`justify-center ${className}`}>
-            <h3 className="text-xl font-bold
-                           md:text-2xl
-                           lg:text-3xl
-                           xl:text-4xl">
-                Recent Patients
-            </h3>
+            <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold
+                               md:text-2xl
+                               lg:text-3xl
+                               xl:text-4xl">
+                    Recent Patients
+                </h3>
+                <button 
+                    onClick={() => setShowLegend(true)}
+                    className="text-gray-500 hover:text-gray-700 text-xl cursor-pointer"
+                    title="Show Legend"
+                >
+                    ?
+                </button>
+            </div>
             <div className="bg-sky-200 rounded-xl p-2 mt-2">
                 {isLoading ? (
                     <div className="text-gray-500">Loading...</div>
@@ -1625,10 +1712,18 @@ const RecentFiles = ({ onOpenFile, className }) => {
                                     {formatPatientDisplay(patient)}
                                 </div>
                                 <div className="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                                    {patient.has_localization && <span className="mr-2">📍</span>}
-                                    {patient.has_designation && <span className="mr-2">📝</span>}
-                                    {patient.has_stimulation && <span className="mr-2">⚡</span>}
-                                    {patient.has_test_selection && <span>🧪</span>}
+                                    {patient.has_localization && (
+                                        <span className="mr-2 cursor-help" title="Localization File">📍</span>
+                                    )}
+                                    {patient.has_designation && (
+                                        <span className="mr-2 cursor-help" title="Designation File">📝</span>
+                                    )}
+                                    {patient.has_stimulation && (
+                                        <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
+                                    )}
+                                    {patient.has_test_selection && (
+                                        <span className="cursor-help" title="Test Selection File">🧪</span>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -1645,6 +1740,8 @@ const RecentFiles = ({ onOpenFile, className }) => {
                     openSavedFile={onOpenFile}
                 />
             )}
+
+            <Legend isOpen={showLegend} onClose={() => setShowLegend(false)} />
         </div>
     );
 };

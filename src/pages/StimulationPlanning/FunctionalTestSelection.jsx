@@ -528,7 +528,7 @@ const FunctionalTestSelection = ({
                 <div className="relative">
                     <button
                         className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
-                        onClick={() => exportTests(tests, initialData.data[0].contacts, false)}
+                        onClick={() => exportTests(tests, initialData.data.contacts, false)}
                     >
                         Save
                     </button>
@@ -540,7 +540,7 @@ const FunctionalTestSelection = ({
                 </div>
                 <button
                     className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
-                    onClick={() => exportTests(tests, initialData.data[0].contacts)}
+                    onClick={() => exportTests(tests, initialData.data.contacts)}
                 >
                     Export
                 </button>
