@@ -275,11 +275,17 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
             if (existingTab) {
                 // Compare the current resection data with the existing tab's data
-                const currentDesignationData = designationData;
-                const existingStimulationData = existingTab.state.electrodes;
+                const currentDesignationData = structuredClone(designationData.electrodes);
+
+                // Remove surgeonmark from consideration
+                currentDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.surgeonMark = false));
+
+                const existingDesignationData = structuredClone(existingTab.state.electrodes);
+                existingDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.surgeonMark = false));
+
 
                 // Check if the resection data has changed
-                const hasResectionChanged = JSON.stringify(currentDesignationData.electrodes) !== JSON.stringify(existingStimulationData);
+                const hasResectionChanged = JSON.stringify(currentDesignationData) !== JSON.stringify(existingDesignationData);
 
                 if (hasResectionChanged) {
                     // Close the existing tab
@@ -291,7 +297,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     // Create a new tab with updated data
                     const event = new CustomEvent('addResectionTab', {
                         detail: {
-                            data: currentDesignationData,
+                            data: designationData,
                             patientId: state.patientId,
                             state: {
                                 patientId: state.patientId,
@@ -328,8 +334,6 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 }
 
                 const result = await response.json();
-
-                console.log(result)
 
                 // Create a new tab with the designation data
                 const event = new CustomEvent('addResectionTab', {
