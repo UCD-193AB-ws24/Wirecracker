@@ -1,12 +1,9 @@
-import { demoContactData } from "./demoData";
 import { useState, useEffect } from "react";
 import Resection from "./ResectionPage";
 import Designation from "./DesignationPage";
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
-
-const PAGE_NAME = ["designation", "resection"];
 
 const backendURL = config.backendURL;
 
@@ -44,20 +41,6 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 })),
             }));
         }
-
-        // For demo purpose
-        return demoContactData.map(electrode => ({
-            ...electrode,
-            contacts: electrode.contacts.map((contact, index) => ({
-                ...contact,
-                id: `${electrode.label}${index + 1}`,
-                electrodeLabel: electrode.label,
-                index: index + 1,
-                mark: contact.mark || 0,
-                surgeonMark: contact.surgeonMark || false,
-                focus: false
-            })),
-        }));
     });
 
     // Save state changes

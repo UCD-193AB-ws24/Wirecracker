@@ -4,8 +4,12 @@ import nifti_anatomical_conversion from '../../utils/Nifti_viewer/nifti_anatomic
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useError } from '../../context/ErrorContext';
 import { niftiStorage } from '../../utils/IndexedDBStorage';
+import { saveDesignationCSVFile } from "../../utils/CSVParser";
+import config from "../../../config.json" with { type: 'json' };
 
-const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
+const backendURL = config.backendURL;
+
+const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const [imageLoaded, setImageLoaded] = useState(savedState.isLoaded || false);
 
     useEffect(() => {
@@ -14,6 +18,315 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
             layout: "resection",
         });
     }, [imageLoaded]);
+
+
+    const { showError } = useError();
+    const [state, setState] = useState(savedState);
+    const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+
+    // Store the original localization data if it exists
+    const [localizationData, setLocalizationData] = useState(() => {
+        if (savedState && savedState.localizationData) {
+            return structuredClone(savedState.localizationData);
+        }
+        return initialData?.data.originalData ? structuredClone(initialData.data.originalData) : null;
+    });
+
+    const [electrodes, setElectrodes] = useState(() => {
+        if (savedState && savedState.electrodes) {
+            return structuredClone(savedState.electrodes);
+        }
+
+        if (initialData && initialData.data.electrodes) {
+            return structuredClone(initialData.data.electrodes);
+        }
+    });
+
+    // Save state changes
+    useEffect(() => {
+        onStateChange(state);
+    }, [state]);
+
+    useEffect(() => {
+        const newState = {
+            ...state,
+            electrodes: electrodes,
+            localizationData: localizationData
+        };
+        setState(newState);
+    }, [electrodes, localizationData]);
+
+    const onClick = (contactId, change) => {
+        setElectrodes(prevElectrodes => {
+            return prevElectrodes.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map(contact => {
+                    if (contact.id === contactId) {
+                        return change(contact);
+                    }
+                    return contact;
+                }),
+            }));
+        });
+    };
+
+    const handleSave = async () => {
+        try {
+            // First save to database if we have a file ID
+            if (state.fileId) {
+                console.log('Saving designation with patientId:', {
+                    fromState: state.patientId,
+                    fromLocalizationData: localizationData?.patientId,
+                    fileId: state.fileId
+                });
+
+                // Get user ID from session
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showError('User not authenticated. Please log in to save designations.');
+                    return;
+                }
+
+                try {
+                    // First save/update file metadata
+                    const response = await fetch(`${backendURL}/api/save-designation`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        },
+                        body: JSON.stringify({
+                            designationData: electrodes,
+                            localizationData: localizationData,
+                            fileId: state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString(),
+                            patientId: state.patientId
+                        }),
+                    });
+
+                    const result = await response.json();
+                    if (!result.success) {
+                        console.error('Failed to save designation:', result.error);
+                        showError(`Failed to save designation: ${result.error}`);
+                        return;
+                    }
+
+                    // Update the state with new modified date
+                    setState(prevState => ({
+                        ...prevState,
+                        modifiedDate: new Date().toISOString()
+                    }));
+
+                    // Show success feedback
+                    setShowSaveSuccess(true);
+                    setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
+
+                    console.log('Designation saved successfully');
+                } catch (error) {
+                    console.error('Error saving designation:', error);
+                    showError(`Error saving designation: ${error.message}`);
+                    return;
+                }
+            }
+
+            // Then export to CSV as before
+            if (localizationData) {
+                // If we have localization data, use it to create a CSV with the same format
+                saveDesignationCSVFile(electrodes, localizationData, false);
+            } else {
+                // Fall back to the simple logging if no localization data
+                for (let electrode of electrodes) {
+                    for (let contact of electrode.contacts) {
+                        console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
+                    }
+                }
+            }
+        } catch (error) {
+            showError('Error saving data on database. Changes are not saved');
+        }
+    };
+
+    const handleExport = async () => {
+        try {
+            // First save to database if we have a file ID
+            if (state.fileId) {
+                console.log('Saving designation to database...');
+
+                // Get user ID from session
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showError('User not authenticated. Please log in to save designations.');
+                    return;
+                }
+
+                try {
+                    // First save/update file metadata
+                    const response = await fetch(`${backendURL}/api/save-designation`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        },
+                        body: JSON.stringify({
+                            designationData: electrodes,
+                            localizationData: localizationData,
+                            fileId: state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString(),
+                            patientId: state.patientId
+                        }),
+                    });
+
+                    const result = await response.json();
+                    if (!result.success) {
+                        console.error('Failed to save designation:', result.error);
+                        showError(`Failed to save designation: ${result.error}`);
+                        return;
+                    }
+
+                    // Update the state with new modified date
+                    setState(prevState => ({
+                        ...prevState,
+                        modifiedDate: new Date().toISOString()
+                    }));
+
+                    // Show success feedback if this was a save operation
+                        setShowSaveSuccess(true);
+
+                    console.log('Designation saved successfully');
+                } catch (error) {
+                    console.error('Error saving designation:', error);
+                    showError(`Error saving designation: ${error.message}`);
+                    return;
+                }
+            }
+
+            // Then export to CSV as before
+            if (localizationData) {
+                // If we have localization data, use it to create a CSV with the same format
+                saveDesignationCSVFile(electrodes, localizationData, true);
+            } else {
+                // Fall back to the simple logging if no localization data
+                for (let electrode of electrodes) {
+                    for (let contact of electrode.contacts) {
+                        console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error exporting contacts:', error);
+            showError(`Error exporting contacts: ${error.message}`);
+        }
+    };
+
+    const handleOpenStimulation = async () => {
+        try {
+            await handleSave();
+
+            let stimulationData = electrodes.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map((contact, index) => {
+                    let pair = index;
+                    if (index == 0) pair = 2;
+                    return {
+                        ...contact,
+                        pair: pair,
+                        isPlanning: false,
+                        duration: 3.0,
+                        frequency: 105.225,
+                        current: 2.445,
+                    }
+                }),
+            }));
+
+            // Check for existing stimulation tabs
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            const existingTab = tabs.find(tab =>
+                (tab.content === 'csv-stimulation' || tab.content === 'stimulation') &&
+                tab.state?.patientId === state.patientId
+            );
+
+            if (existingTab) {
+                // Compare the current stimulation data with the existing tab's data
+                const currentStimulationData = stimulationData;
+                const existingStimulationData = existingTab.state.electrodes;
+
+                // Check if the stimulation data has changed
+                const hasStimulationChanged = JSON.stringify(currentStimulationData) !== JSON.stringify(existingStimulationData);
+
+                if (hasStimulationChanged) {
+                    // Close the existing tab
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(closeEvent);
+
+                    // Create a new tab with updated data
+                    const event = new CustomEvent('addStimulationTab', {
+                        detail: {
+                            data: stimulationData,
+                            patientId: state.patientId,
+                            state: {
+                                patientId: state.patientId,
+                                fileId: state.fileId,
+                                fileName: state.fileName,
+                                creationDate: state.creationDate,
+                                modifiedDate: new Date().toISOString()
+                            }
+                        }
+                    });
+                    window.dispatchEvent(event);
+                } else {
+                    // Just set the existing tab as active
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
+                }
+            } else {
+                // Check if stimulation data exists in the database for this patient
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showError('User not authenticated. Please log in to open stimulation.');
+                    return;
+                }
+
+                const response = await fetch(`${backendURL}/api/by-patient-stimulation/${state.patientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to check for existing stimulation data');
+                }
+
+                const result = await response.json();
+
+                // Create a new tab with the stimulation data
+                const event = new CustomEvent('addStimulationTab', {
+                    detail: {
+                        data: result.exists ? result.data.stimulation_data : stimulationData,
+                        patientId: state.patientId,
+                        state: {
+                            patientId: state.patientId,
+                            fileId: result.exists ? result.fileId : state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString()
+                        }
+                    }
+                });
+                window.dispatchEvent(event);
+            }
+        } catch (error) {
+            console.error('Error opening stimulation:', error);
+            showError('Failed to open stimulation. Please try again.');
+        }
+    };
 
     return (
         <div className="flex-1 h-full">
@@ -49,6 +362,40 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
                     </ul>
                 </div>
             )}
+            {/* Floating Save and Export Buttons at the Bottom Right */}
+            <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1
+                            lg:bottom-6 lg:right-6 lg:flex-row lg:gap-2">
+                <div className="flex flex-row gap-1
+                                lg:gap-2">
+                    <div className="relative">
+                        <button
+                            className="grow py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-700 border border-sky-700 shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                            onClick={handleSave}
+                        >
+                            Save
+                        </button>
+                        {showSaveSuccess && (
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap z-50">
+                                Save successful!
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        className="grow py-1 px-2 bg-green-500 text-white font-semibold rounded border border-green-600 hover:bg-green-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                        onClick={handleExport}
+                    >
+                        Export
+                    </button>
+                    <button
+                        className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                        onClick={handleOpenStimulation}>
+                        Open in Stimulation Page
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };
