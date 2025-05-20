@@ -280,86 +280,21 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 }),
             }));
 
-            // Check for existing stimulation tabs
-            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const existingTab = tabs.find(tab => 
-                (tab.content === 'csv-stimulation' || tab.content === 'stimulation') && 
-                tab.state?.patientId === state.patientId
-            );
-
-            if (existingTab) {
-                // Compare the current stimulation data with the existing tab's data
-                const currentStimulationData = stimulationData;
-                const existingStimulationData = existingTab.state.electrodes;
-                
-                // Check if the stimulation data has changed
-                const hasStimulationChanged = JSON.stringify(currentStimulationData) !== JSON.stringify(existingStimulationData);
-                
-                if (hasStimulationChanged) {
-                    // Close the existing tab
-                    const closeEvent = new CustomEvent('closeTab', {
-                        detail: { tabId: existingTab.id }
-                    });
-                    window.dispatchEvent(closeEvent);
-
-                    // Create a new tab with updated data
-                    const event = new CustomEvent('addStimulationTab', {
-                        detail: { 
-                            data: stimulationData, 
-                            patientId: state.patientId,
-                            state: {
-                                patientId: state.patientId,
-                                fileId: state.fileId,
-                                fileName: state.fileName,
-                                creationDate: state.creationDate,
-                                modifiedDate: new Date().toISOString()
-                            }
-                        }
-                    });
-                    window.dispatchEvent(event);
-                } else {
-                    // Just set the existing tab as active
-                    const activateEvent = new CustomEvent('setActiveTab', {
-                        detail: { tabId: existingTab.id }
-                    });
-                    window.dispatchEvent(activateEvent);
-                }
-            } else {
-                // Check if stimulation data exists in the database for this patient
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    showError('User not authenticated. Please log in to open stimulation.');
-                    return;
-                }
-
-                const response = await fetch(`${backendURL}/api/by-patient-stimulation/${state.patientId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to check for existing stimulation data');
-                }
-
-                const result = await response.json();
-                
-                // Create a new tab with the stimulation data
-                const event = new CustomEvent('addStimulationTab', {
-                    detail: { 
-                        data: result.exists ? result.data.stimulation_data : stimulationData,
+            // Create a new tab with the stimulation data
+            const event = new CustomEvent('addStimulationTab', {
+                detail: { 
+                    data: stimulationData,
+                    patientId: state.patientId,
+                    state: {
                         patientId: state.patientId,
-                        state: {
-                            patientId: state.patientId,
-                            fileId: result.exists ? result.fileId : state.fileId,
-                            fileName: state.fileName,
-                            creationDate: state.creationDate,
-                            modifiedDate: new Date().toISOString()
-                        }
+                        fileId: state.fileId,
+                        fileName: state.fileName,
+                        creationDate: state.creationDate,
+                        modifiedDate: new Date().toISOString()
                     }
-                });
-                window.dispatchEvent(event);
-            }
+                }
+            });
+            window.dispatchEvent(event);
         } catch (error) {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                 showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");

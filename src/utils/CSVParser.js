@@ -14,6 +14,8 @@ export const Identifiers = Object.freeze({
     DESIGNATION:             "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR DESIGNATION ###",
     STIMULATION:             "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR CCEPS / SEIZURE RECREATION PLANNING ###",
     STIMULATION_FUNCTION:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR FUNCTIONAL MAPPING PLANNING ###",
+    STIMULATION_RECREATION:   "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR SEIZURE RECREATION PLANNING ###",
+    STIMULATION_CCEP:         "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR CCEPS PLANNING ###",
 });
 
 /**
@@ -45,7 +47,9 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
                     lines[0].trim() !== Identifiers.LOCALIZATION &&
                     lines[0].trim() !== Identifiers.DESIGNATION &&
                     lines[0].trim() !== Identifiers.STIMULATION &&
-                    lines[0].trim() !== Identifiers.STIMULATION_FUNCTION
+                    lines[0].trim() !== Identifiers.STIMULATION_FUNCTION &&
+                    lines[0].trim() !== Identifiers.STIMULATION_RECREATION &&
+                    lines[0].trim() !== Identifiers.STIMULATION_CCEP
                 ) || lines[1].trim() !== IDENTIFIER_LINE_2 )) {
                 const errorMsg = "Invalid file. The first line must be the correct identifier.";
                 if (showError) showError(errorMsg);
@@ -82,10 +86,10 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
                 });
                 return;
             }
-            else if (identifier === Identifiers.STIMULATION || identifier === Identifiers.STIMULATION_FUNCTION) {
+            else if (identifier === Identifiers.STIMULATION || identifier === Identifiers.STIMULATION_FUNCTION || identifier === Identifiers.STIMULATION_RECREATION || identifier === Identifiers.STIMULATION_CCEP) {
                 // const designationData = parseDesignation(csvWithoutIdentifier);
                 const stimulationData = parseStimulation(csvWithoutIdentifier);
-                resolve({identifier, data: stimulationData, isFunctionalMapping: identifier === Identifiers.STIMULATION_FUNCTION});
+                resolve({identifier, data: stimulationData});
                 return;
             }
             else if (identifier === Identifiers.TEST_PLANNING) {
@@ -493,12 +497,27 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
  * Saves a CSV file from data and downloads it or returns the data.
  *
  * @param {Object[]} stimulationData - The data to be saved.
+ * @param {string} type - The type of stimulation.
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {string} The CSV content.
  */
-export function saveStimulationCSVFile(stimulationData, planOrder, isFunctionalMapping = false, download = true) {
-    let csvContent = isFunctionalMapping ? `${Identifiers.STIMULATION_FUNCTION}\n${IDENTIFIER_LINE_2}\n` : `${Identifiers.STIMULATION}\n${IDENTIFIER_LINE_2}\n`;
-    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning", "Frequency", "Duration", "Current", "PlanOrder"];
+export function saveStimulationCSVFile(stimulationData, planOrder, type = 'mapping', download = true) {
+    let csvContent = '';
+    switch(type) {
+        case 'mapping':
+            csvContent = `${Identifiers.STIMULATION_FUNCTION}\n${IDENTIFIER_LINE_2}\n`;
+            break;
+        case 'recreation':
+            csvContent = `${Identifiers.STIMULATION_RECREATION}\n${IDENTIFIER_LINE_2}\n`;
+            break;
+        case 'ccep':
+            csvContent = `${Identifiers.STIMULATION_CCEP}\n${IDENTIFIER_LINE_2}\n`;
+            break;
+        default:
+            throw new Error('Invalid stimulation type');
+    }
+    
+    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning", "Frequency", "Duration", "Current", "PlanOrder", "Type"];
     csvContent += headers.join(",") + "\n";
 
     // Create a map of electrode contacts for quick lookup
@@ -525,6 +544,7 @@ export function saveStimulationCSVFile(stimulationData, planOrder, isFunctionalM
                 contact.duration,
                 contact.current,
                 order,
+                type
             ].join(",");
         }).join("\n");
     })
@@ -535,7 +555,7 @@ export function saveStimulationCSVFile(stimulationData, planOrder, isFunctionalM
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "stimulation_" + new Date().toISOString().split('T')[0] + ".csv";
+        link.download = `stimulation_${type}_${new Date().toISOString().split('T')[0]}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

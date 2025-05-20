@@ -509,7 +509,29 @@ const HomePage = () => {
     // Add event listener for stimulation tab creation
     useEffect(() => {
         const handleAddStimulationTab = (event) => {
-            addTab('stimulation', event.detail);
+            const { data, state, title } = event.detail;
+            let type;
+            
+            // Determine type based on the stimulation type
+            switch(data.type) {
+                case 'mapping':
+                    type = 'functional-mapping';
+                    break;
+                case 'recreation':
+                    type = 'seizure-recreation';
+                    break;
+                case 'ccep':
+                    type = 'cceps';
+                    break;
+                default:
+                    type = 'stimulation';
+                    break;
+            }
+
+            addTab(type, {
+                data: data?.data || data,
+                state: state
+            });
         };
 
         window.addEventListener('addStimulationTab', handleAddStimulationTab);
@@ -638,7 +660,7 @@ const HomePage = () => {
                 patientId = data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
                 break;
             case 'stimulation':         
-                title = 'Stimulation';
+                title = 'Plan Type Selection';
                 patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
                 console.log('Setting patientId for stimulation:', {
                     finalPatientId: patientId,
@@ -650,24 +672,17 @@ const HomePage = () => {
                 });
                 break;
             case 'seizure-recreation':
+                title = 'Seizure Recreation';
+                patientId = data?.state?.patientId ? data.state.patientId : data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
+                break;
             case 'cceps':
-                return <ContactSelection
-                    key={currentTab.id}
-                    isFunctionalMapping={false}
-                    initialData={{}}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    savedState={currentTab.state}
-                />;
+                title = 'CCEPs';
+                patientId = data?.state?.patientId ? data.state.patientId : data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
+                break;
             case 'functional-mapping':
-                return <ContactSelection
-                    key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    isFunctionalMapping={true}
-                    initialData={{}}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
+                title = 'Functional Mapping';
+                patientId = data?.state?.patientId ? data.state.patientId : data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
+                break;
             case 'functional-test':
                 title = 'Test Selection';
                 patientId = data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
@@ -801,7 +816,11 @@ const HomePage = () => {
             } else if (identifier === Identifiers.STIMULATION) {
                 addTab('csv-stimulation', { name: file.name, data });
             }else if (identifier === Identifiers.STIMULATION_FUNCTION) {
-                addTab('csv-functional-mapping', { name: file.name, data });
+                addTab('functional-mapping', { name: file.name, data });
+            }else if (identifier === Identifiers.STIMULATION_RECREATION) {
+                addTab('seizure-recreation', { name: file.name, data });
+            }else if (identifier === Identifiers.STIMULATION_CCEP) {
+                addTab('cceps', { name: file.name, data });
             }else if (identifier === Identifiers.TEST_PLANNING) {
                 addTab('csv-functional-test', { name: file.name, data });
             }
@@ -999,10 +1018,11 @@ const HomePage = () => {
                 />;
             case 'seizure-recreation':
             case 'cceps':
+            case 'functional-mapping':
                 return <ContactSelection
-                    key={currentTab.id}
-                    isFunctionalMapping={false}
-                    initialData={{}}
+                    type={currentTab.content === 'functional-mapping' ? 'mapping' : 
+                          currentTab.content === 'seizure-recreation' ? 'recreation' : 'ccep'}
+                    initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     savedState={currentTab.state}
@@ -1010,31 +1030,20 @@ const HomePage = () => {
             case 'csv-stimulation':
                 return <ContactSelection
                     key={currentTab.id}
-                    isFunctionalMapping={false}
+                    type={currentTab.data?.type || 'recreation'}
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     savedState={currentTab.state}
-                />;
-            case 'functional-mapping':
-                return <ContactSelection
-                    key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    isFunctionalMapping={true}
-                    initialData={{}}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                    isSharedFile={currentTab.state.isSharedFile}
                 />;
             case 'csv-functional-mapping':
                 return <ContactSelection
                     key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    isFunctionalMapping={true}
+                    type="mapping"
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     savedState={currentTab.state}
-                    isSharedFile={currentTab.state.isSharedFile}
                 />;
             case 'functional-test':
             case 'csv-functional-test':

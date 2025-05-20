@@ -10,7 +10,7 @@ import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
 import { useWarning } from '../../context/WarningContext';
 
-const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, switchContent, isFunctionalMapping = false }) => {
+const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, switchContent, type = 'mapping' }) => {
     const { showError } = useError();
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || demoContactData)
     const [planningContacts, setPlanningContacts] = useState(() => {
@@ -20,7 +20,10 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
             return contactsData.map(electrode => {
                 return mapConsecutive(electrode.contacts, 2,
                     (contacts) => {
-                        return contacts;
+                        if (contacts[0].isPlanning) {
+                            return contacts;
+                        }
+                        return null;
                     });
             })
             .flat()
@@ -129,7 +132,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
             <div className="flex h-screen p-6 space-x-6">
                 <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} submitPlanning={submitPlanning} onStateChange={setState} savedState={state} setElectrodes={setElectrodes}/>
 
-                <PlanningPane state={state} electrodes={electrodes} contactPairs={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} setElectrodes={setElectrodes} onStateChange={setState} savedState={state} isFunctionalMapping={isFunctionalMapping} />
+                <PlanningPane state={state} electrodes={electrodes} contactPairs={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} setElectrodes={setElectrodes} onStateChange={setState} savedState={state} type={type} />
             </div>
             <Container className="">
                 <Button
@@ -139,17 +142,6 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
                     <div>T</div>
                 </Button>
             </Container>
-
-            {/* Floating Back Button at the Bottom Left */}
-            <div className="fixed bottom-2 left-2 z-50
-                            lg:bottom-6 lg:left-6">
-                <button
-                    className="py-1 px-2 border border-sky-800 bg-sky-600 text-white text-sm text-center font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800
-                               lg:py-2 lg:px-4 lg:text-base"
-                    onClick={() => switchContent('stimulation')}>
-                    Back
-                </button>
-            </div>
         </DndProvider>
     );
 };
@@ -264,7 +256,7 @@ const Contact = ({ contacts, onClick }) => {
 };
 
 // Planning pane on the right
-const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, submitFlag, setSubmitFlag, setElectrodes, onStateChange, savedState, isFunctionalMapping = false }) => {
+const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, submitFlag, setSubmitFlag, setElectrodes, onStateChange, savedState, type = 'ccep' }) => {
     const { showError } = useError();
     const [hoverIndex, setHoverIndex] = useState(null);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
@@ -467,9 +459,9 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
 
     const handleSave = async () => {
         try {
-            await exportState(state, electrodes, isFunctionalMapping, false);
+            await exportState(state, electrodes, type, false);
             setShowSaveSuccess(true);
-            setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
+            setTimeout(() => setShowSaveSuccess(false), 2000);
         } catch (error) {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                 showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
@@ -480,9 +472,60 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
         }
     };
 
+    const handleExport = () => {
+        try {
+            exportState(state, electrodes, type, true);
+        } catch (error) {
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+            } else {
+                console.error('Error exporting:', error);
+                showError(error.message);
+            }
+        }
+    };
+
     return (
         <div ref={drop} className={`p-4 w-1/4 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
-            <h2 className="text-2xl font-bold mb-4">Planning Pane</h2>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Planning</h2>
+                <div className="flex space-x-2">
+                    {type === 'mapping' && (
+                        <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
+                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
+                            }`} onClick={createTestSelectionTab}>
+                            Select Tests
+                        </button>
+                    )}
+
+                    <div className="relative">
+                        <button
+                            className={`py-2 px-4 bg-green-500 text-white font-bold rounded ${
+                                contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700 border border-green-700"
+                            }`}
+                            onClick={handleSave}
+                            disabled={contactPairs.length === 0}
+                        >
+                            Save
+                        </button>
+                        {showSaveSuccess && (
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap z-50">
+                                Save successful!
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        className={`py-2 px-4 bg-sky-500 text-white font-bold rounded ${
+                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-sky-700 border border-sky-700"
+                        }`}
+                        onClick={handleExport}
+                        disabled={contactPairs.length === 0}
+                    >
+                        Export
+                    </button>
+                </div>
+            </div>
             {contactPairs.length === 0 ? (
                 <p className="text-lg text-gray-500">Drag contacts here</p>
             ) : (
@@ -500,51 +543,6 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
                     )}
                 </ul>
             )}
-            <div className="flex space-x-2 absolute right-10 bottom-10">
-                {isFunctionalMapping ? (
-                    <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
-                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                            }`} onClick={createTestSelectionTab}>
-                        select tests
-                    </button>
-                ) : (
-                    <div />
-                )}
-
-                <div className="relative">
-                    <button
-                        className={`py-2 px-4 bg-green-500 text-white font-bold rounded ${
-                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700 border border-green-700"
-                        }`}
-                        onClick={handleSave}
-                        disabled={contactPairs.length === 0}
-                    >
-                        Save
-                    </button>
-                    {showSaveSuccess && (
-                        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap z-50">
-                            Save successful!
-                        </div>
-                    )}
-                </div>
-
-                <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
-                        contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                        }`} onClick={async () => {
-                            try {
-                                await exportState(state, electrodes, isFunctionalMapping, true);
-                            } catch (error) {
-                                if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
-                                    showWarning("No internet connection. The progress is not saved on the database.");
-                                } else {
-                                    console.error('Error exporting:', error);
-                                    showError(error.message);
-                                }
-                            }
-                        }}>
-                    Export
-                </button>
-            </div>
         </div>
     );
 };
@@ -676,7 +674,7 @@ const PlanningContact = ({ contacts, onDropBack, onStateChange, savedState, setE
     );
 };
 
-const exportState = async (state, electrodes, isFunctionalMapping, download = true) => {
+const exportState = async (state, electrodes, type, download = true) => {
     let planOrder = state.planningContacts.map(contacts => contacts[0].id);
     try {
         // First save to database if we have a file ID
@@ -706,7 +704,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
                     body: JSON.stringify({
                         electrodes: electrodes,
                         planOrder: planOrder,
-                        isFunctionalMapping: isFunctionalMapping,
+                        type: type,
                         fileId: state.fileId,
                         fileName: state.fileName,
                         creationDate: state.creationDate,
@@ -733,7 +731,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
         throw error;
     } finally {
         if (download) {
-            saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
+            saveStimulationCSVFile(electrodes, planOrder, type, download);
         }
     }
 };

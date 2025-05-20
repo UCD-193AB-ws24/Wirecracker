@@ -14,74 +14,60 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
 
     const handlePlanTypeSelect = async (type) => {
         try {
-            // Check for existing tabs based on the selected type
-            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const isFunctionalMapping = type === 'functional-mapping';
-            
-            // Find existing tab based on type
-            const existingTab = tabs.find(tab => {
-                if (isFunctionalMapping) {
-                    return (tab.content === 'csv-functional-mapping' || tab.content === 'functional-mapping') && 
-                           tab.state?.patientId === initialData.state?.patientId;
-                } else {
-                    return (tab.content === 'csv-stimulation' || tab.content === 'stimulation' || 
-                           tab.content === 'seizure-recreation' || tab.content === 'cceps') && 
-                           tab.state?.patientId === initialData.state?.patientId;
+            // Create new tab with appropriate content type and title
+            let contentType;
+            let title;
+            switch(type) {
+                case 'mapping':
+                    contentType = 'functional-mapping';
+                    title = 'Functional Mapping';
+                    break;
+                case 'recreation':
+                    contentType = 'seizure-recreation';
+                    title = 'Seizure Recreation';
+                    break;
+                case 'ccep':
+                    contentType = 'cceps';
+                    title = 'CCEPs';
+                    break;
+                default:
+                    throw new Error('Invalid stimulation type');
+            }
+
+            // Create a new tab with the current state and data
+            const event = new CustomEvent('addStimulationTab', {
+                detail: {
+                    data: {
+                        type: type,
+                        patientId: initialData.state?.patientId,
+                        data: initialData.data
+                    },
+                    state: {
+                        ...initialData.state,
+                        type: type,
+                        fileName: title
+                    },
+                    title: title
                 }
             });
+            window.dispatchEvent(event);
 
+            // Find any existing designation tab for this patient
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            const existingTab = tabs.find(tab =>
+                tab.content === 'stimulation' && 
+                tab.state?.patientId === initialData.state?.patientId
+            );
             if (existingTab) {
-                // Compare the current data with the existing tab's data
-                const currentData = initialData.data;
-                const existingData = existingTab.state.electrodes;
-                
-                // Check if the data has changed
-                const hasDataChanged = JSON.stringify(currentData) !== JSON.stringify(existingData);
-                
-                if (hasDataChanged) {
-                    // First switch to the selected content type
-                    switchContent(type);
-                    
-                    // Then close the existing tab after a small delay to ensure state updates
-                    setTimeout(() => {
-                        const closeEvent = new CustomEvent('closeTab', {
-                            detail: { tabId: existingTab.id }
-                        });
-                        window.dispatchEvent(closeEvent);
-                    }, 100);
-                } else {
-                    // Just set the existing tab as active
-                    const activateEvent = new CustomEvent('setActiveTab', {
-                        detail: { tabId: existingTab.id }
-                    });
-                    window.dispatchEvent(activateEvent);
-                }
-            } else {
-                // Check if data exists in the database for this patient
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    showError('User not authenticated. Please log in to continue.');
-                    return;
-                }
-
-                const response = await fetch(`${backendURL}/api/by-patient-stimulation/${initialData.state?.patientId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                // Close the plan type selection tab
+                const closeEvent = new CustomEvent('closeTab', {
+                    detail: { tabId: existingTab.id }
                 });
-
-                if (!response.ok) {
-                    throw new Error('Failed to check for existing data');
-                }
-
-                const result = await response.json();
-                
-                // Switch to the selected content type with the appropriate data
-                switchContent(type, result.exists ? result.data : initialData.data);
+                window.dispatchEvent(closeEvent);
             }
         } catch (error) {
-            console.error('Error handling plan type selection:', error);
-            showError('Failed to open plan type. Please try again.');
+            console.error('Error in handlePlanTypeSelect:', error);
+            showError('Failed to create stimulation plan: ' + error.message);
         }
     };
 
@@ -93,7 +79,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                                md:h-11 md:w-80 md:text-lg
                                lg:h-13 lg:w-96 lg:text-xl
                                xl:h-16 xl:w-128 xl:text-2xl"
-                    onClick={() => switchContent('seizure-recreation')}>
+                    onClick={() => handlePlanTypeSelect('recreation')}>
                     Seizure Recreation
                 </button>
                 <button
@@ -101,7 +87,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                                md:h-11 md:w-80 md:text-lg
                                lg:h-13 lg:w-96 lg:text-xl
                                xl:h-16 xl:w-128 xl:text-2xl"
-                    onClick={() => switchContent('cceps')}>
+                    onClick={() => handlePlanTypeSelect('ccep')}>
                     CCEPs
                 </button>
                 <button
@@ -109,7 +95,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                                md:h-11 md:w-80 md:text-lg
                                lg:h-13 lg:w-96 lg:text-xl
                                xl:h-16 xl:w-128 xl:text-2xl"
-                    onClick={() => switchContent('functional-mapping')}>
+                    onClick={() => handlePlanTypeSelect('mapping')}>
                     Functional Mapping
                 </button>
             </div>

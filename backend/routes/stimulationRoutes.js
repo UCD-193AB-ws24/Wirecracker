@@ -80,7 +80,7 @@ router.get('/by-patient-stimulation/:patientId', async (req, res) => {
             data: {
                 stimulation_data: stimulationData[0].stimulation_data,
                 plan_order: stimulationData[0].plan_order,
-                is_mapping: stimulationData[0].is_mapping
+                type: stimulationData[0].type
             }
         });
     } catch (error) {
@@ -97,7 +97,7 @@ router.post('/save-stimulation', async (req, res) => {
     try {
         console.log('Received stimulation save request', req.body);
         
-        const { electrodes, planOrder, isFunctionalMapping, fileId, fileName, creationDate, modifiedDate, patientId } = req.body;
+        const { electrodes, planOrder, type, fileId, fileName, creationDate, modifiedDate, patientId } = req.body;
         
         if (!electrodes) {
             return res.status(400).json({ success: false, error: 'Missing electrodes data' });
@@ -111,8 +111,8 @@ router.post('/save-stimulation', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Missing file ID' });
         }
         
-        if (isFunctionalMapping === undefined) {
-            return res.status(400).json({ success: false, error: 'Missing isFunctionalMapping flag' });
+        if (!type || !['mapping', 'recreation', 'ccep'].includes(type)) {
+            return res.status(400).json({ success: false, error: 'Invalid or missing stimulation type' });
         }
 
         if (!patientId) {
@@ -158,7 +158,7 @@ router.post('/save-stimulation', async (req, res) => {
                     .update({
                         stimulation_data: electrodes,
                         plan_order: planOrder,
-                        is_mapping: isFunctionalMapping,
+                        type: type,
                     })
                     .eq('file_id', fileId);
                     
@@ -182,7 +182,7 @@ router.post('/save-stimulation', async (req, res) => {
                     file_id: fileId,
                     stimulation_data: electrodes,
                     plan_order: planOrder,
-                    is_mapping: isFunctionalMapping
+                    type: type
                 });
                 
             if (insertError) {
