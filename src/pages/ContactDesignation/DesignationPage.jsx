@@ -1,16 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
-import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
+import config from "../../../config.json" with { type: 'json' };
 
 const backendURL = config.backendURL;
 
+/**
+ *
+ * Designation page to mark each contacts to be either onset zone, epilepsy network, not involved, or out of brain.
+ * Default is not involved.
+ *
+ * @component
+ * @param {Object} [initialData] - Initial data for electrodes
+ * @param {Function} onStateChange - Callback for state changes
+ * @param {Object} [savedState] - Saved state data
+ * @returns {JSX.Element} Designation component
+ *
+ */
 const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
+    // Function to show error at the top of the screen
     const { showError } = useError();
     const [state, setState] = useState(savedState);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
-    // Store the original localization data if it exists
+    /**
+     * Store original localization for saving / exporting later
+     * @type {[Object, Function]}
+     */
     const [localizationData, setLocalizationData] = useState(() => {
         if (savedState && savedState.localizationData) {
             return JSON.parse(JSON.stringify(savedState.localizationData));
@@ -18,11 +34,17 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         return initialData?.originalData ? JSON.parse(JSON.stringify(initialData.originalData)) : null;
     });
 
+    /**
+     * Store electrodes data
+     * @type {[Array, Function]}
+     */
     const [electrodes, setElectrodes] = useState(() => {
+        // If there are previous state that can be recalled
         if (savedState && savedState.electrodes) {
             return JSON.parse(JSON.stringify(savedState.electrodes));
         }
 
+        // New page, made from localization page. Process data here.
         if (initialData && Object.keys(initialData).length !== 0) {
             return initialData.data.map(electrode => ({
                 ...electrode,
@@ -39,11 +61,11 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     });
 
-
+    // States for filtering function
     const [filterChar, setFilterChar] = useState('');
     const [filteredElectrodes, setFilteredElectrodes] = useState(electrodes);
 
-    // Save state changes
+    // Save state changes into tab's localstorage using callback function
     useEffect(() => {
         onStateChange(state);
     }, [state]);
@@ -57,6 +79,11 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         setState(newState);
     }, [electrodes, localizationData]);
 
+    /**
+     * Handles contact click event
+     * @param {string} contactId - ID of the clicked contact
+     * @param {Function} change - Function to modify contact state
+     */
     const onClick = (contactId, change) => {
         setElectrodes(prevElectrodes => {
             return prevElectrodes.map(electrode => ({
@@ -71,9 +98,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         });
     };
 
-
-
-
+    // Handle filtering whenever filter character changes
     useEffect(() => {
         if (filterChar === '') {
             setFilteredElectrodes(electrodes);
@@ -103,8 +128,10 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     }, [filterChar]);
 
 
-
-
+    /**
+     * Handles saving designation data
+     * @async
+     */
     const handleSave = async () => {
         try {
             // First save to database if we have a file ID
@@ -183,6 +210,10 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     };
 
+    /**
+     * Handles exporting designation data
+     * @async
+     */
     const handleExport = async () => {
         try {
             // First save to database if we have a file ID
@@ -257,6 +288,10 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     };
 
+    /**
+     * Handles dispatching event to open resection tab
+     * @async
+     */
     const handleOpenResection = async () => {
         try {
             await handleSave();
@@ -275,14 +310,13 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
             if (existingTab) {
                 // Compare the current resection data with the existing tab's data
+
                 const currentDesignationData = structuredClone(designationData.electrodes);
+                const existingDesignationData = structuredClone(existingTab.state.electrodes);
 
                 // Remove surgeonmark from consideration
                 currentDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.surgeonMark = false));
-
-                const existingDesignationData = structuredClone(existingTab.state.electrodes);
                 existingDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.surgeonMark = false));
-
 
                 // Check if the resection data has changed
                 const hasResectionChanged = JSON.stringify(currentDesignationData) !== JSON.stringify(existingDesignationData);
@@ -317,6 +351,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     window.dispatchEvent(activateEvent);
                 }
             } else {
+                // If the user never made resection page before with the patient
                 const token = localStorage.getItem('token');
                 if (!token) {
                     showError('User not authenticated. Please log in to open stimulation.');
@@ -360,11 +395,6 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     };
 
-
-
-
-
-
     return (
         <div className="flex-1 p-4 bg-gray-100 h-full lg:p-8">
             <div className="mb-3 lg:mb-6">
@@ -372,6 +402,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     Filtering electrodes by: {filterChar || 'None'} (Press a key to filter, Esc or Backspace to reset)
                 </p>
             </div>
+            {/* Contact tiles */}
             <ul className="space-y-3 lg:space-y-6">
                 {filteredElectrodes.map((electrode) => (
                     <li
@@ -436,6 +467,13 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     );
 };
 
+/**
+ * Contact component for displaying individual electrode contacts
+ * @component
+ * @param {Object} contact - Data for the contact
+ * @param {Function} onClick - Handler to reflect the change on contact that was clicked
+ * @returns {JSX.Element} A tile that shows information about the contact
+ */
 const Contact = ({ contact, onClick }) => {
     return (
         <li
@@ -456,6 +494,11 @@ const Contact = ({ contact, onClick }) => {
     );
 };
 
+/**
+ * Gets CSS class for contact based on mark status
+ * @param {Object} contact - Data for the contact
+ * @returns {string} CSS classes for the contact
+ */
 function getMarkColor(contact) {
     let mark = "";
     switch (contact.mark) {
