@@ -1128,13 +1128,15 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
     const [isLoading, setIsLoading] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [showLegend, setShowLegend] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const { showError } = useError();
     const { showWarning } = useWarning();
 
-    const loadPatients = async () => {
+    const loadPatients = async (page = 1) => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${backendURL}/api/patients/recent`, {
+            const response = await fetch(`${backendURL}/api/patients/recent?page=${page}&limit=7`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -1145,7 +1147,10 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
             }
 
             const data = await response.json();
-            setPatients(data);
+            console.log('Patients data:', data);
+            setPatients(data.patients);
+            setTotalPages(data.totalPages);
+            setCurrentPage(data.currentPage);
         } catch (error) {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                 showWarning("No internet connection. Failed to load patients");
@@ -1156,6 +1161,55 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            loadPatients(newPage);
+        }
+    };
+
+    // Generate array of page numbers to display
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxVisiblePages = 5; // Maximum number of page buttons to show
+        
+        if (totalPages <= maxVisiblePages) {
+            // If total pages is less than max visible, show all pages
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Always show first page
+            pages.push(1);
+            // Calculate start and end of visible pages
+            let start = Math.max(2, currentPage - 1);
+            let end = Math.min(totalPages - 1, currentPage + 1);
+            // Adjust if at the start
+            if (currentPage <= 2) {
+                end = 4;
+            }
+            // Adjust if at the end
+            if (currentPage >= totalPages - 1) {
+                start = totalPages - 3;
+            }
+            // Add ellipsis if needed
+            if (start > 2) {
+                pages.push('...');
+            }            
+            // Add middle pages
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+            // Add ellipsis if needed
+            if (end < totalPages - 1) {
+                pages.push('...');
+            }
+            // Always show last page
+            pages.push(totalPages);
+        }
+        
+        return pages;
     };
     
     return (
@@ -1211,7 +1265,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                     document.getElementById('fileInput').click();
                                     break;
                                 case "Open-Database":
-                                    loadPatients();
+                                    loadPatients(1);
                                     setShowDatabaseModal(true);
                                     break;
                             }
@@ -1234,7 +1288,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                             ?
                                         </button>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={() => setShowDatabaseModal(false)}
                                         className="text-gray-500 transition-colors duration-200 cursor-pointer hover:text-gray-700 text-xl"
                                     >
@@ -1251,46 +1305,86 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                         <p className="text-gray-600">No patients found. Create a new file to get started.</p>
                                     </div>
                                 ) : (
-                                    <div className="divide-y">
-                                        {patients.map(patient => (
-                                            <div 
-                                                key={patient.patient_id}
-                                                className="py-3 px-4 transition-colors duration-200 hover:bg-sky-50 cursor-pointer flex justify-between items-center"
-                                                onClick={() => {
-                                                    setSelectedPatient(patient);
-                                                    setShowDatabaseModal(false);
-                                                }}
-                                            >
-                                                <div className="flex-1">
-                                                    <div className="font-medium">{formatPatientDisplay(patient)}</div>
+                                    <>
+                                        <div className="divide-y">
+                                            {patients.map(patient => (
+                                                <div 
+                                                    key={patient.patient_id}
+                                                    className="py-3 px-4 transition-colors duration-200 hover:bg-sky-50 cursor-pointer flex justify-between items-center"
+                                                    onClick={() => {
+                                                        setSelectedPatient(patient);
+                                                        setShowDatabaseModal(false);
+                                                    }}
+                                                >
+                                                    <div className="flex-1">
+                                                        <div className="font-medium">{formatPatientDisplay(patient)}</div>
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {patient.has_localization && (
+                                                            <span className="mr-2 cursor-help" title="Localization File">📍</span>
+                                                        )}
+                                                        {patient.has_designation && (
+                                                            <span className="mr-2 cursor-help" title="Designation File">📝</span>
+                                                        )}
+                                                        {patient.has_stimulation && (
+                                                            <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
+                                                        )}
+                                                        {patient.has_test_selection && (
+                                                            <span className="cursor-help" title="Test Selection File">🧪</span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div className="text-sm text-gray-500">
-                                                    {patient.has_localization && (
-                                                        <span className="mr-2 cursor-help" title="Localization File">📍</span>
-                                                    )}
-                                                    {patient.has_designation && (
-                                                        <span className="mr-2 cursor-help" title="Designation File">📝</span>
-                                                    )}
-                                                    {patient.has_stimulation && (
-                                                        <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
-                                                    )}
-                                                    {patient.has_test_selection && (
-                                                        <span className="cursor-help" title="Test Selection File">🧪</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
 
-                                <div className="mt-6 flex justify-end">
-                                    <button
-                                        onClick={() => setShowDatabaseModal(false)}
-                                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded transition-colors duration-200 cursor-pointer hover:bg-gray-300"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
+                                        {/* Pagination Controls */}
+                                        <div className="mt-3 flex flex-col gap-4">
+                                            <div className="flex justify-center items-center gap-2">
+                                                <button
+                                                    onClick={() => handlePageChange(currentPage - 1)}
+                                                    disabled={currentPage === 1}
+                                                    className={`px-3 py-1 rounded transition-colors duration-200 ${
+                                                        currentPage === 1
+                                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                            : 'bg-sky-700 text-white hover:bg-sky-600 cursor-pointer'
+                                                    }`}
+                                                >
+                                                    ←
+                                                </button>
+                                                
+                                                {getPageNumbers().map((pageNum, index) => (
+                                                    pageNum === '...' ? (
+                                                        <span key={`ellipsis-${index}`} className="px-2 text-gray-500">...</span>
+                                                    ) : (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => handlePageChange(pageNum)}
+                                                            className={`px-3 py-1 rounded transition-colors duration-200 ${
+                                                                currentPage === pageNum
+                                                                    ? 'bg-sky-700 text-white'
+                                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                            }`}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    )
+                                                ))}
+                                                
+                                                <button
+                                                    onClick={() => handlePageChange(currentPage + 1)}
+                                                    disabled={currentPage === totalPages}
+                                                    className={`px-3 py-1 rounded transition-colors duration-200 ${
+                                                        currentPage === totalPages
+                                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                            : 'bg-sky-700 text-white hover:bg-sky-600 cursor-pointer'
+                                                    }`}
+                                                >
+                                                    →
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1664,8 +1758,8 @@ const RecentFiles = ({ onOpenFile, className }) => {
                     throw new Error('Failed to fetch recent patients');
                 }
 
-                const patients = await response.json();
-                setRecentPatients(patients.slice(0, 7));
+                const data = await response.json();
+                setRecentPatients(data.patients.slice(0, 7));
             } catch (error) {
                 if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                     showWarning("No internet connection. Failed to load recent patients");

@@ -545,17 +545,6 @@ const FunctionalTestSelection = ({
                     Export
                 </button>
             </div>
-
-            {/* Floating Back Button at the Bottom Left */}
-            <div className="fixed bottom-2 left-2 z-50
-                            lg:bottom-6 lg:left-6">
-                <button
-                    className="py-1 px-2 border border-sky-800 bg-sky-600 text-white text-sm text-center font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800
-                               lg:py-2 lg:px-4 lg:text-base"
-                    onClick={() => switchContent('stimulation')}>
-                    Back
-                </button>
-            </div>
         </div>
     );
 };

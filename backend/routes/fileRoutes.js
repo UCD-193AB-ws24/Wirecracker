@@ -267,6 +267,11 @@ router.get("/patients/recent", async (req, res) => {
         return res.status(401).json({ error: "No authentication token provided" });
     }
 
+    // Get pagination parameters from query
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
     try {
         const { data: session } = await supabase
             .from('sessions')
@@ -336,7 +341,14 @@ router.get("/patients/recent", async (req, res) => {
         const allPatients = Object.values(patients)
             .sort((a, b) => new Date(b.latest_file.modified_date) - new Date(a.latest_file.modified_date));
 
-        res.json(allPatients);
+        const count = allPatients.length;
+
+        res.json({
+            patients: allPatients.slice(offset, offset + limit),
+            totalPatients: count,
+            currentPage: page,
+            totalPages: Math.ceil(count / limit)
+        });
     } catch (error) {
         console.error('Error fetching patients:', error);
         res.status(500).json({ error: "Error fetching patients" });
