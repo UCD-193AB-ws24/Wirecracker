@@ -436,9 +436,8 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
 /**
  * 
  * @param {string} layout
- * @param {string[]} page_names
  * @param setShowLegend
- * @returns 
+ * @returns {JSX.Element}
  */
 const Legend = ({ layout = "designation", setShowLegend }) => {
     return (
@@ -499,8 +498,9 @@ const Legend = ({ layout = "designation", setShowLegend }) => {
 /**
  * 
  * @param {string} color
+ * @param {string} outline
  * @param {string} itemName
- * @returns 
+ * @returns {JSX.Element}
  */
 const LegendItem = ({ color = "black", outline = "false", itemName }) => {
     const colorVariants = {

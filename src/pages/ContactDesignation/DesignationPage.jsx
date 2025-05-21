@@ -6,6 +6,10 @@ import config from "../../../config.json" with { type: 'json' };
 const backendURL = config.backendURL;
 
 /**
+ * @module Designation
+ */
+
+/**
  *
  * Designation page to mark each contacts to be either onset zone, epilepsy network, not involved, or out of brain.
  * Default is not involved.
@@ -25,7 +29,6 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
     /**
      * Store original localization for saving / exporting later
-     * @type {[Object, Function]}
      */
     const [localizationData, setLocalizationData] = useState(() => {
         if (savedState && savedState.localizationData) {
@@ -36,7 +39,6 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
     /**
      * Store electrodes data
-     * @type {[Array, Function]}
      */
     const [electrodes, setElectrodes] = useState(() => {
         // If there are previous state that can be recalled
@@ -131,6 +133,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     /**
      * Handles saving designation data
      * @async
+     * @returns {Promise<void>}
      */
     const handleSave = async () => {
         try {
@@ -213,6 +216,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     /**
      * Handles exporting designation data
      * @async
+     * @returns {Promise<void>}
      */
     const handleExport = async () => {
         try {
@@ -291,6 +295,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     /**
      * Handles dispatching event to open resection tab
      * @async
+     * @returns {Promise<void>}
      */
     const handleOpenResection = async () => {
         try {

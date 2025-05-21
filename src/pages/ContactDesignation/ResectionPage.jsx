@@ -10,6 +10,10 @@ import config from "../../../config.json" with { type: 'json' };
 const backendURL = config.backendURL;
 
 /**
+ * @module Resection
+ */
+
+/**
  * Resection page for neurosurgeon to mark contacts that need to be tested
  * @component
  * @param {Object} [initialData] - Initial data for electrodes
@@ -20,7 +24,6 @@ const backendURL = config.backendURL;
 const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
     /**
      * Store if NIFTI image is loaded or not
-     * @type {[Boolean, Function]}
      */
     const [imageLoaded, setImageLoaded] = useState(savedState.isLoaded || false);
 
@@ -38,7 +41,6 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
     /**
      * Store original localization for saving / exporting later
-     * @type {[Object, Function]}
      */
     const [localizationData, setLocalizationData] = useState(() => {
         if (savedState && savedState.localizationData) {
@@ -49,7 +51,6 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
     /**
      * Store electrodes data
-     * @type {[Array, Function]}
      */
     const [electrodes, setElectrodes] = useState(() => {
         if (savedState && savedState.electrodes) {
@@ -456,13 +457,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
     /**
      * Store nii image to save it locally using indexedDB
-     * @type {[Object, Function]}
      */
     const [niiData, setNiiData] = useState(null);
 
     /**
      * Coordinates of the contacts, used to display contacts on NIFTI image
-     * @type {[Array, Function]}
      */
     const [coordinates, setCoordinates] = useState(savedState.coordinate || []);
 
@@ -470,7 +469,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
     /**
      * Currently displayed contacts
-     * @type {[Array, Function]}
      */
     const [markers, setMarkers] = useState([]);
 
@@ -491,19 +489,16 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
     /**
      * Marker that was hovered to display the detail information of it
-     * @type {[Object, Function]}
      */
     const [hoveredMarker, setHoveredMarker] = useState(savedState.canvas_hoveredMarker || null);
 
     /**
      * To display the loading widget
-     * @type {[Boolean, Function]}
      */
     const [isLoadingNifti, setIsLoadingNifti] = useState(false);
 
     /**
      * Currently selected contacts using rectangle selection tool
-     * @type {[Array, Function]}
      */
     const [selectedContacts, setSelectedContacts] = useState([]);
 
@@ -514,7 +509,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
 
     /**
      * Currently focused contact. Focusing is done by double clicking on a contact
-     * @type {[Object, Function]}
      */
     const [focus, setFocus] = useState(savedState.focusedContact || null);
 
