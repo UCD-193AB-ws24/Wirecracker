@@ -307,13 +307,16 @@ router.get("/patients/recent", async (req, res) => {
                     latest_file: curr,
                     has_localization: false,
                     has_designation: false,
-                    has_stimulation: false,
                     has_test_selection: false,
                     localization_file_id: null,
                     designation_file_id: null,
-                    stimulation_file_id: null,
                     test_selection_file_id: null,
-                    localization_creation_date: null
+                    localization_creation_date: null,
+                    stimulation_types: {
+                        mapping: null,
+                        recreation: null,
+                        ccep: null
+                    }
                 };
             }
 
@@ -326,9 +329,12 @@ router.get("/patients/recent", async (req, res) => {
             } else if (filename.includes('designation')) {
                 acc[curr.patient_id].has_designation = true;
                 acc[curr.patient_id].designation_file_id = curr.file_id;
-            } else if (filename.includes('stimulation')) {
-                acc[curr.patient_id].has_stimulation = true;
-                acc[curr.patient_id].stimulation_file_id = curr.file_id;
+            } else if (filename.includes('functional mapping')) {
+                acc[curr.patient_id].stimulation_types.mapping = curr.file_id;
+            } else if (filename.includes('seizure recreation')) {
+                acc[curr.patient_id].stimulation_types.recreation = curr.file_id;
+            } else if (filename.includes('cceps')) {
+                acc[curr.patient_id].stimulation_types.ccep = curr.file_id;
             } else if (filename.includes('test') || filename.includes('functional')) {
                 acc[curr.patient_id].has_test_selection = true;
                 acc[curr.patient_id].test_selection_file_id = curr.file_id;

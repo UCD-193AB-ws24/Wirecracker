@@ -907,7 +907,7 @@ const HomePage = () => {
             setTabs(prevTabs => [...prevTabs, newTab]);
             setActiveTab(newTab.id);
         }
-        else if (type === 'csv-stimulation' || type === 'csv-functional-mapping') {
+        else if (type === 'cceps' || type === 'functional-mapping' || type === 'seizure-recreation') {
             console.log('Opening saved stimulation file:', fileData);
 
             const newTab = {
@@ -923,7 +923,7 @@ const HomePage = () => {
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
                     electrodes: fileData.data.data,
                     planOrder: fileData.data.planOrder,
-                    isFunctionalMapping: type === 'csv-functional-mapping'
+                    type: type
                 }
             };
 
@@ -1326,7 +1326,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                                         {patient.has_designation && (
                                                             <span className="mr-2 cursor-help" title="Designation File">📝</span>
                                                         )}
-                                                        {patient.has_stimulation && (
+                                                        {(patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep) && (
                                                             <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
                                                         )}
                                                         {patient.has_test_selection && (
@@ -1465,6 +1465,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
     const [clickedFileId, setClickedFileId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [showLegend, setShowLegend] = useState(false);
+    const [showStimulationMenu, setShowStimulationMenu] = useState(false);
     const buttons = [
         {
             name: 'Localization',
@@ -1485,8 +1486,8 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
         {
             name: 'Stimulation',
             type: 'stimulation',
-            exists: patient.has_stimulation,
-            fileId: patient.stimulation_file_id,
+            exists: patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep,
+            fileId: null, // This will be set based on the selected type
             message: 'No stimulation file created yet',
             icon: '⚡'
         },
@@ -1500,7 +1501,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
         }
     ];
 
-    const handleButtonClick = async (clickedButton) => {
+    const handleButtonClick = async (clickedButton, selectedStimulationType = null) => {
         if (!clickedButton.exists) return;
 
         const token = localStorage.getItem('token');
@@ -1513,16 +1514,9 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             setIsLoading(true);
             setClickedFileId(clickedButton.fileId);
 
-            // First check if any tabs for this patient and type already exist
+            // First check if any tabs for this patient already exist
             const existingTabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const existingTab = existingTabs.find(tab => {
-                // For localization, check both 'localization' and 'csv-localization' types
-                if (clickedButton.type === 'localization') {
-                    return (tab.content === 'localization' || tab.content === 'csv-localization') && 
-                           tab.state?.patientId === patient.patient_id;
-                }
-                return tab.content === clickedButton.type && tab.state?.patientId === patient.patient_id;
-            });
+            const existingTab = existingTabs.find(tab => tab.state?.patientId === patient.patient_id);
 
             if (existingTab) {
                 // If tab exists, just switch to it
@@ -1536,8 +1530,28 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                 buttons
                     .filter(button => button.exists)
                     .map(async (button) => {
-                        // First check file type and get initial data
-                        console.log('Fetching file type data for file ID:', button.fileId);
+                        // For stimulation types, we need to handle each type separately
+                        if (button.type === 'stimulation') {
+                            const stimulationFiles = [];
+                            
+                            // Handle each stimulation type
+                            if (patient.stimulation_types.mapping) {
+                                const mappingFile = await loadStimulationFile('Functional Mapping', patient.stimulation_types.mapping);
+                                if (mappingFile) stimulationFiles.push(mappingFile);
+                            }
+                            if (patient.stimulation_types.recreation) {
+                                const recreationFile = await loadStimulationFile('Seizure Recreation', patient.stimulation_types.recreation);
+                                if (recreationFile) stimulationFiles.push(recreationFile);
+                            }
+                            if (patient.stimulation_types.ccep) {
+                                const ccepFile = await loadStimulationFile('CCEPs', patient.stimulation_types.ccep);
+                                if (ccepFile) stimulationFiles.push(ccepFile);
+                            }
+                            
+                            return stimulationFiles;
+                        }
+
+                        // For other file types, proceed as normal
                         const response = await fetch(`${backendURL}/api/files/check-type?fileId=${button.fileId}`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`
@@ -1547,7 +1561,6 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                         if (!response.ok) throw new Error('Failed to check file type');
                         const fileTypeData = await response.json();
 
-                        // Get file metadata from database
                         const metadataResponse = await fetch(`${backendURL}/api/files/dates-metadata?fileId=${button.fileId}`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`
@@ -1557,7 +1570,6 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                         if (!metadataResponse.ok) throw new Error('Failed to fetch file metadata');
                         const metadata = await metadataResponse.json();
 
-                        // Handle each file type based on the check-type response
                         switch (button.type) {
                             case 'designation': {
                                 if (!fileTypeData.hasDesignation) {
@@ -1604,23 +1616,6 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                     data: { data: {} }
                                 };
                             }
-                            case 'stimulation': {
-                                if (!fileTypeData.hasStimulation) {
-                                    throw new Error('No stimulation data found');
-                                }
-                                return {
-                                    fileId: button.fileId,
-                                    name: button.name,
-                                    creationDate: metadata.creation_date || new Date().toISOString(),
-                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
-                                    patientId: patient.patient_id,
-                                    type: fileTypeData.stimulationData.is_mapping ? 'csv-functional-mapping' : 'csv-stimulation',
-                                    data: {
-                                        data: fileTypeData.stimulationData.stimulation_data,
-                                        planOrder: fileTypeData.stimulationData.plan_order
-                                    }
-                                };
-                            }
                             case 'functional-test': {
                                 if (!fileTypeData.hasTestSelection) {
                                     throw new Error('No test selection data found');
@@ -1646,21 +1641,36 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                     })
             );
 
+            // Flatten the array of files (since stimulation files are now an array)
+            const flattenedFiles = availableFiles.flat();
+
             // Add tabs for each available file sequentially
-            for (const file of availableFiles) {
+            for (const file of flattenedFiles) {
                 console.log('Opening file:', file);
                 await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay between each file
                 openSavedFile(file.type, file);
             }
 
-            // After opening all files, switch to the clicked file's tab
+            // After opening all files, switch to the appropriate tab
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const clickedTab = tabs.find(tab => 
-                tab.title === clickedButton.name && 
-                tab.state?.patientId === patient.patient_id
-            );
-            if (clickedTab) {
-                const tabId = clickedTab.id;
+            let targetTab;
+            
+            if (selectedStimulationType) {
+                // If a specific stimulation type was selected, find that tab
+                targetTab = tabs.find(tab => 
+                    tab.title === selectedStimulationType && 
+                    tab.state?.patientId === patient.patient_id
+                );
+            } else {
+                // Otherwise, find the tab for the clicked button
+                targetTab = tabs.find(tab => 
+                    tab.title === clickedButton.name && 
+                    tab.state?.patientId === patient.patient_id
+                );
+            }
+            
+            if (targetTab) {
+                const tabId = targetTab.id;
                 window.dispatchEvent(new CustomEvent('setActiveTab', { detail: { tabId } }));
             }
             
@@ -1670,6 +1680,51 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             showError(`Failed to load files: ${error.message}`);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // Helper function to load stimulation files
+    const loadStimulationFile = async (type, fileId) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return null;
+
+            const response = await fetch(`${backendURL}/api/files/check-type?fileId=${fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to check file type');
+            const fileTypeData = await response.json();
+            
+            if (!fileTypeData.hasStimulation) return null;
+
+            const metadataResponse = await fetch(`${backendURL}/api/files/dates-metadata?fileId=${fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!metadataResponse.ok) throw new Error('Failed to fetch file metadata');
+            const metadata = await metadataResponse.json();
+
+            return {
+                fileId: fileId,
+                name: type,
+                patientId: patient.patient_id,
+                creationDate: metadata.creation_date || new Date().toISOString(),
+                modifiedDate: metadata.modified_date || new Date().toISOString(),
+                type: type === 'Functional Mapping' ? 'functional-mapping' : 
+                      type === 'Seizure Recreation' ? 'seizure-recreation' : 'cceps',
+                data: {
+                    data: fileTypeData.stimulationData.stimulation_data,
+                    planOrder: fileTypeData.stimulationData.plan_order
+                }
+            };
+        } catch (error) {
+            console.error('Error loading stimulation file:', error);
+            return null;
         }
     };
 
@@ -1698,18 +1753,65 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                 <div className="grid grid-cols-2 gap-6">
                     {buttons.map((button) => (
                         <div key={button.type} className="flex flex-col items-center">
-                            <button
-                                onClick={() => handleButtonClick(button)}
-                                className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
-                                    ${button.exists 
-                                        ? 'bg-sky-700 text-white hover:bg-sky-600' 
-                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
-                                disabled={!button.exists || isLoading}
-                            >
-                                <span className="mr-2">{button.icon}</span>
-                                {button.name}
-                            </button>
-                            {!button.exists && (
+                            {button.type === 'stimulation' && showStimulationMenu ? (
+                                <div className="w-full">
+                                    <button
+                                        onClick={() => handleButtonClick(button, 'Functional Mapping')}
+                                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200 mb-2 ${
+                                            patient.stimulation_types.mapping 
+                                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
+                                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                        }`}
+                                        disabled={!patient.stimulation_types.mapping}
+                                    >
+                                        <span className="mr-2">⚡</span>
+                                        Functional Mapping
+                                    </button>
+                                    <button
+                                        onClick={() => handleButtonClick(button, 'Seizure Recreation')}
+                                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200 mb-2 ${
+                                            patient.stimulation_types.recreation 
+                                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
+                                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                        }`}
+                                        disabled={!patient.stimulation_types.recreation}
+                                    >
+                                        <span className="mr-2">⚡</span>
+                                        Seizure Recreation
+                                    </button>
+                                    <button
+                                        onClick={() => handleButtonClick(button, 'CCEPs')}
+                                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200 ${
+                                            patient.stimulation_types.ccep 
+                                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
+                                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                        }`}
+                                        disabled={!patient.stimulation_types.ccep}
+                                    >
+                                        <span className="mr-2">⚡</span>
+                                        CCEPs
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => {
+                                        if (button.type === 'stimulation') {
+                                            setShowStimulationMenu(!showStimulationMenu);
+                                        } else {
+                                            handleButtonClick(button);
+                                        }
+                                    }}
+                                    className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                                        ${button.exists 
+                                            ? 'bg-sky-700 text-white hover:bg-sky-600' 
+                                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                                    disabled={!button.exists || isLoading}
+                                >
+                                    <span className="mr-2">{button.icon}</span>
+                                    {button.name}
+                                </button>
+                            )}
+                            {!button.exists && !showStimulationMenu && (
                                 <p className="mt-2 text-sm text-gray-500">{button.message}</p>
                             )}
                         </div>
@@ -1732,6 +1834,7 @@ const RecentFiles = ({ onOpenFile, className }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [showLegend, setShowLegend] = useState(false);
+    const [showStimulationMenu, setShowStimulationMenu] = useState(null);
     const { showError } = useError();
     const { showWarning } = useWarning();
     
@@ -1821,7 +1924,7 @@ const RecentFiles = ({ onOpenFile, className }) => {
                                     {patient.has_designation && (
                                         <span className="mr-2 cursor-help" title="Designation File">📝</span>
                                     )}
-                                    {patient.has_stimulation && (
+                                    {(patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep) && (
                                         <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
                                     )}
                                     {patient.has_test_selection && (
