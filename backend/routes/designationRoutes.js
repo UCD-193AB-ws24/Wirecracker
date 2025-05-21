@@ -29,17 +29,6 @@ router.post('/save-designation', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing patient ID' });
     }
 
-    // Handle file record
-    try {
-      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
-    } catch (error) {
-      console.error('Error saving file metadata:', error);
-      return res.status(500).json({ 
-        success: false, 
-        error: `Failed to save file metadata: ${error.message}`
-      });
-    }
-    
     // Check for existing designation with this patient_id
     const { data: existingFile, error: fileError } = await supabase
       .from('files')
@@ -73,29 +62,70 @@ router.post('/save-designation', async (req, res) => {
       }
 
       if (existingDesignation) {
+        // Compare designation data
+        const isDesignationDifferent = JSON.stringify(existingDesignation.designation_data) !== JSON.stringify(designationData);
         // Compare localization data
         const isLocalizationDifferent = JSON.stringify(existingDesignation.localization_data) !== JSON.stringify(localizationData);
 
-        // Update the designation record
-        const { error: updateError } = await supabase
-          .from('designation')
-          .update({
-            designation_data: designationData,
-            localization_data: isLocalizationDifferent ? localizationData : existingDesignation.localization_data
-          })
-          .eq('file_id', existingFile.file_id);
-          
-        if (updateError) {
-          console.error('Error updating designation:', updateError);
-          return res.status(500).json({ 
-            success: false, 
-            error: `Failed to update existing designation: ${updateError.message}`
+        // Only update if there are changes
+        if (isDesignationDifferent || isLocalizationDifferent) {
+          // Handle file record update with new modified date
+          try {
+            await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
+          } catch (error) {
+            console.error('Error saving file metadata:', error);
+            return res.status(500).json({ 
+              success: false, 
+              error: `Failed to save file metadata: ${error.message}`
+            });
+          }
+
+          // Update the designation record
+          const { error: updateError } = await supabase
+            .from('designation')
+            .update({
+              designation_data: designationData,
+              localization_data: isLocalizationDifferent ? localizationData : existingDesignation.localization_data
+            })
+            .eq('file_id', existingFile.file_id);
+            
+          if (updateError) {
+            console.error('Error updating designation:', updateError);
+            return res.status(500).json({ 
+              success: false, 
+              error: `Failed to update existing designation: ${updateError.message}`
+            });
+          }
+
+          console.log('Successfully updated designation with changes');
+          res.status(200).json({ 
+            success: true,
+            message: 'Designation data saved successfully',
+            fileId: existingFile.file_id,
+            modifiedDate: modifiedDate
+          });
+        } else {
+          console.log('No changes detected in designation data, skipping update');
+          res.status(200).json({ 
+            success: true,
+            message: 'No changes detected in designation data',
+            fileId: existingFile.file_id
           });
         }
-        console.log('Successfully updated designation');
       } else {
         // Insert new designation record
         console.log('Creating new designation record...');
+        // Handle file record for new designation
+        try {
+          await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
+        } catch (error) {
+          console.error('Error saving file metadata:', error);
+          return res.status(500).json({ 
+            success: false, 
+            error: `Failed to save file metadata: ${error.message}`
+          });
+        }
+
         const { error: insertError } = await supabase
           .from('designation')
           .insert({
@@ -112,10 +142,27 @@ router.post('/save-designation', async (req, res) => {
           });
         }
         console.log('Successfully created new designation');
+        res.status(200).json({ 
+          success: true,
+          message: 'Designation data saved successfully',
+          fileId: existingFile.file_id,
+          modifiedDate: modifiedDate
+        });
       }
     } else {
       // Insert new designation record
       console.log('Creating new designation record...');
+      // Handle file record for new designation
+      try {
+        await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
+      } catch (error) {
+        console.error('Error saving file metadata:', error);
+        return res.status(500).json({ 
+          success: false, 
+          error: `Failed to save file metadata: ${error.message}`
+        });
+      }
+
       const { error: insertError } = await supabase
         .from('designation')
         .insert({
@@ -132,13 +179,13 @@ router.post('/save-designation', async (req, res) => {
         });
       }
       console.log('Successfully created new designation');
+      res.status(200).json({ 
+        success: true,
+        message: 'Designation data saved successfully',
+        fileId: fileId,
+        modifiedDate: modifiedDate
+      });
     }
-    
-    res.status(200).json({ 
-      success: true,
-      message: 'Designation data saved successfully',
-      fileId: existingFile ? existingFile.file_id : fileId
-    });
   } catch (error) {
     console.error('Error in save-designation endpoint:', error);
     res.status(500).json({ 
@@ -217,4 +264,4 @@ router.get('/by-patient/:patientId', async (req, res) => {
   }
 });
 
-export default router; 
+export default router;

@@ -133,11 +133,14 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                         return;
                     }
                     
-                    // Update the state with new modified date
-                    setState(prevState => ({
-                        ...prevState,
-                        modifiedDate: new Date().toISOString()
-                    }));
+                    // Only update the state with new modified date if the save was successful
+                    // and we got a new modified date back
+                    if (result.modifiedDate) {
+                        setState(prevState => ({
+                            ...prevState,
+                            modifiedDate: result.modifiedDate
+                        }));
+                    }
                     
                     // Show success feedback
                     setShowSaveSuccess(true);
@@ -215,11 +218,14 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                         throw result.error;
                     }
                     
-                    // Update the state with new modified date
-                    setState(prevState => ({
-                        ...prevState,
-                        modifiedDate: new Date().toISOString()
-                    }));
+                    // Only update the state with new modified date if the save was successful
+                    // and we got a new modified date back
+                    if (result.modifiedDate) {
+                        setState(prevState => ({
+                            ...prevState,
+                            modifiedDate: result.modifiedDate
+                        }));
+                    }
                     
                     // Show success feedback if this was a save operation
                     setShowSaveSuccess(true);
