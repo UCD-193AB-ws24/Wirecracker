@@ -34,6 +34,100 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                     throw new Error('Invalid stimulation type');
             }
 
+            // Get current tabs
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            
+            // Check for existing tab of the same type
+            const existingTab = tabs.find(tab =>
+                tab.content === contentType && 
+                tab.state?.patientId === initialData.state?.patientId
+            );
+
+            if (existingTab) {
+                // Compare modified dates
+                const existingModifiedDate = new Date(existingTab.state.modifiedDate);
+                const designationModifiedDate = new Date(initialData.state.designationModifiedDate);
+
+                if (existingModifiedDate > designationModifiedDate) {
+                    // Switch to existing tab and close plan type selection
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
+
+                    // Close the plan type selection tab
+                    const existingPTSTab = tabs.find(tab =>
+                        tab.content === 'stimulation' && 
+                        tab.state?.patientId === initialData.state?.patientId
+                    );
+                    if (existingPTSTab) {
+                        // Close the plan type selection tab
+                        const closeEvent = new CustomEvent('closeTab', {
+                            detail: { tabId: existingPTSTab.id }
+                        });
+                        window.dispatchEvent(closeEvent);
+                    }
+                    return;
+                } else {
+                    // Close existing tab as it's older
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(closeEvent);
+                }
+            } else {
+                // Check database for existing file
+                try {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        throw new Error('User not authenticated');
+                    }
+
+                    const response = await fetch(`${backendURL}/api/by-patient-stimulation/${initialData.state?.patientId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        }
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success && result.exists && result.data.type === type) {
+                        const dbModifiedDate = new Date(result.data.modified_date);
+                        const designationModifiedDate = new Date(initialData.state.designationModifiedDate);
+
+                        if (dbModifiedDate > designationModifiedDate) {
+                            // Create tab from database file
+                            const event = new CustomEvent('addStimulationTab', {
+                                detail: {
+                                    data: result.data.stimulation_data,
+                                    state: {
+                                        ...result.data,
+                                        type: type,
+                                        fileName: title,
+                                        fileId: result.fileId,
+                                        patientId: initialData.state?.patientId
+                                    },
+                                    title: title
+                                }
+                            });
+                            window.dispatchEvent(event);
+
+                            // Close plan type selection tab
+                            const closeEvent = new CustomEvent('closeTab', {
+                                detail: { tabId: tabs.find(t => t.content === 'plan-type-selection')?.id }
+                            });
+                            window.dispatchEvent(closeEvent);
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking database for existing file:', error);
+                    // Continue with creating new tab if database check fails
+                }
+            }
+
             // Create a new tab with the current state and data
             const event = new CustomEvent('addStimulationTab', {
                 detail: {
@@ -52,16 +146,15 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
             });
             window.dispatchEvent(event);
 
-            // Find any existing designation tab for this patient
-            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const existingTab = tabs.find(tab =>
+            // Close the plan type selection tab
+            const existingPTSTab = tabs.find(tab =>
                 tab.content === 'stimulation' && 
                 tab.state?.patientId === initialData.state?.patientId
             );
-            if (existingTab) {
+            if (existingPTSTab) {
                 // Close the plan type selection tab
                 const closeEvent = new CustomEvent('closeTab', {
-                    detail: { tabId: existingTab.id }
+                    detail: { tabId: existingPTSTab.id }
                 });
                 window.dispatchEvent(closeEvent);
             }

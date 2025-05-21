@@ -262,8 +262,6 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
 
     const handleOpenStimulation = async () => {
         try {
-            await handleSave();
-
             let stimulationData = modifiedElectrodes.map(electrode => ({
                 ...electrode,
                 contacts: electrode.contacts.map((contact, index) => {
@@ -290,70 +288,17 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                         fileId: state.fileId,
                         fileName: state.fileName,
                         creationDate: state.creationDate,
-                        modifiedDate: new Date().toISOString()
+                        modifiedDate: new Date().toISOString(),
+                        designationModifiedDate: state.modifiedDate
                     }
                 }
             });
             window.dispatchEvent(event);
+
+            await handleSave();
         } catch (error) {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                 showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
-
-                let stimulationData = modifiedElectrodes.map(electrode => ({
-                    ...electrode,
-                    contacts: electrode.contacts.map((contact, index) => {
-                        let pair = index;
-                        if (index == 0) pair = 2;
-                        return {
-                            ...contact,
-                            pair: pair,
-                            isPlanning: false,
-                            duration: 3.0,
-                            frequency: 105.225,
-                            current: 2.445,
-                        }
-                    }),
-                }));
-
-                // Check for existing stimulation tabs
-                const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-                const existingTabs = tabs.filter(tab =>
-                    (tab.content === 'csv-stimulation' || tab.content === 'stimulation') &&
-                    tab.state?.patientId === state.patientId
-                );
-
-                // Check if the stimulation data has changed
-                // NOTE This does not quite work as checker. Always evaluate to false
-                const hasNoStimulationChanged = existingTabs.some(existingTab => JSON.stringify(stimulationData) !== JSON.stringify(existingTab.state.electrodes));
-
-                if (!hasNoStimulationChanged) {
-                    // Create a new tab with updated data
-                    const event = new CustomEvent('addStimulationTab', {
-                        detail: {
-                            data: stimulationData,
-                            patientId: state.patientId,
-                            state: {
-                                patientId: state.patientId,
-                                fileId: state.fileId,
-                                fileName: state.fileName,
-                                creationDate: state.creationDate,
-                                modifiedDate: new Date().toISOString()
-                            }
-                        }
-                    });
-                    window.dispatchEvent(event);
-                } else {
-                    // Just set the existing tab as active
-                    const existingTab = tabs.find(tab =>
-                        tab.content === 'designation' &&
-                        tab.state?.patientId === savedState.patientId &&
-                        JSON.stringify(stimulationData) === JSON.stringify(tab.state.electrodes)
-                    );
-                    const activateEvent = new CustomEvent('setActiveTab', {
-                        detail: { tabId: existingTab.id }
-                    });
-                    window.dispatchEvent(activateEvent);
-                }
             } else {
                 console.error('Error opening stimulation:', error);
                 showError('Failed to open stimulation. Please try again.');
