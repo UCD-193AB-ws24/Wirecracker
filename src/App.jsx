@@ -1020,6 +1020,7 @@ const HomePage = () => {
             case 'cceps':
             case 'functional-mapping':
                 return <ContactSelection
+                    key={`${currentTab.id}-${currentTab.content}`}
                     type={currentTab.content === 'functional-mapping' ? 'mapping' : 
                           currentTab.content === 'seizure-recreation' ? 'recreation' : 'ccep'}
                     initialData={currentTab.data}
@@ -1029,7 +1030,7 @@ const HomePage = () => {
                 />;
             case 'csv-stimulation':
                 return <ContactSelection
-                    key={currentTab.id}
+                    key={`${currentTab.id}-csv-stimulation`}
                     type={currentTab.data?.type || 'recreation'}
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
@@ -1038,7 +1039,7 @@ const HomePage = () => {
                 />;
             case 'csv-functional-mapping':
                 return <ContactSelection
-                    key={currentTab.id}
+                    key={`${currentTab.id}-csv-functional-mapping`}
                     type="mapping"
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
