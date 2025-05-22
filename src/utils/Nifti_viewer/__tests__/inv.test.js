@@ -1,4 +1,5 @@
 import { inv } from '../matlab_functions.js';
+import { describe, test, expect } from 'vitest';
 
 describe('inv function', () => {
     test('inverse of a 2x2 matrix', () => {
@@ -31,6 +32,27 @@ describe('inv function', () => {
             [-24,  18,  5],
             [ 20, -15, -4],
             [ -5,   4,  1]
+        ];
+
+        // Loop through each row
+        for (let i = 0; i < result.length; i++) {
+            for (let j = 0; j < result[i].length; j++) {
+                expect(result[i][j]).toBeCloseTo(expected[i][j], 15);  // Allow small precision difference
+            }
+        }
+    });
+
+    test('inverse of a 3x3 matrix with 0s in diagonal line', () => {
+        const matrix = [
+            [0, 2, 1],
+            [1, 0, 3],
+            [0, 3, 2]
+        ];
+        const result = inv(matrix);
+        const expected = [
+            [ 9, 1, -6],
+            [ 2, 0, -1],
+            [-3, 0,  2]
         ];
 
         // Loop through each row
@@ -80,5 +102,16 @@ describe('inv function', () => {
                 expect(result[i][j]).toBeCloseTo(expected[i][j], 15);  // Allow small precision difference
             }
         }
+    });
+
+    test('attempt to inverse non-square matrix', () => {
+        const matrix = [
+            [-1, -2],
+            [-3, -4],
+            [-5, -6],
+        ];
+        const result = inv(matrix);
+
+        expect(result).toBeUndefined();
     });
 });

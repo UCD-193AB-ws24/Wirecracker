@@ -1,4 +1,5 @@
 import { flip } from '../matlab_functions.js';
+import { describe, test, expect } from 'vitest';
 
 describe('flip function', () => {
     test('flips a 1D array', () => {
@@ -59,6 +60,12 @@ describe('flip function', () => {
         const input = [1, 2, 3];
         flip(input, -1);  // This should reverse the array since n is less than 0
         expect(input).toEqual([3, 2, 1]);
+    });
+
+    test('flip with non-array object', () => {
+        const input = {tired: true, sleep: 4};
+        flip(input, 1);
+        expect(input).toEqual(input);
     });
 
     test('flips with n = 0 (reverse the whole array)', () => {

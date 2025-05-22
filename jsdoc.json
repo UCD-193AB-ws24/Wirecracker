@@ -1,7 +1,7 @@
 {
     "source": {
         "include": ["backend/", "src/", "package.json", "README.md"],
-        "includePattern": ".js$",
+        "includePattern": ".jsx?$",
         "excludePattern": "(node_modules/|docs)"
     },
     "plugins": ["plugins/markdown"],

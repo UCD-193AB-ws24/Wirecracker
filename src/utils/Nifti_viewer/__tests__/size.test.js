@@ -1,4 +1,5 @@
 import { size } from '../matlab_functions.js';
+import { describe, test, expect } from 'vitest';
 
 describe('size function', () => {
     test('size of a 1D array', () => {
