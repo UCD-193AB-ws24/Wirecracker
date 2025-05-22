@@ -1381,6 +1381,36 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         }
     };
 
+    const removeNifti = () => {
+        // Bring tiles back
+        onLoad(false)
+
+        // Remove states for user interaction
+        setMarkers([]);
+        setHoveredMarker(null)
+        setSelectedContacts([])
+        setIsSelecting(false)
+        setSelectionStart({x: 0, y: 0})
+        setSelectionEnd({x: 0, y: 0})
+        setFocus(null)
+
+        // Remove states for each canvas
+        setSliceIndex(0)
+        setMaxSlices(0)
+        setDirection('Axial')
+
+        setSubCanvas0SliceIndex(0)
+        setMaxSubCanvas0Slices(0)
+        setSubCanvas0Direction('Coronal')
+
+        setSubCanvas1SliceIndex(0)
+        setMaxSubCanvas1Slices(0)
+        setSubCanvas1Direction('Sagittal')
+
+        // Remove NIFTI data
+        setNiiData(null)
+    }
+
     return (
         <div className="p-1 lg:p-2 mx-2 lg:mx-5 bg-gray-100">
             <div className="flex space-x-2 mb-4
@@ -1430,6 +1460,13 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                         </div>
                     )}
                 </div>
+                {isLoaded && (
+                <button
+                    className="border-solid border-2 border-sky-700 text-sky-700 font-semibold rounded-xl w-64 h-12 hover:bg-sky-700 hover:text-white transition-colors duration-200"
+                    onClick={removeNifti}
+                >
+                    Remove NIfTI image
+                </button>)}
             </div>
             {isLoaded && (
                 <div className="flex flex-col lg:flex-row gap-3 lg:gap-6">
