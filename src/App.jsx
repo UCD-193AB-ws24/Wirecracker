@@ -711,7 +711,7 @@ const HomePage = () => {
                 break;
             case 'functional-test':
                 title = 'Test Selection';
-                patientId = data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
+                patientId = data?.state?.patientId ? data.state.patientId : data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
                 break;
             case 'database-lookup':     title = 'Lookup'; break;
             default:
@@ -919,15 +919,18 @@ const HomePage = () => {
                 id: Date.now().toString(),
                 title: fileData.name,
                 content: type,
-                data: fileData.data,
+                data: {
+                    data: fileData.data.data.contacts,
+                    tests: fileData.data.data.tests
+                },
                 state: {
                     fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
                     patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
-                    tests: fileData.data.tests,
-                    contacts: fileData.data.contacts
+                    tests: fileData.data?.data.tests || fileData.data.tests,
+                    contacts: fileData.data?.data.contacts || fileData.data.contacts
                 }
             };
 

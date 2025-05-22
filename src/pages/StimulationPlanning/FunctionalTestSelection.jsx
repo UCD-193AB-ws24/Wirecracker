@@ -10,7 +10,6 @@ const backendURL = config.backendURL;
 const FunctionalTestSelection = ({
     initialData = {},
     onStateChange,
-    switchContent,
     savedState = {},
 }) => {
     const { showError } = useError();
@@ -34,10 +33,11 @@ const FunctionalTestSelection = ({
         }
         if (contactsData) {
             return contactsData.map(electrode => {
-                return mapConsecutive(electrode.contacts, 2,
-                    (contacts) => {
-                        return contacts[0].isPlanning ? contacts : null;
-                    });
+                // Create pairs of consecutive contacts where at least one has a surgeon mark
+                return mapConsecutive(electrode.contacts, 2, contacts => {
+                    // Return the pair if either contact has a surgeon mark
+                    return (contacts[0].surgeonMark || contacts[1].surgeonMark) ? contacts : null;
+                });
             })
             .flat()
             .filter(Boolean)
@@ -266,7 +266,7 @@ const FunctionalTestSelection = ({
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save test selection:', result.error);
-                        throw result.error; // Let error bubble up
+                        throw new Error(result.error || 'Failed to save test selection');
                     }
 
                     // Only update the state with new modified date if the save was successful
@@ -291,7 +291,7 @@ const FunctionalTestSelection = ({
                 }
             }
         } catch (error) {
-            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+            if (error.name === "NetworkError" || (error.message && error.message.toString().includes("NetworkError"))) {
                 if (download) {
                     showWarning("No internet connection. The progress is not saved on the database.");
                 } else {
@@ -299,7 +299,7 @@ const FunctionalTestSelection = ({
                 }
             } else {
                 console.error("Error exporting contacts:", error);
-                showError(`Error exporting contacts: ${error.message}`);
+                showError(`Error exporting contacts: ${error.message || 'Unknown error occurred'}`);
             }
         } finally {
             // Then export to CSV if download is true
@@ -360,7 +360,7 @@ const FunctionalTestSelection = ({
     return (
         <div className="p-12 bg-gray-50 min-h-screen">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">
-                Function Mapping Test Selection
+                Functional Test Selection
             </h1>
 
             {/* Auto Assign Button */}
@@ -384,11 +384,6 @@ const FunctionalTestSelection = ({
                             <span className="text-gray-600 text-sm">
                                 {contactPair[0].associatedLocation} - {contactPair[1].associatedLocation}
                             </span>
-                        </div>
-                        <div className="text-gray-500 text-sm">
-                            Duration: {contactPair[0].duration} sec | Frequency:{" "}
-                            {contactPair[0].frequency} Hz | Current: {contactPair[0].current}{" "}
-                            mA
                         </div>
 
                         {/* Display added tests */}
@@ -579,7 +574,7 @@ const FunctionalTestSelection = ({
                 <div className="relative">
                     <button
                         className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
-                        onClick={() => exportTests(tests, initialData.data.contacts, false)}
+                        onClick={() => exportTests(tests, initialData.data?.data || initialData.data, false)}
                     >
                         Save
                     </button>
@@ -591,7 +586,7 @@ const FunctionalTestSelection = ({
                 </div>
                 <button
                     className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
-                    onClick={() => exportTests(tests, initialData.data.contacts)}
+                    onClick={() => exportTests(tests, initialData.data?.data || initialData.data)}
                 >
                     Export
                 </button>

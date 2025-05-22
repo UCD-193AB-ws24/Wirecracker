@@ -414,7 +414,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         throw new Error('User not authenticated');
                     }
 
-                    const response = await fetch(`${backendURL}/api/by-patient-test-selection/${state.patientId}`, {
+                    const response = await fetch(`${backendURL}/api/by-patient-test/${state.patientId}`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
@@ -454,17 +454,13 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
             // Create a new tab with the test selection data
             const event = new CustomEvent('addFunctionalTestTab', {
                 detail: { 
-                    data: {
-                        data: electrodes,
-                        contacts: electrodes
-                    },
+                    data: electrodes,
                     state: {
                         patientId: state.patientId,
                         fileId: state.fileId,
                         fileName: 'Test Selection',
                         creationDate: state.creationDate,
-                        modifiedDate: new Date().toISOString(),
-                        designationModifiedDate: state.modifiedDate
+                        modifiedDate: new Date().toISOString()
                     }
                 }
             });
