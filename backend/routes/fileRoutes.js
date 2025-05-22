@@ -124,6 +124,17 @@ router.get("/files/check-type", async (req, res) => {
       if (localizationError) {
         console.error('Error checking localization data:', localizationError);
       }
+
+      // Check for resection data
+      const { data: resectionData, error: resectionError } = await supabase
+        .from('designation')
+        .select('*')
+        .eq('file_id', parsedFileId)
+        .single();
+
+      if (resectionError && resectionError.code !== 'PGRST116') {
+        console.error('Error checking resection data:', resectionError);
+      }        
   
       // Check for designation data
       const { data: designationData, error: designationError } = await supabase
@@ -160,9 +171,14 @@ router.get("/files/check-type", async (req, res) => {
   
       res.json({
         hasLocalization: localizationData && localizationData.length > 0,
+        hasResection: !!resectionData,
         hasDesignation: !!designationData,
         hasTestSelection: !!testSelectionData,
         hasStimulation: !!stimulationData,
+        resectionData: resectionData ? {
+          resection_data: resectionData.designation_data,
+          localization_data: resectionData.localization_data
+        } : null,
         designationData: designationData ? {
           designation_data: designationData.designation_data,
           localization_data: designationData.localization_data
@@ -267,6 +283,11 @@ router.get("/patients/recent", async (req, res) => {
         return res.status(401).json({ error: "No authentication token provided" });
     }
 
+    // Get pagination parameters from query
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
     try {
         const { data: session } = await supabase
             .from('sessions')
@@ -301,30 +322,41 @@ router.get("/patients/recent", async (req, res) => {
                     patient_id: curr.patient_id,
                     latest_file: curr,
                     has_localization: false,
+                    has_resection: false,
                     has_designation: false,
-                    has_stimulation: false,
                     has_test_selection: false,
                     localization_file_id: null,
+                    resection_file_id: null,
                     designation_file_id: null,
-                    stimulation_file_id: null,
                     test_selection_file_id: null,
-                    localization_creation_date: null
+                    localization_creation_date: null,
+                    stimulation_types: {
+                        mapping: null,
+                        recreation: null,
+                        ccep: null
+                    }
                 };
             }
 
             // Check file type based on filename
             const filename = curr.filename.toLowerCase();
-            if (filename.includes('localization')) {
+            if (filename.includes('anatomy')) {
                 acc[curr.patient_id].has_localization = true;
                 acc[curr.patient_id].localization_file_id = curr.file_id;
                 acc[curr.patient_id].localization_creation_date = curr.creation_date;
-            } else if (filename.includes('designation')) {
+            } else if (filename.includes('epilepsy')) {
                 acc[curr.patient_id].has_designation = true;
                 acc[curr.patient_id].designation_file_id = curr.file_id;
-            } else if (filename.includes('stimulation')) {
-                acc[curr.patient_id].has_stimulation = true;
-                acc[curr.patient_id].stimulation_file_id = curr.file_id;
-            } else if (filename.includes('test') || filename.includes('functional')) {
+            } else if (filename.includes('neurosurgery')) {
+                acc[curr.patient_id].has_resection = true;
+                acc[curr.patient_id].resection_file_id = curr.file_id;
+            } else if (filename.includes('functional mapping')) {
+                acc[curr.patient_id].stimulation_types.mapping = curr.file_id;
+            } else if (filename.includes('seizure recreation')) {
+                acc[curr.patient_id].stimulation_types.recreation = curr.file_id;
+            } else if (filename.includes('cceps')) {
+                acc[curr.patient_id].stimulation_types.ccep = curr.file_id;
+            } else if (filename.includes('neuropsychology')) {
                 acc[curr.patient_id].has_test_selection = true;
                 acc[curr.patient_id].test_selection_file_id = curr.file_id;
             }
@@ -336,7 +368,14 @@ router.get("/patients/recent", async (req, res) => {
         const allPatients = Object.values(patients)
             .sort((a, b) => new Date(b.latest_file.modified_date) - new Date(a.latest_file.modified_date));
 
-        res.json(allPatients);
+        const count = allPatients.length;
+
+        res.json({
+            patients: allPatients.slice(offset, offset + limit),
+            totalPatients: count,
+            currentPage: page,
+            totalPages: Math.ceil(count / limit)
+        });
     } catch (error) {
         console.error('Error fetching patients:', error);
         res.status(500).json({ error: "Error fetching patients" });

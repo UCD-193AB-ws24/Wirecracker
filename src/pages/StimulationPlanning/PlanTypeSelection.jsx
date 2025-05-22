@@ -14,74 +14,166 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
 
     const handlePlanTypeSelect = async (type) => {
         try {
-            // Check for existing tabs based on the selected type
+            // Create new tab with appropriate content type and title
+            let contentType;
+            let title;
+            switch(type) {
+                case 'mapping':
+                    contentType = 'functional-mapping';
+                    title = 'Functional Mapping';
+                    break;
+                case 'recreation':
+                    contentType = 'seizure-recreation';
+                    title = 'Seizure Recreation';
+                    break;
+                case 'ccep':
+                    contentType = 'cceps';
+                    title = 'CCEPs';
+                    break;
+                default:
+                    throw new Error('Invalid stimulation type');
+            }
+
+            // Get current tabs
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const isFunctionalMapping = type === 'functional-mapping';
             
-            // Find existing tab based on type
-            const existingTab = tabs.find(tab => {
-                if (isFunctionalMapping) {
-                    return (tab.content === 'csv-functional-mapping' || tab.content === 'functional-mapping') && 
-                           tab.state?.patientId === initialData.state?.patientId;
-                } else {
-                    return (tab.content === 'csv-stimulation' || tab.content === 'stimulation' || 
-                           tab.content === 'seizure-recreation' || tab.content === 'cceps') && 
-                           tab.state?.patientId === initialData.state?.patientId;
-                }
-            });
+            // Check for existing tab of the same type
+            const existingTab = tabs.find(tab =>
+                tab.content === contentType && 
+                tab.state?.patientId === initialData.state?.patientId
+            );
 
             if (existingTab) {
-                // Compare the current data with the existing tab's data
-                const currentData = initialData.data;
-                const existingData = existingTab.state.electrodes;
+                // Compare modified dates based on source
+                const existingModifiedDate = existingTab.state.modifiedDate;
+                let sourceModifiedDate;
                 
-                // Check if the data has changed
-                const hasDataChanged = JSON.stringify(currentData) !== JSON.stringify(existingData);
-                
-                if (hasDataChanged) {
-                    // First switch to the selected content type
-                    switchContent(type);
-                    
-                    // Then close the existing tab after a small delay to ensure state updates
-                    setTimeout(() => {
-                        const closeEvent = new CustomEvent('closeTab', {
-                            detail: { tabId: existingTab.id }
-                        });
-                        window.dispatchEvent(closeEvent);
-                    }, 100);
-                } else {
-                    // Just set the existing tab as active
+                if (initialData.state?.fromDesignation) {
+                    sourceModifiedDate = initialData.state.designationModifiedDate;
+                } else if (initialData.state?.fromTestSelection) {
+                    sourceModifiedDate = initialData.state.testSelectionModifiedDate;
+                }
+
+                if (existingModifiedDate > sourceModifiedDate) {
+                    // Switch to existing tab and close plan type selection
                     const activateEvent = new CustomEvent('setActiveTab', {
                         detail: { tabId: existingTab.id }
                     });
                     window.dispatchEvent(activateEvent);
+
+                    // Close the plan type selection tab
+                    const existingPTSTab = tabs.find(tab =>
+                        tab.content === 'stimulation' && 
+                        tab.state?.patientId === initialData.state?.patientId
+                    );
+                    if (existingPTSTab) {
+                        // Close the plan type selection tab
+                        const closeEvent = new CustomEvent('closeTab', {
+                            detail: { tabId: existingPTSTab.id }
+                        });
+                        window.dispatchEvent(closeEvent);
+                    }
+                    return;
+                } else {
+                    // Close existing tab as it's older
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(closeEvent);
                 }
             } else {
-                // Check if data exists in the database for this patient
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    showError('User not authenticated. Please log in to continue.');
-                    return;
-                }
-
-                const response = await fetch(`${backendURL}/api/by-patient-stimulation/${initialData.state?.patientId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+                // Check database for existing file
+                try {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        throw new Error('User not authenticated');
                     }
-                });
 
-                if (!response.ok) {
-                    throw new Error('Failed to check for existing data');
+                    const response = await fetch(`${backendURL}/api/by-patient-stimulation/${initialData.state?.patientId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        }
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success && result.exists && result.data.type === type) {
+                        const dbModifiedDate = result.data.modified_date;
+                        let sourceModifiedDate;
+                        
+                        if (initialData.state?.fromDesignation) {
+                            sourceModifiedDate = initialData.state.designationModifiedDate;
+                        } else if (initialData.state?.fromTestSelection) {
+                            sourceModifiedDate = initialData.state.testSelectionModifiedDate;
+                        }
+
+                        if (dbModifiedDate > sourceModifiedDate) {
+                            // Create tab from database file
+                            const event = new CustomEvent('addStimulationTab', {
+                                detail: {
+                                    data: result.data.stimulation_data,
+                                    state: {
+                                        ...result.data,
+                                        type: type,
+                                        fileName: title,
+                                        fileId: result.fileId,
+                                        patientId: initialData.state?.patientId
+                                    },
+                                    title: title
+                                }
+                            });
+                            window.dispatchEvent(event);
+
+                            // Close plan type selection tab
+                            const closeEvent = new CustomEvent('closeTab', {
+                                detail: { tabId: tabs.find(t => t.content === 'plan-type-selection')?.id }
+                            });
+                            window.dispatchEvent(closeEvent);
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking database for existing file:', error);
+                    // Continue with creating new tab if database check fails
                 }
+            }
 
-                const result = await response.json();
-                
-                // Switch to the selected content type with the appropriate data
-                switchContent(type, result.exists ? result.data : initialData.data);
+            // Create a new tab with the current state and data
+            const event = new CustomEvent('addStimulationTab', {
+                detail: {
+                    data: {
+                        type: type,
+                        patientId: initialData.state?.patientId,
+                        data: initialData.data
+                    },
+                    state: {
+                        ...initialData.state,
+                        fileId: existingTab?.state?.fileId || null,
+                        type: type,
+                        fileName: title
+                    },
+                    title: title
+                }
+            });
+            window.dispatchEvent(event);
+
+            // Close the plan type selection tab
+            const existingPTSTab = tabs.find(tab =>
+                tab.content === 'stimulation' && 
+                tab.state?.patientId === initialData.state?.patientId
+            );
+            if (existingPTSTab) {
+                // Close the plan type selection tab
+                const closeEvent = new CustomEvent('closeTab', {
+                    detail: { tabId: existingPTSTab.id }
+                });
+                window.dispatchEvent(closeEvent);
             }
         } catch (error) {
-            console.error('Error handling plan type selection:', error);
-            showError('Failed to open plan type. Please try again.');
+            console.error('Error in handlePlanTypeSelect:', error);
+            showError('Failed to create stimulation plan: ' + error.message);
         }
     };
 
@@ -93,7 +185,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                                md:h-11 md:w-80 md:text-lg
                                lg:h-13 lg:w-96 lg:text-xl
                                xl:h-16 xl:w-128 xl:text-2xl"
-                    onClick={() => switchContent('seizure-recreation')}>
+                    onClick={() => handlePlanTypeSelect('recreation')}>
                     Seizure Recreation
                 </button>
                 <button
@@ -101,17 +193,28 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                                md:h-11 md:w-80 md:text-lg
                                lg:h-13 lg:w-96 lg:text-xl
                                xl:h-16 xl:w-128 xl:text-2xl"
-                    onClick={() => switchContent('cceps')}>
+                    onClick={() => handlePlanTypeSelect('ccep')}>
                     CCEPs
                 </button>
-                <button
-                    className="h-10 w-68 bg-sky-600 hover:bg-sky-700 border border-sky-700 text-white font-semibold rounded cursor-pointer transition-colors duration-200
-                               md:h-11 md:w-80 md:text-lg
-                               lg:h-13 lg:w-96 lg:text-xl
-                               xl:h-16 xl:w-128 xl:text-2xl"
-                    onClick={() => switchContent('functional-test')}>
-                    Functional Mapping
-                </button>
+                <div className="relative">
+                    <button
+                        className={`h-10 w-68 border border-sky-700 text-white font-semibold rounded transition-colors duration-200
+                                   md:h-11 md:w-80 md:text-lg
+                                   lg:h-13 lg:w-96 lg:text-xl
+                                   xl:h-16 xl:w-128 xl:text-2xl
+                                   ${initialData.state?.fromDesignation 
+                                       ? 'bg-gray-400 cursor-not-allowed' 
+                                       : 'bg-sky-600 hover:bg-sky-700 cursor-pointer'}`}
+                        onClick={() => initialData.state?.fromTestSelection && handlePlanTypeSelect('mapping')}
+                        disabled={initialData.state?.fromDesignation}>
+                        Functional Mapping
+                    </button>
+                    {initialData.state?.fromDesignation && (
+                        <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded text-sm whitespace-nowrap">
+                            Functional Mapping can only be opened from Neuropsychology page
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
