@@ -46,19 +46,32 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
         if (savedState && savedState.localizationData) {
             return structuredClone(savedState.localizationData);
         }
-        return initialData?.data.originalData ? structuredClone(initialData.data.originalData) : null;
+        return initialData?.originalData ? structuredClone(initialData.originalData) : null;
     });
 
     /**
-     * Store electrodes data
-     */
+    * Store electrodes data
+    */
     const [electrodes, setElectrodes] = useState(() => {
+        // If there are previous state that can be recalled
         if (savedState && savedState.electrodes) {
-            return structuredClone(savedState.electrodes);
+            return JSON.parse(JSON.stringify(savedState.electrodes));
         }
 
-        if (initialData && initialData.data.electrodes) {
-            return structuredClone(initialData.data.electrodes);
+        // New page, made from localization page. Process data here.
+        if (initialData && Object.keys(initialData).length !== 0) {
+            return initialData.data.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map((contact, index) => ({
+                    ...contact,
+                    id: `${electrode.label}${index + 1}`,
+                    electrodeLabel: electrode.label,
+                    index: index + 1,
+                    mark: contact.mark || 0,
+                    surgeonMark: contact.surgeonMark || false,
+                    focus: false
+                })),
+            }));
         }
     });
 
@@ -161,8 +174,8 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                         showWarning("No internet connection. The progress is not saved. Make sure to download your progress.");
                     } else {
-                        console.error('Error saving designation:', error);
-                        showError(`Error saving designation: ${error.message}`);
+                        console.error('Error saving resection:', error);
+                        showError(`Error saving resection: ${error.message}`);
                     }
                     return;
                 }
@@ -184,8 +197,8 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                 showWarning("No internet connection. The progress is not saved. Make sure to download your progress.");
             } else {
-                console.error('Error saving designation:', error);
-                showError(`Error saving designation: ${error.message}`);
+                console.error('Error saving resection:', error);
+                showError(`Error saving resection: ${error.message}`);
             }
             return;
         }
@@ -199,12 +212,12 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
         try {
             // First save to database if we have a file ID
             if (state.fileId) {
-                console.log('Saving designation to database...');
+                console.log('Saving resection to database...');
 
                 // Get user ID from session
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    showError('User not authenticated. Please log in to save designations.');
+                    showError('User not authenticated. Please log in to save resections.');
                     return;
                 }
 
@@ -229,8 +242,8 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
                     const result = await response.json();
                     if (!result.success) {
-                        console.error('Failed to save designation:', result.error);
-                        showError(`Failed to save designation: ${result.error}`);
+                        console.error('Failed to save resection:', result.error);
+                        showError(`Failed to save resection: ${result.error}`);
                         return;
                     }
 
@@ -246,13 +259,13 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     // Show success feedback if this was a save operation
                     setShowSaveSuccess(true);
 
-                    console.log('Designation saved successfully');
+                    console.log('Resection saved successfully');
                 } catch (error) {
                     if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                         showWarning("No internet connection. The progress is not saved on the database.");
                     } else {
-                        console.error('Error saving designation:', error);
-                        showError(`Error saving designation: ${error.message}`);
+                        console.error('Error saving resection:', error);
+                        showError(`Error saving resection: ${error.message}`);
                         return;
                     }
                 }
@@ -274,59 +287,120 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                 showWarning("No internet connection. The progress is not saved on the database.");
             } else {
-                console.error('Error saving designation:', error);
-                showError(`Error saving designation: ${error.message}`);
+                console.error('Error saving resection:', error);    
+                showError(`Error saving resection: ${error.message}`);
                 return;
             }
         }
     };
 
     /**
-     * Handles dispatching event to open stimulation tab
+     * Handles dispatching event to open resection tab
      * @async
+     * @returns {Promise<void>}
      */
-    const handleOpenStimulation = async () => {
+    const handleOpenDesignation = async () => {
         try {
-            let stimulationData = electrodes.map(electrode => ({
-                ...electrode,
-                contacts: electrode.contacts.map((contact, index) => {
-                    let pair = index;
-                    if (index == 0) pair = 2;
-                    return {
-                        ...contact,
-                        pair: pair,
-                        isPlanning: false,
-                        duration: 3.0,
-                        frequency: 105.225,
-                        current: 2.445,
-                    }
-                }),
-            }));
-
-            // Create a new tab with the stimulation data
-            const event = new CustomEvent('addStimulationTab', {
-                detail: { 
-                    data: stimulationData,
-                    patientId: state.patientId,
-                    state: {
-                        patientId: state.patientId,
-                        fileId: state.fileId,
-                        fileName: state.fileName,
-                        creationDate: state.creationDate,
-                        modifiedDate: new Date().toISOString(),
-                        designationModifiedDate: state.modifiedDate
-                    }
-                }
-            });
-            window.dispatchEvent(event);
-
             await handleSave();
+
+            let designationData = {
+                electrodes,
+                originalData: localizationData
+            };
+
+            // Check for existing resection tabs
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            const existingTab = tabs.find(tab =>
+                (tab.content === 'csv-designation' || tab.content === 'designation') &&
+                tab.state?.patientId === state.patientId
+            );
+
+            if (existingTab) {
+                // Compare the current designation data with the existing tab's data
+                const currentDesignationData = structuredClone(designationData.electrodes);
+                const existingDesignationData = structuredClone(existingTab.state.electrodes);
+
+                // Remove surgeonmark from consideration
+                currentDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.mark = 0));
+                existingDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.mark = 0));
+
+                const hasDesignationChanged = JSON.stringify(currentDesignationData) !== JSON.stringify(existingDesignationData);
+
+                if (hasDesignationChanged) {
+                    // Close the existing tab
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(closeEvent);
+
+                    // Create a new tab with updated data
+                    const event = new CustomEvent('addDesignationTab', {
+                        detail: {
+                            data: designationData,
+                            patientId: state.patientId,
+                            state: {
+                                patientId: state.patientId,
+                                fileId: state.fileId,
+                                fileName: state.fileName,
+                                creationDate: state.creationDate,
+                                modifiedDate: new Date().toISOString()
+                            }
+                        }
+                    });
+                    window.dispatchEvent(event);
+                } else {
+                    // Just set the existing tab as active
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
+                }
+            } else {
+                // If the user never made designation page before with the patient
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showError('User not authenticated. Please log in to open resection.');
+                    return;
+                }
+
+                const response = await fetch(`${backendURL}/api/by-patient/${state.patientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to check for existing resection data');
+                }
+
+                const result = await response.json();
+
+                // Create a new tab with the designation data
+                const event = new CustomEvent('addDesignationTab', {
+                    detail: {
+                        data: result.exists ? {
+                            electrodes: result.data.designation_data,
+                            originalData: result.data.localization_data
+                        } : designationData,
+                        patientId: state.patientId,
+                        state: {
+                            patientId: state.patientId,
+                            fileId: result.exists ? result.fileId : state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString()
+                        }
+                    }
+                });
+                window.dispatchEvent(event);
+            }
         } catch (error) {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
-                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+                showWarning("No internet connection. The progress is not saved on the database.");
             } else {
-                console.error('Error opening stimulation:', error);
-                showError('Failed to open stimulation. Please try again.');
+                console.error('Error saving resection:', error);
+                showError(`Error saving resection: ${error.message}`);
+                return;
             }
         }
     };
@@ -395,8 +469,8 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     <button
                         className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
                                     lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleOpenStimulation}>
-                        Open in Stimulation Page
+                        onClick={handleOpenDesignation}>
+                        Open in Designation Page
                     </button>
                 </div>
             </div>

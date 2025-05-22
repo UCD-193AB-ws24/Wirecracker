@@ -502,7 +502,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         return changes;
     };
 
-    const createDesignationTab = async () => {
+    const createResectionTab = async () => {
         if (Object.keys(electrodes).length === 0) return;
 
         try {
@@ -532,7 +532,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             
             // Find any existing designation tab for this patient
             const existingTab = tabs.find(tab =>
-                tab.content === 'designation' && 
+                tab.content === 'resection' && 
                 tab.state?.patientId === patientId
             );
 
@@ -565,7 +565,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
                     console.log("file id: ", existingTab.state.fileId);
                     // Create a new tab with updated data
-                    const event = new CustomEvent('addDesignationTab', {
+                    const event = new CustomEvent('addResectionTab', {
                         detail: { 
                             originalData: originalDataCopy,
                             data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
@@ -585,35 +585,35 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 }
             } else {
                 // Only make database calls when creating a new tab
-                const designationResponse = await fetch(`${backendURL}/api/by-patient/${patientId}`, {
+                const resectionResponse = await fetch(`${backendURL}/api/by-patient/${patientId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
-                if (!designationResponse.ok) {
-                    throw new Error('Failed to check for existing designation');
+                if (!resectionResponse.ok) {
+                    throw new Error('Failed to check for existing resection');
                 }
 
-                const designationResult = await designationResponse.json();
+                const resectionResult = await resectionResponse.json();
                 
                 // Create deep copies of the data
                 const originalDataCopy = JSON.parse(JSON.stringify(
-                    designationResult.exists ? designationResult.data.localization_data : electrodes
+                    resectionResult.exists ? resectionResult.data.localization_data : electrodes
                 ));
                 const localizationDataCopy = JSON.parse(JSON.stringify({
-                    ...(designationResult.exists ? designationResult.data.localization_data : electrodes),
+                    ...(resectionResult.exists ? resectionResult.data.localization_data : electrodes),
                     patientId: patientId
                 }));
                 
                 // Create a new tab
-                const event = new CustomEvent('addDesignationTab', {
+                const event = new CustomEvent('addResectionTab', {
                     detail: { 
                         originalData: originalDataCopy,
-                        data: designationResult.exists ? designationResult.data.designation_data : saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
+                        data: resectionResult.exists ? resectionResult.data.resection_data : saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
                         localizationData: localizationDataCopy,
                         patientId: patientId,
-                        fileId: designationResult.exists ? designationResult.fileId : null
+                        fileId: resectionResult.exists ? resectionResult.fileId : null
                     }
                 });
                 window.dispatchEvent(event);
@@ -628,19 +628,19 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
                 // Find all existing designation tab(s) for this patient
                 const existingTab = tabs.find(tab =>
-                    tab.content === 'designation' &&
+                    tab.content === 'resection' &&
                     tab.state?.patientId === savedState.patientId
                 );
 
                 // Check if there's any changes'
                 const hasChanges = JSON.stringify(electrodes) !== JSON.stringify(existingTab?.data.originalData);
 
-                // There's change or there were no designation tab before for this patient'
+                // There's change or there were no resection tab before for this patient'
                 if (!existingTab || hasChanges) {
                     const updatedTabs = tabs.filter(tab => tab.state?.patientId !== savedState.patientId);
                     localStorage.setItem('tabs', JSON.stringify(updatedTabs));
 
-                    // Close out existing designation tab
+                    // Close out existing resection tab
                     if (existingTab) {
                         const closeEvent = new CustomEvent('closeTab', {
                             detail: { tabId: existingTab.id }
@@ -657,7 +657,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
                     console.log("file id: ", savedState.fileId);
                     // Create a new tab with updated data
-                    const event = new CustomEvent('addDesignationTab', {
+                    const event = new CustomEvent('addResectionTab', {
                         detail: {
                             originalData: originalDataCopy,
                             data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
@@ -670,7 +670,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 } else {
                     // We saw the content before. Just set the existing tab as active
                     const existingTab = tabs.find(tab =>
-                        tab.content === 'designation' &&
+                        tab.content === 'resection' &&
                         tab.state?.patientId === savedState.patientId &&
                         JSON.stringify(electrodes) === JSON.stringify(tab.data.originalData)
                     );
@@ -680,8 +680,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     window.dispatchEvent(activateEvent);
                 }
             } else {
-                console.error('Error creating designation tab:', error);
-                showError('Failed to create designation tab. Please try again.');
+                console.error('Error creating resection tab:', error);
+                showError('Failed to create resection tab. Please try again.');
             }
         }
     };
@@ -886,9 +886,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             <div className="fixed bottom-6 right-6 z-50 flex gap-4">
                 <button
                     className="py-2 px-4 bg-green-500 text-white font-bold rounded-md hover:bg-green-600 transition-colors duration-200 shadow-lg"
-                    onClick={createDesignationTab}
+                    onClick={createResectionTab}
                 >
-                    Open in Designation
+                    Open in Resection
                 </button>
 
                 {isSharedFile && (

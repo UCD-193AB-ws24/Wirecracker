@@ -34,32 +34,19 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         if (savedState && savedState.localizationData) {
             return JSON.parse(JSON.stringify(savedState.localizationData));
         }
-        return initialData?.originalData ? JSON.parse(JSON.stringify(initialData.originalData)) : null;
+        return initialData?.data.originalData ? JSON.parse(JSON.stringify(initialData.data.originalData)) : null;
     });
 
     /**
-     * Store electrodes data
-     */
+    * Store electrodes data
+    */
     const [electrodes, setElectrodes] = useState(() => {
-        // If there are previous state that can be recalled
         if (savedState && savedState.electrodes) {
-            return JSON.parse(JSON.stringify(savedState.electrodes));
+            return savedState.electrodes;
         }
 
-        // New page, made from localization page. Process data here.
-        if (initialData && Object.keys(initialData).length !== 0) {
-            return initialData.data.map(electrode => ({
-                ...electrode,
-                contacts: electrode.contacts.map((contact, index) => ({
-                    ...contact,
-                    id: `${electrode.label}${index + 1}`,
-                    electrodeLabel: electrode.label,
-                    index: index + 1,
-                    mark: contact.mark || 0,
-                    surgeonMark: contact.surgeonMark || false,
-                    focus: false
-                })),
-            }));
+        if (initialData && initialData.data.electrodes) {
+            return initialData.data.electrodes;
         }
     });
 
@@ -316,114 +303,51 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     };
 
     /**
-     * Handles dispatching event to open resection tab
+     * Handles dispatching event to open stimulation tab
      * @async
-     * @returns {Promise<void>}
      */
-    const handleOpenResection = async () => {
+    const handleOpenStimulation = async () => {
         try {
-            await handleSave();
-
-            let designationData = {
-                electrodes,
-                originalData: localizationData
-            };
-
-            // Check for existing resection tabs
-            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const existingTab = tabs.find(tab =>
-                (tab.content === 'csv-resection' || tab.content === 'resection') &&
-                tab.state?.patientId === state.patientId
-            );
-
-            if (existingTab) {
-                // Compare the current resection data with the existing tab's data
-
-                const currentDesignationData = structuredClone(designationData.electrodes);
-                const existingDesignationData = structuredClone(existingTab.state.electrodes);
-
-                // Remove surgeonmark from consideration
-                currentDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.surgeonMark = false));
-                existingDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.surgeonMark = false));
-
-                // Check if the resection data has changed
-                const hasResectionChanged = JSON.stringify(currentDesignationData) !== JSON.stringify(existingDesignationData);
-
-                if (hasResectionChanged) {
-                    // Close the existing tab
-                    const closeEvent = new CustomEvent('closeTab', {
-                        detail: { tabId: existingTab.id }
-                    });
-                    window.dispatchEvent(closeEvent);
-
-                    // Create a new tab with updated data
-                    const event = new CustomEvent('addResectionTab', {
-                        detail: {
-                            data: designationData,
-                            patientId: state.patientId,
-                            state: {
-                                patientId: state.patientId,
-                                fileId: state.fileId,
-                                fileName: state.fileName,
-                                creationDate: state.creationDate,
-                                modifiedDate: new Date().toISOString()
-                            }
-                        }
-                    });
-                    window.dispatchEvent(event);
-                } else {
-                    // Just set the existing tab as active
-                    const activateEvent = new CustomEvent('setActiveTab', {
-                        detail: { tabId: existingTab.id }
-                    });
-                    window.dispatchEvent(activateEvent);
-                }
-            } else {
-                // If the user never made resection page before with the patient
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    showError('User not authenticated. Please log in to open stimulation.');
-                    return;
-                }
-
-                const response = await fetch(`${backendURL}/api/by-patient/${state.patientId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+            let stimulationData = electrodes.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map((contact, index) => {
+                    let pair = index;
+                    if (index == 0) pair = 2;
+                    return {
+                        ...contact,
+                        pair: pair,
+                        isPlanning: false,
+                        duration: 3.0,
+                        frequency: 105.225,
+                        current: 2.445,
                     }
-                });
+                }),
+            }));
 
-                if (!response.ok) {
-                    throw new Error('Failed to check for existing resection data');
-                }
-
-                const result = await response.json();
-
-                // Create a new tab with the designation data
-                const event = new CustomEvent('addResectionTab', {
-                    detail: {
-                        data: result.exists ? {
-                            electrodes: result.data.designation_data,
-                            originalData: result.data.localization_data
-                        } : designationData,
+            // Create a new tab with the stimulation data
+            const event = new CustomEvent('addStimulationTab', {
+                detail: { 
+                    data: stimulationData,
+                    patientId: state.patientId,
+                    state: {
                         patientId: state.patientId,
-                        state: {
-                            patientId: state.patientId,
-                            fileId: result.exists ? result.fileId : state.fileId,
-                            fileName: state.fileName,
-                            creationDate: state.creationDate,
-                            modifiedDate: new Date().toISOString()
-                        }
+                        fileId: state.fileId,
+                        fileName: state.fileName,
+                        creationDate: state.creationDate,
+                        modifiedDate: new Date().toISOString(),
+                        designationModifiedDate: state.modifiedDate
                     }
-                });
-                window.dispatchEvent(event);
-            }
+                }
+            });
+            window.dispatchEvent(event);
+
+            await handleSave();
         } catch (error) {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
-                showWarning("No internet connection. The progress is not saved on the database.");
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
             } else {
-                console.error('Error saving designation:', error);
-                showError(`Error saving designation: ${error.message}`);
-                return;
+                console.error('Error opening stimulation:', error);
+                showError('Failed to open stimulation. Please try again.');
             }
         }
     };
@@ -491,8 +415,8 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     <button
                         className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
                                     lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleOpenResection}>
-                        Open in Resection Page
+                        onClick={handleOpenStimulation}>
+                        Open in Stimulation Page
                     </button>
                 </div>
             </div>
