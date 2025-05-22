@@ -457,7 +457,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     data: electrodes,
                     state: {
                         patientId: state.patientId,
-                        fileId: existingTab.state?.fileId || null,
+                        fileId: existingTab?.state?.fileId || null,
                         fileName: 'Neuropsychology',
                         creationDate: state.creationDate,
                         modifiedDate: new Date().toISOString()

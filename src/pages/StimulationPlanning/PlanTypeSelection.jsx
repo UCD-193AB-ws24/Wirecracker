@@ -150,6 +150,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                     },
                     state: {
                         ...initialData.state,
+                        fileId: existingTab?.state?.fileId || null,
                         type: type,
                         fileName: title
                     },

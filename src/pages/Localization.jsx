@@ -662,7 +662,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                             data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
                             localizationData: localizationDataCopy,
                             patientId: savedState.patientId,
-                            fileId: savedState.fileId
+                            fileId: existingTab?.state?.fileId || null
                         }
                     });
                     window.dispatchEvent(event);
