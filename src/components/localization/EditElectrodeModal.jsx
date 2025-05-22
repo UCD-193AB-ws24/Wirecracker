@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import Popup from 'reactjs-popup';
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
-import config from "../../../config.json" with { type: 'json' };
 import ErrorMessage from '../ErrorMessage';
 import { useWarning } from '../../context/WarningContext';
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 const EditElectrodeModal = ({ 
     trigger,

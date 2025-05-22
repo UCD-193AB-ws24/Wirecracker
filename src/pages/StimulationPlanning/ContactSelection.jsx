@@ -6,7 +6,6 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import { saveStimulationCSVFile } from "../../utils/CSVParser";
 import mapConsecutive from "../../utils/MapConsecutive";
-import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
 import { useWarning } from '../../context/WarningContext';
 
@@ -540,7 +539,7 @@ const exportState = async (state, electrodes, type, download = true) => {
             try {
                 // Save stimulation data to database
                 console.log('Saving stimulation data with patient_id:', state.patientId);
-                const response = await fetch(`${config.backendURL}/api/save-stimulation`, {
+                const response = await fetch(`${__APP_CONFIG__.backendURL}/api/save-stimulation`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

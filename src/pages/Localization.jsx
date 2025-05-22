@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Container, Button, darkColors, lightColors } from 'react-floating-action-button';
 import 'reactjs-popup/dist/index.css';
 import { saveCSVFile, Identifiers } from '../utils/CSVParser.js';
-import config from "../../config.json" with { type: 'json' };
 import ViewLogsButton from '../components/localization/ViewLogsButton';
 import LocalizationContact from '../components/localization/localizationContact';
 import EditElectrodeModal from '../components/localization/EditElectrodeModal';
@@ -10,7 +9,7 @@ import Electrodes from '../components/localization/Electrodes';
 import { useError } from '../context/ErrorContext';
 import { useWarning } from '../context/WarningContext.jsx';
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 const Localization = ({ initialData = {}, onStateChange, savedState = {}, isSharedFile = false, readOnly = false, changesData = null, highlightedChange = null, onHighlightChange = () => {}, expandedElectrode: initialExpandedElectrode = null }) => {
     const { showError } = useError();

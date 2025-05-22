@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { useError } from '../../context/ErrorContext';
-import config from "../../../config.json" with { type: 'json' };
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
     const { showError } = useError();

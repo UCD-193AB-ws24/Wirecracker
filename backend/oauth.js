@@ -6,7 +6,8 @@ import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcryptjs";
-import config from "../config.json" with { type: 'json' };
+import devConfig from '../config.dev.json' with { type: 'json' };
+import prodConfig from '../config.prod.json' with { type: 'json' };
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ const router = express.Router();
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
+const config = process.env.NODE_ENV === 'production' ? prodConfig : devConfig;
 const frontendURL = config.frontendURL;
 
 // Session Middleware

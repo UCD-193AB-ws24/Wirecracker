@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import * as d3 from "d3";
-import config from "../../config.json" with { type: "json" };
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const ItemTypes = Object.freeze({
