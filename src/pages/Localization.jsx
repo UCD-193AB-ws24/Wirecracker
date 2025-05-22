@@ -25,6 +25,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
     const [showElectrodeModal, setShowElectrodeModal] = useState(false);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
     const [hasDesignation, setHasDesignation] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [shareEmail, setShareEmail] = useState('');
+    const [isSharing, setIsSharing] = useState(false);
 
     useEffect(() => {
         if (initialData.data && !savedState.electrodes) {
@@ -735,6 +738,63 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         }
     };
 
+    const handleShareWithEpileptologist = async () => {
+        try {
+            setIsSharing(true);
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            // First save the localization to ensure we have the latest data
+            await handleSaveLocalization(false);
+
+            // Get the patient_id from the files table
+            const response = await fetch(`${backendURL}/api/files/patient/${fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch patient ID');
+            }
+
+            const { patientId } = await response.json();
+
+            // Send share request
+            const shareResponse = await fetch(`${backendURL}/api/share`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    patientId,
+                    email: shareEmail,
+                    originalFileId: fileId,
+                    newFileName: "Designation",
+                    fileType: "designation"
+                })
+            });
+
+            if (!shareResponse.ok) {
+                throw new Error('Failed to share file');
+            }
+
+            setShowShareModal(false);
+            setShareEmail('');
+            showError('File shared successfully!');
+            // After successful share, proceed to create the designation tab
+            await createDesignationTab();
+        } catch (error) {
+            console.error('Error sharing file:', error);
+            showError(`Failed to share file: ${error.message}`);
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
     // Add an effect to update expandedElectrode when initialExpandedElectrode changes
     useEffect(() => {
         if (initialExpandedElectrode) {
@@ -843,9 +903,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             <div className="fixed bottom-6 right-6 z-50 flex gap-4">
                 <button
                     className="py-2 px-4 bg-green-500 text-white font-bold rounded-md hover:bg-green-600 transition-colors duration-200 shadow-lg"
-                    onClick={createDesignationTab}
+                    onClick={hasDesignation ? createDesignationTab : () => setShowShareModal(true)}
                 >
-                    {hasDesignation ? 'View Epileptic Network' : 'Open in Designation'}
+                    {hasDesignation ? 'View Epileptic Network' : 'Send Data to Epileptologist'}
                 </button>
 
                 {isSharedFile && (
@@ -892,6 +952,44 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                                 className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                             >
                                 {hasChanges ? 'Submit' : 'Approve'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showShareModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+                        <h2 className="text-xl font-bold mb-4">Share with Epileptologist</h2>
+                        <p className="mb-4 text-gray-600">
+                            Enter the email address of the epileptologist you want to share this data with.
+                        </p>
+                        <input
+                            type="email"
+                            value={shareEmail}
+                            onChange={(e) => setShareEmail(e.target.value)}
+                            placeholder="Enter email address"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500 mb-4"
+                        />
+                        <div className="flex justify-end gap-4">
+                            <button
+                                onClick={() => {
+                                    setShowShareModal(false);
+                                    setShareEmail('');
+                                }}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleShareWithEpileptologist}
+                                disabled={isSharing || !shareEmail}
+                                className={`px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 ${
+                                    (isSharing || !shareEmail) ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
+                            >
+                                {isSharing ? 'Sharing...' : 'Share'}
                             </button>
                         </div>
                     </div>

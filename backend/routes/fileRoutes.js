@@ -417,4 +417,191 @@ router.get("/files/dates-metadata", async (req, res) => {
     }
 });
 
+// Share file with another user
+router.post("/share", async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: "No authentication token provided" });
+    }
+
+    const { patientId, email, originalFileId, newFileName, fileType } = req.body;
+
+    console.log('Share request received with data:', {
+        patientId,
+        email,
+        originalFileId,
+        newFileName,
+        fileType
+    });
+
+    if (!newFileName) {
+        console.error('newFileName is missing from request');
+        return res.status(400).json({ error: "newFileName is required" });
+    }
+
+    try {
+        // Get the user ID of the epileptologist from their email
+        const { data: sharedUser, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (userError || !sharedUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Create a new file
+        const newFileId = Math.floor(Date.now() % 1000000000);
+        const fileData = {
+            file_id: newFileId,
+            owner_user_id: sharedUser.id,
+            filename: newFileName,
+            creation_date: new Date().toISOString(),
+            modified_date: new Date().toISOString(),
+            patient_id: patientId
+        };
+
+        console.log('Creating new file with data:', fileData);
+
+        const { error: newFileError } = await supabase
+            .from('files')
+            .insert(fileData);
+
+        if (newFileError) {
+            console.error('Error creating new file:', newFileError);
+            throw newFileError;
+        }
+
+        // Create file assignment for the epileptologist
+        const assignmentData = {
+            file_id: newFileId,
+            user_id: sharedUser.id,
+            patient_id: patientId,
+            role: 'owner',
+            has_seen: false,
+            is_completed: false
+        };
+
+        console.log('Creating file assignment with data:', assignmentData);
+
+        const { error: assignmentError } = await supabase
+            .from('file_assignments')
+            .insert(assignmentData);
+
+        if (assignmentError) {
+            console.error('Error creating file assignment:', assignmentError);
+            throw assignmentError;
+        }
+
+        // Try to fetch a designation record for the original file
+        const { data: originalDesignation, error: designationError } = await supabase
+            .from('designation')
+            .select('*')
+            .eq('file_id', originalFileId)
+            .single();
+
+        if (!designationError && originalDesignation) {
+            // If a designation record exists, copy it
+            const { error: newDesignationError } = await supabase
+                .from('designation')
+                .insert({
+                    file_id: newFileId,
+                    designation_data: originalDesignation.designation_data,
+                    localization_data: originalDesignation.localization_data
+                });
+            if (newDesignationError) {
+                console.error('Error creating new designation record:', newDesignationError);
+                throw newDesignationError;
+            }
+        } else {
+            // Otherwise, treat as localization and build the new designation
+            const { data: localizationData, error: localizationError } = await supabase
+                .from('localization')
+                .select(`
+                    id, contact, tissue_type,
+                    electrode:electrode_id(id, label, description, type),
+                    region:region_id(id, name)
+                `)
+                .eq('file_id', originalFileId);
+
+            if (localizationError) {
+                console.error('Error fetching localization data:', localizationError);
+                throw localizationError;
+            }
+
+            if (!localizationData || localizationData.length === 0) {
+                throw new Error('No localization data found for the original file');
+            }
+
+            // Transform the normalized data into the array-of-objects format for designation_data
+            const electrodeMap = {};
+            localizationData.forEach(record => {
+                const label = record.electrode.label;
+                const index = parseInt(record.contact);
+                if (!electrodeMap[label]) {
+                    electrodeMap[label] = {
+                        label: label,
+                        contacts: []
+                    };
+                }
+                electrodeMap[label].contacts.push({
+                    associatedLocation: record.tissue_type,
+                    mark: 0,
+                    surgeonMark: false,
+                    index: index,
+                    __electrodeDescription__: record.electrode.description,
+                    __contactDescription__: record.region.name
+                });
+            });
+            // Sort contacts by index for each electrode
+            Object.values(electrodeMap).forEach(e => {
+                e.contacts.sort((a, b) => a.index - b.index);
+            });
+            const designationDataArray = Object.values(electrodeMap);
+
+            // Also build the localization_data in the nested object format for reference
+            const transformedData = {};
+            localizationData.forEach(record => {
+                const label = record.electrode.label;
+                const contact = record.contact;
+                const tissueType = record.tissue_type;
+                const regionName = record.region.name;
+                if (!transformedData[label]) {
+                    transformedData[label] = {
+                        description: record.electrode.description,
+                        type: record.electrode.type || 'DIXI'
+                    };
+                }
+                transformedData[label][contact] = {
+                    contactDescription: regionName,
+                    associatedLocation: tissueType
+                };
+            });
+
+            // Create new designation record with the correct format
+            const { error: newDesignationError } = await supabase
+                .from('designation')
+                .insert({
+                    file_id: newFileId,
+                    designation_data: designationDataArray,
+                    localization_data: transformedData
+                });
+            if (newDesignationError) {
+                console.error('Error creating new designation record:', newDesignationError);
+                throw newDesignationError;
+            }
+        }
+
+        res.json({ 
+            success: true, 
+            newFileId,
+            message: "File shared successfully" 
+        });
+    } catch (error) {
+        console.error('Error sharing file:', error);
+        res.status(500).json({ error: "Error sharing file" });
+    }
+});
+
 export default router;
