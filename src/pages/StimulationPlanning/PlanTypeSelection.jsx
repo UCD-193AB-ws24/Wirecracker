@@ -209,7 +209,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                         Functional Mapping
                     </button>
                     {initialData.state?.fromDesignation && (
-                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded text-sm whitespace-nowrap">
+                        <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded text-sm whitespace-nowrap">
                             Functional Mapping can only be opened from Test Selection page
                         </div>
                     )}
