@@ -354,7 +354,8 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         fileName: state.fileName,
                         creationDate: state.creationDate,
                         modifiedDate: new Date().toISOString(),
-                        designationModifiedDate: state.modifiedDate
+                        designationModifiedDate: state.modifiedDate,
+                        fromDesignation: true
                     }
                 }
             });
@@ -367,6 +368,114 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
             } else {
                 console.error('Error opening stimulation:', error);
                 showError('Failed to open stimulation. Please try again.');
+            }
+        }
+    };
+
+    /**
+     * Handles opening the test selection page
+     * @async
+     */
+    const handleOpenTestSelection = async () => {
+        try {
+            await handleSave();
+
+            // First check if any test selection tabs for this patient already exist
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            const existingTab = tabs.find(tab => 
+                tab.content === 'functional-test' && 
+                tab.state?.patientId === state.patientId
+            );
+
+            if (existingTab) {
+                // Compare modified dates
+                const existingModifiedDate = new Date(existingTab.state.modifiedDate);
+                const designationModifiedDate = new Date(state.modifiedDate);
+
+                if (existingModifiedDate > designationModifiedDate) {
+                    // Switch to existing tab as it's newer
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
+                    return;
+                } else {
+                    // Close existing tab as it's older
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(closeEvent);
+                }
+            } else {
+                // Check database for existing file
+                try {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        throw new Error('User not authenticated');
+                    }
+
+                    const response = await fetch(`${backendURL}/api/by-patient-test-selection/${state.patientId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        }
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success && result.exists) {
+                        const dbModifiedDate = new Date(result.data.modified_date);
+                        const designationModifiedDate = new Date(state.modifiedDate);
+
+                        if (dbModifiedDate > designationModifiedDate) {
+                            // Create tab from database file
+                            const event = new CustomEvent('addFunctionalTestTab', {
+                                detail: {
+                                    data: result.data.test_selection_data,
+                                    state: {
+                                        ...result.data,
+                                        fileName: 'Test Selection',
+                                        fileId: result.fileId,
+                                        patientId: state.patientId
+                                    }
+                                }
+                            });
+                            window.dispatchEvent(event);
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking database for existing file:', error);
+                    // Continue with creating new tab if database check fails
+                }
+            }
+
+            // Create a new tab with the test selection data
+            const event = new CustomEvent('addFunctionalTestTab', {
+                detail: { 
+                    data: {
+                        data: electrodes,
+                        contacts: electrodes
+                    },
+                    state: {
+                        patientId: state.patientId,
+                        fileId: state.fileId,
+                        fileName: 'Test Selection',
+                        creationDate: state.creationDate,
+                        modifiedDate: new Date().toISOString(),
+                        designationModifiedDate: state.modifiedDate
+                    }
+                }
+            });
+            window.dispatchEvent(event);
+
+        } catch (error) {
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+            } else {
+                console.error('Error opening test selection:', error);
+                showError('Failed to open test selection. Please try again.');
             }
         }
     };
@@ -436,6 +545,12 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                     lg:py-2 lg:px-4 lg:text-base"
                         onClick={handleOpenStimulation}>
                         Open in Stimulation Page
+                    </button>
+                    <button
+                        className="py-1 px-2 bg-indigo-500 border border-indigo-600 text-white font-semibold rounded hover:bg-indigo-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                        onClick={handleOpenTestSelection}>
+                        Open in Test Selection
                     </button>
                 </div>
             </div>
