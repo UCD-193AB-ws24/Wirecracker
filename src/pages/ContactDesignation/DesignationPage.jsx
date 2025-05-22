@@ -68,23 +68,41 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         setState(newState);
     }, [electrodes, localizationData]);
 
+    // Update electrodes if there are any update from resection tab stored in the channel
+    useEffect(() => {
+        const channel = JSON.parse(localStorage.getItem("Designation_Resection_Sync_Channel"));
+        if (channel[state.patientId]) {
+            setElectrodes(channel[state.patientId]);
+        }
+
+        delete channel[state.patientId];
+        localStorage.setItem("Designation_Resection_Sync_Channel", JSON.stringify(channel));
+    }, []);
+
     /**
      * Handles contact click event
      * @param {string} contactId - ID of the clicked contact
      * @param {Function} change - Function to modify contact state
      */
     const onClick = (contactId, change) => {
-        setElectrodes(prevElectrodes => {
-            return prevElectrodes.map(electrode => ({
-                ...electrode,
-                contacts: electrode.contacts.map(contact => {
-                    if (contact.id === contactId) {
-                        return change(contact);
-                    }
-                    return contact;
-                }),
-            }));
-        });
+        let updatedElectrode = electrodes.map(electrode => ({
+            ...electrode,
+            contacts: electrode.contacts.map(contact => {
+                if (contact.id === contactId) {
+                    return change(contact);
+                }
+                return contact;
+            }),
+        }));
+
+        setElectrodes(updatedElectrode);
+
+        // Set the updated electrode in designated "channel" in localstorage
+        const prevChannel = JSON.parse(localStorage.getItem("Designation_Resection_Sync_Channel"));
+        localStorage.setItem("Designation_Resection_Sync_Channel", JSON.stringify({
+            ...prevChannel,
+            [state.patientId]: updatedElectrode
+        }))
     };
 
     // Handle filtering whenever filter character changes
