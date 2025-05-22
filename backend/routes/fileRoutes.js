@@ -124,6 +124,17 @@ router.get("/files/check-type", async (req, res) => {
       if (localizationError) {
         console.error('Error checking localization data:', localizationError);
       }
+
+      // Check for resection data
+      const { data: resectionData, error: resectionError } = await supabase
+        .from('designation')
+        .select('*')
+        .eq('file_id', parsedFileId)
+        .single();
+
+      if (resectionError && resectionError.code !== 'PGRST116') {
+        console.error('Error checking resection data:', resectionError);
+      }        
   
       // Check for designation data
       const { data: designationData, error: designationError } = await supabase
@@ -160,9 +171,14 @@ router.get("/files/check-type", async (req, res) => {
   
       res.json({
         hasLocalization: localizationData && localizationData.length > 0,
+        hasResection: !!resectionData,
         hasDesignation: !!designationData,
         hasTestSelection: !!testSelectionData,
         hasStimulation: !!stimulationData,
+        resectionData: resectionData ? {
+          resection_data: resectionData.designation_data,
+          localization_data: resectionData.localization_data
+        } : null,
         designationData: designationData ? {
           designation_data: designationData.designation_data,
           localization_data: designationData.localization_data
@@ -306,9 +322,11 @@ router.get("/patients/recent", async (req, res) => {
                     patient_id: curr.patient_id,
                     latest_file: curr,
                     has_localization: false,
+                    has_resection: false,
                     has_designation: false,
                     has_test_selection: false,
                     localization_file_id: null,
+                    resection_file_id: null,
                     designation_file_id: null,
                     test_selection_file_id: null,
                     localization_creation_date: null,
@@ -329,6 +347,9 @@ router.get("/patients/recent", async (req, res) => {
             } else if (filename.includes('designation')) {
                 acc[curr.patient_id].has_designation = true;
                 acc[curr.patient_id].designation_file_id = curr.file_id;
+            } else if (filename.includes('resection')) {
+                acc[curr.patient_id].has_resection = true;
+                acc[curr.patient_id].resection_file_id = curr.file_id;
             } else if (filename.includes('functional mapping')) {
                 acc[curr.patient_id].stimulation_types.mapping = curr.file_id;
             } else if (filename.includes('seizure recreation')) {

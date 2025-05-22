@@ -12,6 +12,7 @@ router.post('/save-designation', async (req, res) => {
     console.log('Received designation save request', req.body);
     
     const { designationData, localizationData, fileId, fileName, creationDate, modifiedDate, patientId } = req.body;
+    const { type } = req.query;
     
     if (!designationData) {
       return res.status(400).json({ success: false, error: 'Missing designation data' });
@@ -29,12 +30,20 @@ router.post('/save-designation', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing patient ID' });
     }
 
+    let filename;
+    if (type === 'resection') {
+      filename = '%resection%';
+    }
+    else {  
+      filename = '%designation%';
+    }
+
     // Check for existing designation with this patient_id
     const { data: existingFile, error: fileError } = await supabase
       .from('files')
       .select('file_id')
       .eq('patient_id', patientId)
-      .ilike('filename', '%designation%')
+      .ilike('filename', filename)
       .single();
       
     if (fileError && fileError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
@@ -199,9 +208,17 @@ router.post('/save-designation', async (req, res) => {
 router.get('/by-patient/:patientId', async (req, res) => {
   try {
     const { patientId } = req.params;
-    
+    const { type } = req.query;
     if (!patientId) {
       return res.status(400).json({ success: false, error: 'Missing patient ID' });
+    }
+
+    let filename;
+    if (type === 'resection') {
+      filename = '%resection%';
+    }
+    else {
+      filename = '%designation%';
     }
 
     // Get the file ID for this patient's designation
@@ -209,7 +226,7 @@ router.get('/by-patient/:patientId', async (req, res) => {
       .from('files')
       .select('file_id')
       .eq('patient_id', patientId)
-      .ilike('filename', '%designation%')
+      .ilike('filename', filename)
       .single();
 
     if (fileError && fileError.code !== 'PGRST116') { // PGRST116 is "no rows returned"

@@ -585,7 +585,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 }
             } else {
                 // Only make database calls when creating a new tab
-                const resectionResponse = await fetch(`${backendURL}/api/by-patient/${patientId}`, {
+                const resectionResponse = await fetch(`${backendURL}/api/by-patient/${patientId}?type=resection`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

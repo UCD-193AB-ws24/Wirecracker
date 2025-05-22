@@ -151,7 +151,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 try {
                     // First save/update file metadata
                     // Reusing the link for designation because these two page shares the same data structure
-                    const response = await fetch(`${backendURL}/api/save-designation`, {
+                    const response = await fetch(`${backendURL}/api/save-designation?type=resection`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -382,7 +382,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     return;
                 }
 
-                const response = await fetch(`${backendURL}/api/by-patient/${state.patientId}`, {
+                const response = await fetch(`${backendURL}/api/by-patient/${state.patientId}?type=resection`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

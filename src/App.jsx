@@ -888,7 +888,7 @@ const HomePage = () => {
                 setActiveTab(newTab.id);
             }
         } 
-        else if (type === 'designation' || type === 'resection') {
+        else if (type === 'designation') {
             console.log('Opening saved file:', fileData);
             
             const newTab = {
@@ -908,6 +908,30 @@ const HomePage = () => {
             };
 
             console.log('Created new tab with state:', newTab.state);
+
+            setTabs(prevTabs => [...prevTabs, newTab]);
+            setActiveTab(newTab.id);
+        }
+        else if (type === 'resection') {
+            console.log('Opening saved resection file:', fileData);
+            
+            const newTab = {
+                id: Date.now().toString(),
+                title: fileData.name,
+                content: 'resection',
+                data: fileData.data,
+                state: {
+                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
+                    patientId: fileData.patientId,
+                    fileName: fileData.name,
+                    creationDate: fileData.creationDate || new Date().toISOString(),
+                    modifiedDate: fileData.modifiedDate || new Date().toISOString(),
+                    electrodes: fileData.data,
+                    localizationData: fileData.originalData  // This should include the electrode type
+                }
+            };
+
+            console.log('Created new resection tab with state:', newTab.state);
 
             setTabs(prevTabs => [...prevTabs, newTab]);
             setActiveTab(newTab.id);
@@ -1373,6 +1397,9 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                                         {patient.has_designation && (
                                                             <span className="mr-2 cursor-help" title="Designation File">📝</span>
                                                         )}
+                                                        {patient.has_resection && (
+                                                            <span className="mr-2 cursor-help" title="Resection File">🔪</span>
+                                                        )}
                                                         {(patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep) && (
                                                             <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
                                                         )}
@@ -1493,6 +1520,10 @@ const Legend = ({ isOpen, onClose }) => {
                         <span>Designation File</span>
                     </div>
                     <div className="flex items-center">
+                        <span className="text-xl mr-3">🔪</span>
+                        <span>Resection File</span>
+                    </div>
+                    <div className="flex items-center">
                         <span className="text-xl mr-3">⚡</span>
                         <span>Stimulation File</span>
                     </div>
@@ -1529,6 +1560,14 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             fileId: patient.designation_file_id,
             message: 'No designation file created yet',
             icon: '📝'
+        },
+        {
+            name: 'Resection',
+            type: 'resection',
+            exists: patient.has_resection,
+            fileId: patient.resection_file_id,
+            message: 'No resection file created yet',
+            icon: '🔪'
         },
         {
             name: 'Stimulation',
@@ -1619,6 +1658,24 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                         const metadata = await metadataResponse.json();
 
                         switch (button.type) {
+                            case 'resection': {
+                                if (fileTypeData.hasResection) {
+                                    console.log('resection file type data:', fileTypeData.resectionData);
+                                }
+                                else {
+                                    throw new Error('No resection data found');
+                                }
+                                return {
+                                    fileId: button.fileId,
+                                    name: button.name,
+                                    creationDate: metadata.creation_date || new Date().toISOString(),
+                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
+                                    patientId: patient.patient_id,
+                                    type: 'resection',
+                                    data: fileTypeData.resectionData.resection_data,
+                                    originalData: fileTypeData.resectionData.localization_data
+                                };
+                            }
                             case 'designation': {
                                 if (!fileTypeData.hasDesignation) {
                                     throw new Error('No designation data found');
@@ -1634,6 +1691,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                     originalData: fileTypeData.designationData.localization_data
                                 };
                             }
+                            
                             case 'localization': {
                                 if (fileTypeData.hasLocalization) {
                                     const localizationResponse = await fetch(`${backendURL}/api/files/localization?fileId=${button.fileId}`, {
@@ -1970,6 +2028,9 @@ const RecentFiles = ({ onOpenFile, className }) => {
                                     )}
                                     {patient.has_designation && (
                                         <span className="mr-2 cursor-help" title="Designation File">📝</span>
+                                    )}
+                                    {patient.has_resection && (
+                                        <span className="mr-2 cursor-help" title="Resection File">🔪</span>
                                     )}
                                     {(patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep) && (
                                         <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
