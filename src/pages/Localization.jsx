@@ -870,15 +870,14 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             />
 
             {!readOnly && (
-            <Container>
-                    <Button
-                        tooltip="Add Electrode"
-                        styles={{ backgroundColor: darkColors.lightBlue, color: lightColors.white }}
-                        onClick={() => setShowElectrodeModal(true)}
-                    >
-                        +
-                    </Button>
-                </Container>
+                <button
+                    className="fixed bottom-20 right-7 z-50 rounded-full size-10
+                               border border-sky-800 bg-sky-600 text-white font-semibold text-center
+                               transition-colors duration-200 cursor-pointer hover:bg-sky-800"
+                    onClick={() => setShowElectrodeModal(true)}
+                >
+                    +
+                </button>
             )}
 
             <EditElectrodeModal
