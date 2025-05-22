@@ -4,12 +4,18 @@ import { supabase } from './utils.js';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
+import devConfig from '../../config.dev.json' with { type: 'json' };
+import prodConfig from '../../config.prod.json' with { type: 'json' };
+
 const router = express.Router();
 router.use(cors());
 router.use(express.json());
 
 // Authentication Endpoints
 router.post("/auth/login", async (req, res) => {
+    const config = process.env.NODE_ENV === 'development' ? devConfig : prodConfig;
+    console.log(frontendURL = config.frontendURL);
+
     const { email, password, rememberMe } = req.body;
   
     try {
