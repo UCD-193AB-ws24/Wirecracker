@@ -1218,7 +1218,6 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
             }
 
             const data = await response.json();
-            console.log('Patients data:', data);
             setPatients(data.patients);
             setTotalPages(data.totalPages);
             setCurrentPage(data.currentPage);
@@ -1554,20 +1553,20 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             icon: '📍'
         },
         {
-            name: 'Designation',
-            type: 'designation',
-            exists: patient.has_designation,
-            fileId: patient.designation_file_id,
-            message: 'No designation file created yet',
-            icon: '📝'
-        },
-        {
             name: 'Resection',
             type: 'resection',
             exists: patient.has_resection,
             fileId: patient.resection_file_id,
             message: 'No resection file created yet',
             icon: '🔪'
+        },
+        {
+            name: 'Designation',
+            type: 'designation',
+            exists: patient.has_designation,
+            fileId: patient.designation_file_id,
+            message: 'No designation file created yet',
+            icon: '📝'
         },
         {
             name: 'Stimulation',
@@ -1835,7 +1834,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white p-8 rounded-lg shadow-xl w-4/5 max-w-3xl">
+            <div className="bg-white p-8 rounded-lg shadow-xl w-5/6 max-w-5xl max-h-[80vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-8">
                     <div className="flex items-center">
                         <h2 className="text-2xl font-bold">{formatPatientDisplay(patient)}</h2>
@@ -1855,72 +1854,105 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                     </button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-6">
-                    {buttons.map((button) => (
-                        <div key={button.type} className="flex flex-col items-center">
-                            {button.type === 'stimulation' && showStimulationMenu ? (
-                                <div className="w-full">
-                                    <button
-                                        onClick={() => handleButtonClick(button, 'Functional Mapping')}
-                                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200 mb-2 ${
-                                            patient.stimulation_types.mapping 
-                                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
-                                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                        }`}
-                                        disabled={!patient.stimulation_types.mapping}
-                                    >
-                                        <span className="mr-2">⚡</span>
-                                        Functional Mapping
-                                    </button>
-                                    <button
-                                        onClick={() => handleButtonClick(button, 'Seizure Recreation')}
-                                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200 mb-2 ${
-                                            patient.stimulation_types.recreation 
-                                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
-                                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                        }`}
-                                        disabled={!patient.stimulation_types.recreation}
-                                    >
-                                        <span className="mr-2">⚡</span>
-                                        Seizure Recreation
-                                    </button>
-                                    <button
-                                        onClick={() => handleButtonClick(button, 'CCEPs')}
-                                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200 ${
-                                            patient.stimulation_types.ccep 
-                                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
-                                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                        }`}
-                                        disabled={!patient.stimulation_types.ccep}
-                                    >
-                                        <span className="mr-2">⚡</span>
-                                        CCEPs
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => {
-                                        if (button.type === 'stimulation') {
-                                            setShowStimulationMenu(!showStimulationMenu);
-                                        } else {
-                                            handleButtonClick(button);
-                                        }
-                                    }}
-                                    className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
-                                        ${button.exists 
-                                            ? 'bg-sky-700 text-white hover:bg-sky-600' 
-                                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
-                                    disabled={!button.exists || isLoading}
-                                >
-                                    <span className="mr-2">{button.icon}</span>
-                                    {button.name}
-                                </button>
-                            )}
-                            {!button.exists && !showStimulationMenu && (
-                                <p className="mt-2 text-sm text-gray-500">{button.message}</p>
-                            )}
+                <div className="grid grid-cols-4 gap-4 mb-8">
+                    <button
+                        onClick={() => handleButtonClick(buttons[0])}
+                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                            ${buttons[0].exists 
+                                ? 'bg-green-600 text-white hover:bg-green-700' 
+                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                        disabled={!buttons[0].exists || isLoading}
+                    >
+                        <span className="mr-2">{buttons[0].icon}</span>
+                        {buttons[0].name}
+                    </button>
+                    <button
+                        onClick={() => handleButtonClick(buttons[1])}
+                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                            ${buttons[1].exists 
+                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
+                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                        disabled={!buttons[1].exists || isLoading}
+                    >
+                        <span className="mr-2">{buttons[1].icon}</span>
+                        {buttons[1].name}
+                    </button>
+                    <button
+                        onClick={() => handleButtonClick(buttons[2])}
+                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                            ${buttons[2].exists 
+                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
+                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                        disabled={!buttons[2].exists || isLoading}
+                    >
+                        <span className="mr-2">{buttons[2].icon}</span>
+                        {buttons[2].name}
+                    </button>
+                    <button
+                        onClick={() => handleButtonClick(buttons[4])}
+                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                            ${buttons[4].exists 
+                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
+                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                        disabled={!buttons[4].exists || isLoading}
+                    >
+                        <span className="mr-2">{buttons[4].icon}</span>
+                        {buttons[4].name}
+                    </button>
+                </div>
+                <div className="flex justify-center">
+                    {showStimulationMenu ? (
+                        <div className="flex gap-4 w-3/4">
+                            <button
+                                onClick={() => handleButtonClick(buttons[3], 'Functional Mapping')}
+                                className={`flex-1 py-3 px-4 rounded-lg text-base font-semibold transition-colors duration-200 ${
+                                    patient.stimulation_types.mapping 
+                                        ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                }`}
+                                disabled={!patient.stimulation_types.mapping}
+                            >
+                                <span className="mr-2">⚡</span>
+                                Functional Mapping
+                            </button>
+                            <button
+                                onClick={() => handleButtonClick(buttons[3], 'Seizure Recreation')}
+                                className={`flex-1 py-3 px-4 rounded-lg text-base font-semibold transition-colors duration-200 ${
+                                    patient.stimulation_types.recreation 
+                                        ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                }`}
+                                disabled={!patient.stimulation_types.recreation}
+                            >
+                                <span className="mr-2">⚡</span>
+                                Seizure Recreation
+                            </button>
+                            <button
+                                onClick={() => handleButtonClick(buttons[3], 'CCEPs')}
+                                className={`flex-1 py-3 px-4 rounded-lg text-base font-semibold transition-colors duration-200 ${
+                                    patient.stimulation_types.ccep 
+                                        ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                }`}
+                                disabled={!patient.stimulation_types.ccep}
+                            >
+                                <span className="mr-2">⚡</span>
+                                CCEPs
+                            </button>
                         </div>
-                    ))}
+                    ) : (
+                        <button
+                            onClick={() => setShowStimulationMenu(!showStimulationMenu)}
+                            className={`w-1/2 py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                                ${buttons[3].exists 
+                                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                            disabled={!buttons[3].exists || isLoading}
+                        >
+                            <span className="mr-2">{buttons[3].icon}</span>
+                            {buttons[3].name}
+                        </button>
+                    )}
                 </div>
                 {isLoading && (
                     <div className="mt-4 text-center text-gray-600">
