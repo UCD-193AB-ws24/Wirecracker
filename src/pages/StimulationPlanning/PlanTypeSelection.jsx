@@ -45,13 +45,13 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
 
             if (existingTab) {
                 // Compare modified dates based on source
-                const existingModifiedDate = new Date(existingTab.state.modifiedDate);
+                const existingModifiedDate = existingTab.state.modifiedDate;
                 let sourceModifiedDate;
                 
                 if (initialData.state?.fromDesignation) {
-                    sourceModifiedDate = new Date(initialData.state.designationModifiedDate);
+                    sourceModifiedDate = initialData.state.designationModifiedDate;
                 } else if (initialData.state?.fromTestSelection) {
-                    sourceModifiedDate = new Date(initialData.state.testSelectionModifiedDate);
+                    sourceModifiedDate = initialData.state.testSelectionModifiedDate;
                 }
 
                 if (existingModifiedDate > sourceModifiedDate) {
@@ -100,13 +100,13 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                     const result = await response.json();
                     
                     if (result.success && result.exists && result.data.type === type) {
-                        const dbModifiedDate = new Date(result.data.modified_date);
+                        const dbModifiedDate = result.data.modified_date;
                         let sourceModifiedDate;
                         
                         if (initialData.state?.fromDesignation) {
-                            sourceModifiedDate = new Date(initialData.state.designationModifiedDate);
+                            sourceModifiedDate = initialData.state.designationModifiedDate;
                         } else if (initialData.state?.fromTestSelection) {
-                            sourceModifiedDate = new Date(initialData.state.testSelectionModifiedDate);
+                            sourceModifiedDate = initialData.state.testSelectionModifiedDate;
                         }
 
                         if (dbModifiedDate > sourceModifiedDate) {

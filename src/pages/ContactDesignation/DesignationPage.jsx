@@ -389,8 +389,8 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
             if (existingTab) {
                 // Compare modified dates
-                const existingModifiedDate = new Date(existingTab.state.modifiedDate);
-                const designationModifiedDate = new Date(state.modifiedDate);
+                const existingModifiedDate = existingTab.state.modifiedDate;
+                const designationModifiedDate = state.modifiedDate;
 
                 if (existingModifiedDate > designationModifiedDate) {
                     // Switch to existing tab as it's newer
@@ -425,8 +425,8 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     const result = await response.json();
                     
                     if (result.success && result.exists) {
-                        const dbModifiedDate = new Date(result.data.modified_date);
-                        const designationModifiedDate = new Date(state.modifiedDate);
+                        const dbModifiedDate = result.data.modified_date;
+                        const designationModifiedDate = state.modifiedDate;
 
                         if (dbModifiedDate > designationModifiedDate) {
                             // Create tab from database file
