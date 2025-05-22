@@ -178,11 +178,14 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         return;
                     }
 
-                    // Update the state with new modified date
-                    setState(prevState => ({
-                        ...prevState,
-                        modifiedDate: new Date().toISOString()
-                    }));
+                    // Only update the state with new modified date if the save was successful
+                    // and we got a new modified date back
+                    if (result.modifiedDate) {
+                        setState(prevState => ({
+                            ...prevState,
+                            modifiedDate: result.modifiedDate
+                        }));
+                    }
 
                     // Show success feedback
                     setShowSaveSuccess(true);
@@ -190,8 +193,12 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
                     console.log('Designation saved successfully');
                 } catch (error) {
-                    console.error('Error saving designation:', error);
-                    showError(`Error saving designation: ${error.message}`);
+                    if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                        showWarning("No internet connection. The progress is not saved. Make sure to download your progress.");
+                    } else {
+                        console.error('Error saving designation:', error);
+                        showError(`Error saving designation: ${error.message}`);
+                    }
                     return;
                 }
             }
@@ -209,7 +216,11 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 }
             }
         } catch (error) {
-            showError('Error saving data on database. Changes are not saved');
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved. Make sure to download your progress.");
+            } else {
+                showError('Error saving data on database. Changes are not saved');
+            }
         }
     };
 
@@ -257,20 +268,27 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         return;
                     }
 
-                    // Update the state with new modified date
-                    setState(prevState => ({
-                        ...prevState,
-                        modifiedDate: new Date().toISOString()
-                    }));
+                    // Only update the state with new modified date if the save was successful
+                    // and we got a new modified date back
+                    if (result.modifiedDate) {
+                        setState(prevState => ({
+                            ...prevState,
+                            modifiedDate: result.modifiedDate
+                        }));
+                    }
 
                     // Show success feedback if this was a save operation
-                        setShowSaveSuccess(true);
+                    setShowSaveSuccess(true);
 
                     console.log('Designation saved successfully');
                 } catch (error) {
-                    console.error('Error saving designation:', error);
-                    showError(`Error saving designation: ${error.message}`);
-                    return;
+                    if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                        showWarning("No internet connection. The progress is not saved on the database.");
+                    } else {
+                        console.error('Error saving designation:', error);
+                        showError(`Error saving designation: ${error.message}`);
+                        return;
+                    }
                 }
             }
 
@@ -287,8 +305,13 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 }
             }
         } catch (error) {
-            console.error('Error exporting contacts:', error);
-            showError(`Error exporting contacts: ${error.message}`);
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database.");
+            } else {
+                console.error('Error saving designation:', error);
+                showError(`Error saving designation: ${error.message}`);
+                return;
+            }
         }
     };
 
@@ -395,8 +418,13 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 window.dispatchEvent(event);
             }
         } catch (error) {
-            console.error('Error opening resection:', error);
-            showError('Failed to open resection. Please try again.');
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database.");
+            } else {
+                console.error('Error saving designation:', error);
+                showError(`Error saving designation: ${error.message}`);
+                return;
+            }
         }
     };
 
