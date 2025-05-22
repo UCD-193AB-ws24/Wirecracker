@@ -356,7 +356,7 @@ router.get("/patients/recent", async (req, res) => {
                 acc[curr.patient_id].stimulation_types.recreation = curr.file_id;
             } else if (filename.includes('cceps')) {
                 acc[curr.patient_id].stimulation_types.ccep = curr.file_id;
-            } else if (filename.includes('test') || filename.includes('functional')) {
+            } else if (filename.includes('neuropsychology')) {
                 acc[curr.patient_id].has_test_selection = true;
                 acc[curr.patient_id].test_selection_file_id = curr.file_id;
             }

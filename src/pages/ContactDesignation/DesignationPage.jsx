@@ -435,7 +435,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                     data: result.data.test_selection_data,
                                     state: {
                                         ...result.data,
-                                        fileName: 'Test Selection',
+                                        fileName: 'Neuropsychology',
                                         fileId: result.fileId,
                                         patientId: state.patientId
                                     }
@@ -458,7 +458,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     state: {
                         patientId: state.patientId,
                         fileId: state.fileId,
-                        fileName: 'Test Selection',
+                        fileName: 'Neuropsychology',
                         creationDate: state.creationDate,
                         modifiedDate: new Date().toISOString()
                     }
@@ -546,7 +546,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         className="py-1 px-2 bg-indigo-500 border border-indigo-600 text-white font-semibold rounded hover:bg-indigo-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
                                     lg:py-2 lg:px-4 lg:text-base"
                         onClick={handleOpenTestSelection}>
-                        Open in Test Selection
+                        Open in Neuropsychology
                     </button>
                 </div>
             </div>

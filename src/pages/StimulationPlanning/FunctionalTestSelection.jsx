@@ -361,7 +361,7 @@ const FunctionalTestSelection = ({
     return (
         <div className="p-12 bg-gray-50 min-h-screen">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">
-                Functional Test Selection
+                Neuropsychology
             </h1>
 
             {/* Auto Assign Button */}
@@ -468,7 +468,7 @@ const FunctionalTestSelection = ({
                 ))}
             </div>
 
-            {/* Test Selection Popup */}
+            {/* Neuropsychology Popup */}
             {showPopup && selectedContact && (
                 <div className="fixed inset-0 bg-black/25 flex items-center justify-center">
                     <div className="bg-white p-6 rounded-lg shadow-lg w-[500px] max-h-[450px]">

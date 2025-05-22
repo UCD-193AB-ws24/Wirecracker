@@ -34,7 +34,7 @@ router.post('/save-test-selection', async (req, res) => {
       .from('files')
       .select('file_id')
       .eq('patient_id', patientId)
-      .ilike('filename', '%test%')
+      .ilike('filename', '%neuropsychology%')
       .single();
       
     if (fileError && fileError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
@@ -258,7 +258,7 @@ router.get('/by-patient-test/:patientId', async (req, res) => {
       .from('files')
       .select('file_id')
       .eq('patient_id', patientId)
-      .ilike('filename', '%test%')
+      .ilike('filename', '%neuropsychology%')
       .single();
 
     if (fileError && fileError.code !== 'PGRST116') { // PGRST116 is "no rows returned"

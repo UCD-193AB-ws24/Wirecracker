@@ -384,7 +384,7 @@ const FileUtils = {
             if (fileTypeData.hasTestSelection) {
                 console.log('Found test selection data:', fileTypeData.testSelectionData);
                 openSavedFile('csv-functional-test', {
-                    name: file.filename || 'Unnamed Test Selection',
+                    name: file.filename || 'Unnamed Neuropsychology',
                     fileId: file.file_id,
                     fileName: file.filename,
                     creationDate: file.creation_date,
@@ -710,7 +710,7 @@ const HomePage = () => {
                 patientId = data?.state?.patientId ? data.state.patientId : data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
                 break;
             case 'functional-test':
-                title = 'Test Selection';
+                title = 'Neuropsychology';
                 patientId = data?.state?.patientId ? data.state.patientId : data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
                 break;
             case 'database-lookup':     title = 'Lookup'; break;
@@ -937,8 +937,6 @@ const HomePage = () => {
             setActiveTab(newTab.id);
         }
         else if (type === 'csv-functional-test') {
-            console.log('Opening saved test selection file:', fileData);
-
             const newTab = {
                 id: Date.now().toString(),
                 title: fileData.name,
@@ -1403,7 +1401,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                                             <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
                                                         )}
                                                         {patient.has_test_selection && (
-                                                            <span className="cursor-help" title="Test Selection File">🧪</span>
+                                                            <span className="cursor-help" title="Neuropsychology File">🧪</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -1528,7 +1526,7 @@ const Legend = ({ isOpen, onClose }) => {
                     </div>
                     <div className="flex items-center">
                         <span className="text-xl mr-3">🧪</span>
-                        <span>Test Selection File</span>
+                        <span>Neuropsychology File</span>
                     </div>
                 </div>
             </div>
@@ -1577,11 +1575,11 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             icon: '⚡'
         },
         {
-            name: 'Test Selection',
+            name: 'Neuropsychology',
             type: 'functional-test',
             exists: patient.has_test_selection,
             fileId: patient.test_selection_file_id,
-            message: 'No test selection file created yet',
+            message: 'No neuropsychology file created yet',
             icon: '🧪'
         }
     ];
@@ -2068,7 +2066,7 @@ const RecentFiles = ({ onOpenFile, className }) => {
                                         <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
                                     )}
                                     {patient.has_test_selection && (
-                                        <span className="cursor-help" title="Test Selection File">🧪</span>
+                                        <span className="cursor-help" title="Neuropsychology File">🧪</span>
                                     )}
                                 </div>
                             </div>
