@@ -1,7 +1,6 @@
 //import { sendVerificationEmail } from './utils/emailService';
-import config from '../config.json' with { type: 'json' };
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 export async function sendVerificationEmail(email, code) {
     try {

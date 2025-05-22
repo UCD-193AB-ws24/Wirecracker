@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { saveTestCSVFile } from "../../utils/CSVParser";
-import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
 import { useWarning } from "../../context/WarningContext";
 import mapConsecutive from "../../utils/MapConsecutive";
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 const FunctionalTestSelection = ({
     initialData = {},
@@ -246,7 +245,7 @@ const FunctionalTestSelection = ({
 
                 try {
                     // Save/update test selection data
-                    const response = await fetch(`${config.backendURL}/api/save-test-selection`, {
+                    const response = await fetch(`${backendURL}/api/save-test-selection`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

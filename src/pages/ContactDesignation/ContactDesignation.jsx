@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import Resection from "./ResectionPage";
 import Designation from "./DesignationPage";
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
-import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
 import { useWarning } from '../../context/WarningContext.jsx';
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     const { showError } = useError();

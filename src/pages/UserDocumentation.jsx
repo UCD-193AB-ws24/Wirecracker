@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import config from "../../config.json" with { type: "json" };
 import "../../docs/styles/github-markdown-light.css";
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 /**
  * A component for displaying user documentation from markdown files.

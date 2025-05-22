@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
 import { useError } from '../../context/ErrorContext';
-import config from "../../../config.json" with { type: 'json' };
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 /**
  * @module Designation
