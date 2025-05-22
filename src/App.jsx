@@ -626,7 +626,7 @@ const HomePage = () => {
 
         let title = '';
         let patientId = null;
-        let fileId = data?.fileId || generateUniqueId();
+        let fileId = data?.fileId || data?.state?.fileId || generateUniqueId();
 
         console.log('Adding new tab:', {
             type,
