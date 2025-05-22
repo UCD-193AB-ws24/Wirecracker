@@ -32,7 +32,7 @@ router.post('/save-designation', async (req, res) => {
 
     let filename;
     if (type === 'resection') {
-      filename = '%resection%';
+      filename = '%neurosurgery%';
     }
     else {  
       filename = '%designation%';
@@ -215,7 +215,7 @@ router.get('/by-patient/:patientId', async (req, res) => {
 
     let filename;
     if (type === 'resection') {
-      filename = '%resection%';
+      filename = '%neurosurgery%';
     }
     else {
       filename = '%designation%';

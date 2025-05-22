@@ -658,9 +658,9 @@ const HomePage = () => {
                 });
                 break;
             case 'resection':
-                title = 'Resection';
+                title = 'Neurosurgery';
                 patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
-                console.log('Setting patientId for resection:', {
+                console.log('Setting patientId for neurosurgery:', {
                     finalPatientId: patientId,
                     sources: {
                         dataPatientId: data.patientId,
@@ -1397,7 +1397,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                                             <span className="mr-2 cursor-help" title="Designation File">📝</span>
                                                         )}
                                                         {patient.has_resection && (
-                                                            <span className="mr-2 cursor-help" title="Resection File">🔪</span>
+                                                            <span className="mr-2 cursor-help" title="Neurosurgery File">🔪</span>
                                                         )}
                                                         {(patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep) && (
                                                             <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
@@ -1520,7 +1520,7 @@ const Legend = ({ isOpen, onClose }) => {
                     </div>
                     <div className="flex items-center">
                         <span className="text-xl mr-3">🔪</span>
-                        <span>Resection File</span>
+                        <span>Neurosurgery File</span>
                     </div>
                     <div className="flex items-center">
                         <span className="text-xl mr-3">⚡</span>
@@ -1553,11 +1553,11 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             icon: '📍'
         },
         {
-            name: 'Resection',
+            name: 'Neurosurgery',
             type: 'resection',
             exists: patient.has_resection,
             fileId: patient.resection_file_id,
-            message: 'No resection file created yet',
+            message: 'No neurosurgery file created yet',
             icon: '🔪'
         },
         {
@@ -2062,7 +2062,7 @@ const RecentFiles = ({ onOpenFile, className }) => {
                                         <span className="mr-2 cursor-help" title="Designation File">📝</span>
                                     )}
                                     {patient.has_resection && (
-                                        <span className="mr-2 cursor-help" title="Resection File">🔪</span>
+                                        <span className="mr-2 cursor-help" title="Neurosurgery File">🔪</span>
                                     )}
                                     {(patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep) && (
                                         <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>

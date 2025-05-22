@@ -530,7 +530,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             // Get current tabs from localStorage
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
             
-            // Find any existing designation tab for this patient
+            // Find any existing neurosurgery tab for this patient
             const existingTab = tabs.find(tab =>
                 tab.content === 'resection' && 
                 tab.state?.patientId === patientId
@@ -538,7 +538,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
             if (existingTab) {
                 console.log("existing tab");
-                // Compare current electrodes with the designation tab's original data
+                // Compare current electrodes with the neurosurgery tab's original data
                 const hasChanges = JSON.stringify(electrodes) !== JSON.stringify(existingTab.data.originalData);
                 
                 if (hasChanges) {
@@ -592,7 +592,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 });
 
                 if (!resectionResponse.ok) {
-                    throw new Error('Failed to check for existing resection');
+                    throw new Error('Failed to check for existing neurosurgery');
                 }
 
                 const resectionResult = await resectionResponse.json();
@@ -619,14 +619,13 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 window.dispatchEvent(event);
             }
         } catch (error) {
-
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                 showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
 
                 // Get the tabs to compare
                 const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
 
-                // Find all existing designation tab(s) for this patient
+                // Find all existing neurosurgery tab(s) for this patient
                 const existingTab = tabs.find(tab =>
                     tab.content === 'resection' &&
                     tab.state?.patientId === savedState.patientId
@@ -635,12 +634,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 // Check if there's any changes'
                 const hasChanges = JSON.stringify(electrodes) !== JSON.stringify(existingTab?.data.originalData);
 
-                // There's change or there were no resection tab before for this patient'
+                // There's change or there were no neurosurgery tab before for this patient'
                 if (!existingTab || hasChanges) {
                     const updatedTabs = tabs.filter(tab => tab.state?.patientId !== savedState.patientId);
                     localStorage.setItem('tabs', JSON.stringify(updatedTabs));
 
-                    // Close out existing resection tab
+                    // Close out existing neurosurgery tab
                     if (existingTab) {
                         const closeEvent = new CustomEvent('closeTab', {
                             detail: { tabId: existingTab.id }
@@ -680,8 +679,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     window.dispatchEvent(activateEvent);
                 }
             } else {
-                console.error('Error creating resection tab:', error);
-                showError('Failed to create resection tab. Please try again.');
+                console.error('Error creating neurosurgery tab:', error);
+                showError('Failed to create neurosurgery tab. Please try again.');
             }
         }
     };
@@ -888,7 +887,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     className="py-2 px-4 bg-green-500 text-white font-bold rounded-md hover:bg-green-600 transition-colors duration-200 shadow-lg"
                     onClick={createResectionTab}
                 >
-                    Open in Resection
+                    Open in Neurosurgery
                 </button>
 
                 {isSharedFile && (

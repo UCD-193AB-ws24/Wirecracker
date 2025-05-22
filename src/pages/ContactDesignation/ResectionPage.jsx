@@ -144,7 +144,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 // Get user ID from session
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    showError('User not authenticated. Please log in to save resection.');
+                    showError('User not authenticated. Please log in to save neurosurgery.');
                     return;
                 }
 
@@ -171,7 +171,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save resection:', result.error);
-                        showError(`Failed to save resection: ${result.error}`);
+                        showError(`Failed to save neurosurgery: ${result.error}`);
                         return;
                     }
 
@@ -194,7 +194,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         showWarning("No internet connection. The progress is not saved. Make sure to download your progress.");
                     } else {
                         console.error('Error saving resection:', error);
-                        showError(`Error saving resection: ${error.message}`);
+                        showError(`Error saving neurosurgery: ${error.message}`);
                     }
                     return;
                 }
@@ -217,7 +217,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 showWarning("No internet connection. The progress is not saved. Make sure to download your progress.");
             } else {
                 console.error('Error saving resection:', error);
-                showError(`Error saving resection: ${error.message}`);
+                showError(`Error saving neurosurgery: ${error.message}`);
             }
             return;
         }
@@ -236,7 +236,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 // Get user ID from session
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    showError('User not authenticated. Please log in to save resections.');
+                    showError('User not authenticated. Please log in to save neurosurgery.');
                     return;
                 }
 
@@ -262,7 +262,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save resection:', result.error);
-                        showError(`Failed to save resection: ${result.error}`);
+                        showError(`Failed to save neurosurgery: ${result.error}`);
                         return;
                     }
 
@@ -284,7 +284,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         showWarning("No internet connection. The progress is not saved on the database.");
                     } else {
                         console.error('Error saving resection:', error);
-                        showError(`Error saving resection: ${error.message}`);
+                        showError(`Error saving neurosurgery: ${error.message}`);
                         return;
                     }
                 }
@@ -307,7 +307,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 showWarning("No internet connection. The progress is not saved on the database.");
             } else {
                 console.error('Error saving resection:', error);    
-                showError(`Error saving resection: ${error.message}`);
+                showError(`Error saving neurosurgery: ${error.message}`);
                 return;
             }
         }
@@ -327,7 +327,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 originalData: localizationData
             };
 
-            // Check for existing resection tabs
+            // Check for existing designation tabs
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
             const existingTab = tabs.find(tab =>
                 (tab.content === 'csv-designation' || tab.content === 'designation') &&
@@ -378,18 +378,18 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 // If the user never made designation page before with the patient
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    showError('User not authenticated. Please log in to open resection.');
+                    showError('User not authenticated. Please log in to open designation.');
                     return;
                 }
 
-                const response = await fetch(`${backendURL}/api/by-patient/${state.patientId}?type=resection`, {
+                const response = await fetch(`${backendURL}/api/by-patient/${state.patientId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to check for existing resection data');
+                    throw new Error('Failed to check for existing designation data');
                 }
 
                 const result = await response.json();
@@ -417,8 +417,8 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                 showWarning("No internet connection. The progress is not saved on the database.");
             } else {
-                console.error('Error saving resection:', error);
-                showError(`Error saving resection: ${error.message}`);
+                console.error('Error saving neurosurgery:', error);
+                showError(`Error saving neurosurgery: ${error.message}`);
                 return;
             }
         }
