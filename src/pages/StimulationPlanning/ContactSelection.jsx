@@ -172,19 +172,22 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
         return mapConsecutive(electrode.contacts, 2, (contacts) => { // List for every contact pair
             if (!contacts) return null;
 
-            // Filter out the non-marked contacts.
-            const shouldAppear1 = !(droppedContacts.some((c) => c.id === contacts[0].id)) && 
-                                  (contacts[0].mark || contacts[1].surgeonMark);
-            const shouldAppear2 = (contacts[1].mark || contacts[1].surgeonMark);
+            // Only show contacts that haven't been dropped to planning
+            const notDropped = !(droppedContacts.some((c) => c.id === contacts[0].id));
+
+            // In default state, only show pairs where both contacts have surgeonMark
+            const bothSurgeonMarked = contacts[0].surgeonMark && contacts[1].surgeonMark;
 
             return (
                 !(contacts[0].isPlanning) && (
                     areAllVisible ? (
-                        <Contact key={contacts[0].id}
-                            contacts={contacts}
-                            onClick={() => onClick(contacts)} />
+                        notDropped && (
+                            <Contact key={contacts[0].id}
+                                contacts={contacts}
+                                onClick={() => onClick(contacts)} />
+                        )
                     ) : (
-                        (shouldAppear1 || shouldAppear2) && (
+                        notDropped && bothSurgeonMarked && (
                             <Contact key={contacts[0].id}
                                 contacts={contacts}
                                 onClick={() => onClick(contacts)} />
@@ -237,7 +240,7 @@ const Contact = ({ contacts, onClick }) => {
     } else {
         classes += "bg-stone-300 ";
     }
-    if (contacts[0].surgeonMark || contacts[1].surgeonMark) {
+    if (contacts[0].surgeonMark && contacts[1].surgeonMark) {
         classes += "border-2 border-stone-500";
     } else {
         classes += "border border-gray-300";
@@ -464,7 +467,7 @@ const PlanningContact = ({ contacts, onDropBack, onStateChange, savedState, setE
     } else {
         classes += "bg-stone-300 ";
     }
-    if (contacts[0].surgeonMark || contacts[1].surgeonMark) {
+    if (contacts[0].surgeonMark && contacts[1].surgeonMark) {
         classes += "border-2 border-stone-500";
     } else {
         classes += "border border-gray-300";
