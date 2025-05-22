@@ -312,7 +312,8 @@ const FunctionalTestSelection = ({
     const handleOpenStimulation = async () => {
         try {
             // Format the data for stimulation
-            let stimulationData = initialData.data.contacts.map(electrode => ({
+            const stimulationContacts = initialData.data?.data || initialData.data;
+            let stimulationData = stimulationContacts.map(electrode => ({
                 ...electrode,
                 contacts: electrode.contacts.map((contact, index) => {
                     let pair = index;
@@ -346,7 +347,7 @@ const FunctionalTestSelection = ({
             });
             window.dispatchEvent(event);
 
-            await exportTests(tests, initialData.data.contacts, false);
+            await exportTests(tests, initialData.data?.data || initialData.data, false);
         } catch (error) {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
                 showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
