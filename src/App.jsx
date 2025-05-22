@@ -236,11 +236,14 @@ const UserProfile = ({ onSignOut }) => {
     };
 
     return (
-        <div className="flex items-center gap-4 px-4 py-2 border-b bg-gray-50">
-            <span className="text-sky-700 font-semibold">{userName}</span>
+        <div className="flex justify-end items-center gap-2 px-2 py-1 border-b bg-gray-50
+                        lg:gap-4 lg:px-4 lg:py-2">
+            <span className="text-sky-700 font-semibold text-xs lg:text-sm">{userName}</span>
             <button 
                 onClick={handleSignOut}
-                className="px-4 py-2 text-sm text-red-600 cursor-pointer hover:text-red-800 font-medium"
+                className="px-2 py-1 text-xs text-red-600 text-sm font-medium
+                           transition-colors duration-200 cursor-pointer hover:text-red-800
+                           lg:px-4 lg:py-2 lg:text-sm"
             >
                 Sign Out
             </button>
@@ -928,10 +931,10 @@ const HomePage = () => {
         switch (currentTab.content) {
             case 'home':
                 return (
-                    <div className="bg-gray-100 h-full px-2 flex flex-col-reverse items-center
-                                    md:px-5
-                                    lg:px-10 lg:flex-row lg:items-baseline
-                                    xl:px-15">
+                    <div className="bg-gray-100 h-full px-7 flex flex-col-reverse items-center
+                                    md:px-14
+                                    lg:px-24 lg:flex-row lg:items-start
+                                    xl:px-35">
                         {token ? (
                             <>
                                 <div className="lg:basis-6 lg:flex-auto mt-15 flex flex-col">
@@ -1122,22 +1125,13 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
     };
     
     return (
-        <div className="px-2 self-center flex flex-col justify-center items-center m-auto
+        <div className="px-2 mt-[3vb] flex flex-col justify-center items-center
                         md:px-7
-                        lg:px-12 lg:basis-7 lg:flex-auto
+                        lg:px-12 lg:mt-[10vb] lg:basis-7 lg:flex-auto
                         xl:px-15">
             <Logo />
             {token ? (
                 <>
-                    <button
-                        className="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-800
-                                   md:w-40 md:text-sm
-                                   lg:w-48 lg:mt-4 lg:py-2 lg:text-md
-                                   xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
-                        onClick={() => window.dispatchEvent(new CustomEvent('addDatabaseLookupTab'))}
-                    >
-                        Search the Database
-                    </button>
                     <button
                         className="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-800
                                    md:w-40 md:text-sm
@@ -1186,6 +1180,15 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                             }
                         }}
                     />
+                    <button
+                        className="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-800
+                                   md:w-40 md:text-sm
+                                   lg:w-48 lg:mt-4 lg:py-2 lg:text-md
+                                   xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
+                        onClick={() => window.dispatchEvent(new CustomEvent('addDatabaseLookupTab'))}
+                    >
+                        Search the Database
+                    </button>
                     {error && <p className="text-red-500 mt-2">{error}</p>}
 
                     {/* Database Patients Modal */}
@@ -1262,7 +1265,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
 
 const Activity = () => {
     return (
-        <div>
+        <div className="lg:mt-20 xl:mt-25">
             <h2 className="text-xl font-bold my-1 whitespace-nowrap
                            md:text-2xl
                            lg:text-3xl lg:my-2
@@ -1688,7 +1691,7 @@ const ToReview = () => {
 
     return (
         <div
-            className="text-violet-500 text-base font-semibold flex gap-x-2 cursor-pointer
+            className="text-violet-800 text-base font-semibold flex gap-x-2 cursor-pointer
                        md:text-lg
                        lg:text-xl
                        xl:text-2xl"
@@ -1717,7 +1720,7 @@ const Approved = () => {
 
     return (
         <div
-            className="text-green-500 text-base font-semibold flex gap-x-2 cursor-pointer
+            className="text-green-800 text-base font-semibold flex gap-x-2 cursor-pointer
                        md:text-lg
                        lg:text-xl
                        xl:text-2xl"
