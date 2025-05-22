@@ -33,6 +33,15 @@ app.use("/api", routes);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+app.get('/env', (req, res) => {
+  res.json({
+    NODE_ENV: process.env.NODE_ENV,
+    configUsed: config === prodConfig ? 'production' : 'development',
+    config: config,
+    allEnvVars: process.env
+  });
+});
+
 // Email verification endpoint
 app.post('/send-verification-email', async (req, res) => {
     const { email, code } = req.body;
