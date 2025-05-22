@@ -19,7 +19,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
     const [submitFlag, setSubmitFlag] = useState(savedState.submitFlag || false);
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || {});
     const [fileId, setFileId] = useState(savedState.fileId || null);
-    const [fileName, setFileName] = useState(savedState.fileName || 'New Localization');
+    const [fileName, setFileName] = useState(savedState.fileName || 'New Anatomy');
     const [creationDate, setCreationDate] = useState(savedState.creationDate || new Date().toISOString());
     const [modifiedDate, setModifiedDate] = useState(savedState.modifiedDate || new Date().toISOString());
     const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -790,7 +790,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             <div className="header">
                 <div className="flex justify-between items-center w-full">
                     <div className="flex items-center gap-4">
-                        <h1 className="text-2xl font-bold">Localization</h1>
+                        <h1 className="text-2xl font-bold">Anatomy</h1>
                         <input
                             type="text"
                             value={fileName}

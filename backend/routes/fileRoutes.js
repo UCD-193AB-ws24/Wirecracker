@@ -340,7 +340,7 @@ router.get("/patients/recent", async (req, res) => {
 
             // Check file type based on filename
             const filename = curr.filename.toLowerCase();
-            if (filename.includes('localization')) {
+            if (filename.includes('anatomy')) {
                 acc[curr.patient_id].has_localization = true;
                 acc[curr.patient_id].localization_file_id = curr.file_id;
                 acc[curr.patient_id].localization_creation_date = curr.creation_date;

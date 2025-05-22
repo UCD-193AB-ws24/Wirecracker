@@ -355,7 +355,7 @@ const FileUtils = {
                 
                 // Open in localization view with the saved data
                 openSavedFile('localization', { 
-                    name: file.filename || 'Unnamed Localization',
+                    name: file.filename || 'Unnamed Anatomy',
                     fileId: file.file_id,
                     fileName: file.filename,
                     creationDate: file.creation_date,
@@ -417,7 +417,7 @@ const FileUtils = {
             // If no data found in any table, create new empty localization
             console.log('No data found for this file, creating new empty localization');
             openSavedFile('localization', { 
-                name: file.filename || 'Unnamed Localization',
+                name: file.filename || 'Unnamed Anatomy',
                 fileId: file.file_id,
                 fileName: file.filename,
                 creationDate: file.creation_date,
@@ -593,7 +593,7 @@ const HomePage = () => {
     useEffect(() => {
         // Find the highest localization number to initialize the counter
         if (tabs.length > 1) {
-            const pattern = /Localization(\d+)/;
+            const pattern = /Anatomy(\d+)/;
             const numbers = tabs
                 .map(tab => {
                     const match = tab.title.match(pattern);
@@ -638,11 +638,11 @@ const HomePage = () => {
 
         switch (type) {
             case 'localization':
-                title = 'Localization';
+                title = 'Anatomy';
                 patientId = data ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'csv-localization':
-                title = 'CSV Localization';
+                title = 'CSV Anatomy';
                 patientId = data.patientId ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'designation':
@@ -1391,7 +1391,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                                     </div>
                                                     <div className="text-sm text-gray-500">
                                                         {patient.has_localization && (
-                                                            <span className="mr-2 cursor-help" title="Localization File">📍</span>
+                                                            <span className="mr-2 cursor-help" title="Anatomy File">📍</span>
                                                         )}
                                                         {patient.has_designation && (
                                                             <span className="mr-2 cursor-help" title="Designation File">📝</span>
@@ -1512,7 +1512,7 @@ const Legend = ({ isOpen, onClose }) => {
                 <div className="space-y-3">
                     <div className="flex items-center">
                         <span className="text-xl mr-3">📍</span>
-                        <span>Localization File</span>
+                        <span>Anatomy File</span>
                     </div>
                     <div className="flex items-center">
                         <span className="text-xl mr-3">📝</span>
@@ -1545,11 +1545,11 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
     const [showStimulationMenu, setShowStimulationMenu] = useState(false);
     const buttons = [
         {
-            name: 'Localization',
+            name: 'Anatomy',
             type: 'localization',
             exists: patient.has_localization,
             fileId: patient.localization_file_id,
-            message: 'No localization file created yet',
+            message: 'No anatomy file created yet',
             icon: '📍'
         },
         {
@@ -2056,7 +2056,7 @@ const RecentFiles = ({ onOpenFile, className }) => {
                                 </div>
                                 <div className="text-xs text-gray-500 ml-2 whitespace-nowrap">
                                     {patient.has_localization && (
-                                        <span className="mr-2 cursor-help" title="Localization File">📍</span>
+                                        <span className="mr-2 cursor-help" title="Anatomy File">📍</span>
                                     )}
                                     {patient.has_designation && (
                                         <span className="mr-2 cursor-help" title="Designation File">📝</span>
