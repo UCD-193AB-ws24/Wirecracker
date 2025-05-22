@@ -1381,9 +1381,15 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         }
     };
 
-    const removeNifti = () => {
+    /**
+     * Remove nifti image and clean up the state variable
+     */
+    const removeNifti = async () => {
         // Bring tiles back
         onLoad(false)
+
+        // Let indexedDB to delete the image as we remove metadata on the page
+        let promsie = niftiStorage.deleteNiftiFile(savedState.fileId);
 
         // Remove states for user interaction
         setMarkers([]);
@@ -1406,6 +1412,9 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         setSubCanvas1SliceIndex(0)
         setMaxSubCanvas1Slices(0)
         setSubCanvas1Direction('Sagittal')
+
+        // Indexed db should be cleared out by here.
+        await promsie;
 
         // Remove NIFTI data
         setNiiData(null)
