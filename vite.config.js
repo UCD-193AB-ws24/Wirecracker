@@ -15,5 +15,14 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     __APP_CONFIG__: mode === 'development' ? configDev : configProd
-  }
+  },
+  server: mode === 'development' ? {
+    host: '0.0.0.0',
+    proxy: {
+      '/api': {
+        target: configDev.backendURL, // Docker service name
+        changeOrigin: true
+      }
+    }
+  } : {}
 }));
