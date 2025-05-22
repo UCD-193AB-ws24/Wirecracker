@@ -1006,9 +1006,9 @@ const HomePage = () => {
         switch (currentTab.content) {
             case 'home':
                 return (
-                    <div className="bg-gray-100 h-full px-7 flex flex-col-reverse items-center
+                    <div className="bg-gray-100 h-full px-7 flex flex-col-reverse justify-end items-center
                                     md:px-14
-                                    lg:px-24 lg:flex-row lg:items-start
+                                    lg:px-24 lg:flex-row lg:justify-start lg:items-start
                                     xl:px-35">
                         {token ? (
                             <>
@@ -1308,8 +1308,8 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                         id="fileInput"
                     />
                     <Dropdown
-                        closedText="Open File"
-                        openText="Open File ▾"
+                        closedText="Open Patient Files"
+                        openText="Open Patient Files ▾"
                         closedClassName="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-800
                                          md:w-40 md:text-sm
                                          lg:w-48 lg:mt-4 lg:py-2 lg:text-md
@@ -1346,7 +1346,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                    xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
                         onClick={() => window.dispatchEvent(new CustomEvent('addDatabaseLookupTab'))}
                     >
-                        Search the Database
+                        Structure-Function-Test Lookup
                     </button>
                     {error && <p className="text-red-500 mt-2">{error}</p>}
 
@@ -2035,13 +2035,16 @@ const RecentFiles = ({ onOpenFile, className }) => {
                 </h3>
                 <button 
                     onClick={() => setShowLegend(true)}
-                    className="text-gray-500 hover:text-gray-700 text-xl cursor-pointer"
+                    className="text-gray-500 text-base
+                               transition-colors duration-200 cursor-pointer hover:text-gray-700
+                               lg:text-lg
+                               xl:text-xl"
                     title="Show Legend"
                 >
                     ?
                 </button>
             </div>
-            <div className="bg-sky-200 rounded-xl p-2 mt-2">
+            <div className="bg-gray-200 rounded-xl p-2 mt-2">
                 {isLoading ? (
                     <div className="text-gray-600">Loading...</div>
                 ) : recentPatients.length > 0 ? (
