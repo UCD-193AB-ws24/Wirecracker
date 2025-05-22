@@ -71,6 +71,15 @@ export async function handleFileRecord(fileId, fileName, creationDate, modifiedD
       throw new Error('Invalid or expired session');
     }
 
+    console.log('Creating new file record with data:', {
+      fileId,
+      owner_user_id: session.user_id,
+      fileName,
+      creationDate,
+      modifiedDate,
+      patientId
+    });
+
     // Insert new file record
     const { error: fileError } = await supabase
       .from('files')
@@ -84,6 +93,33 @@ export async function handleFileRecord(fileId, fileName, creationDate, modifiedD
       });
 
     if (fileError) throw fileError;
+
+    console.log('Successfully created file record, now creating file assignment...');
+
+    // Create file assignment for the owner
+    const assignmentData = {
+      file_id: fileId,
+      user_id: session.user_id,
+      patient_id: patientId,
+      role: 'owner',
+      has_seen: true,
+      is_completed: false
+    };
+
+    console.log('Attempting to insert file assignment with data:', assignmentData);
+
+    const { data: insertedAssignment, error: assignmentError } = await supabase
+      .from('file_assignments')
+      .insert(assignmentData)
+      .select();
+
+    if (assignmentError) {
+      console.error('Error creating file assignment:', assignmentError);
+      console.error('Error details:', JSON.stringify(assignmentError));
+      throw assignmentError;
+    }
+
+    console.log('Successfully created file assignment:', insertedAssignment);
   }
 }
 

@@ -10,7 +10,8 @@ import userRoutes from './userRoutes.js';
 import authRoutes from './authRoutes.js';
 import fileRoutes from './fileRoutes.js';
 import docsRoutes from './docsRoutes.js';
-import fileShareRoutes from './fileShareRoutes.js';
+//import fileShareRoutes from './fileShareRoutes.js';
+import shareRoutes from './shareRoutes.js';
 
 const router = express.Router();
 router.use(cors());
@@ -27,6 +28,6 @@ router.use('/', userRoutes);
 router.use('/', authRoutes);
 router.use('/', fileRoutes);
 router.use('/', docsRoutes);
-router.use('/', fileShareRoutes);
-
+//router.use('/', fileShareRoutes);
+router.use('/', shareRoutes);
 export default router; 
