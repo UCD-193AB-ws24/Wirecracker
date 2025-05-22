@@ -1,4 +1,5 @@
 import { bitset } from '../matlab_functions.js';
+import { describe, test, expect } from 'vitest';
 
 describe('bitset function', () => {
     test('set bit to 1 at specified position', () => {

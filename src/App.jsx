@@ -13,9 +13,12 @@ import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
 import { parseCSVFile, Identifiers } from './utils/CSVParser';
 import Localization from './pages/Localization';
 import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
+import Designation from './pages/ContactDesignation/DesignationPage';
+import Resection from './pages/ContactDesignation/ResectionPage';
 import { FcGoogle } from 'react-icons/fc';
 import config from '../config.json' with { type: 'json' };
 import { ErrorProvider, useError } from './context/ErrorContext';
+import { WarningProvider, useWarning } from './context/WarningContext';
 import DBLookup from './pages/DatabaseLookup';
 
 const backendURL = config.backendURL;
@@ -199,6 +202,7 @@ const PatientTabGroup = ({ patientId, tabs, activeTab, onTabClick, onTabClose, o
 const UserProfile = ({ onSignOut }) => {
     const navigate = useNavigate();
     const [userName, setUserName] = useState('');
+    const { showWarning } = useWarning();
     
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -354,7 +358,7 @@ const FileUtils = {
                 
                 // Open in localization view with the saved data
                 openSavedFile('localization', { 
-                    name: file.filename || 'Unnamed Localization',
+                    name: file.filename || 'Unnamed Anatomy',
                     fileId: file.file_id,
                     fileName: file.filename,
                     creationDate: file.creation_date,
@@ -368,7 +372,7 @@ const FileUtils = {
             if (fileTypeData.hasDesignation) {
                 console.log('Found designation data:', fileTypeData.designationData);
                 openSavedFile('designation', {
-                    name: file.filename || 'Unnamed Designation',
+                    name: file.filename || 'Unnamed Epilepsy',
                     fileId: file.file_id,
                     fileName: file.filename,
                     creationDate: file.creation_date,
@@ -383,7 +387,7 @@ const FileUtils = {
             if (fileTypeData.hasTestSelection) {
                 console.log('Found test selection data:', fileTypeData.testSelectionData);
                 openSavedFile('csv-functional-test', {
-                    name: file.filename || 'Unnamed Test Selection',
+                    name: file.filename || 'Unnamed Neuropsychology',
                     fileId: file.file_id,
                     fileName: file.filename,
                     creationDate: file.creation_date,
@@ -416,7 +420,7 @@ const FileUtils = {
             // If no data found in any table, create new empty localization
             console.log('No data found for this file, creating new empty localization');
             openSavedFile('localization', { 
-                name: file.filename || 'Unnamed Localization',
+                name: file.filename || 'Unnamed Anatomy',
                 fileId: file.file_id,
                 fileName: file.filename,
                 creationDate: file.creation_date,
@@ -509,8 +513,42 @@ const HomePage = () => {
 
     // Add event listener for stimulation tab creation
     useEffect(() => {
+        const handleAddResectionTab = (event) => {
+            addTab('resection', event.detail);
+        };
+
+        window.addEventListener('addResectionTab', handleAddResectionTab);
+        return () => {
+            window.removeEventListener('addResectionTab', handleAddResectionTab);
+        };
+    }, []);
+
+    // Add event listener for stimulation tab creation
+    useEffect(() => {
         const handleAddStimulationTab = (event) => {
-            addTab('stimulation', event.detail);
+            const { data, state, title } = event.detail;
+            let type;
+            
+            // Determine type based on the stimulation type
+            switch(data.type) {
+                case 'mapping':
+                    type = 'functional-mapping';
+                    break;
+                case 'recreation':
+                    type = 'seizure-recreation';
+                    break;
+                case 'ccep':
+                    type = 'cceps';
+                    break;
+                default:
+                    type = 'stimulation';
+                    break;
+            }
+
+            addTab(type, {
+                data: data?.data || data,
+                state: state
+            });
         };
 
         window.addEventListener('addStimulationTab', handleAddStimulationTab);
@@ -558,7 +596,7 @@ const HomePage = () => {
     useEffect(() => {
         // Find the highest localization number to initialize the counter
         if (tabs.length > 1) {
-            const pattern = /Localization(\d+)/;
+            const pattern = /Anatomy(\d+)/;
             const numbers = tabs
                 .map(tab => {
                     const match = tab.title.match(pattern);
@@ -591,7 +629,7 @@ const HomePage = () => {
 
         let title = '';
         let patientId = null;
-        let fileId = data?.fileId || generateUniqueId();
+        let fileId = data?.fileId || data?.state?.fileId || generateUniqueId();
 
         console.log('Adding new tab:', {
             type,
@@ -603,17 +641,29 @@ const HomePage = () => {
 
         switch (type) {
             case 'localization':
-                title = 'Localization';
+                title = 'Anatomy';
                 patientId = data ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'csv-localization':
-                title = 'CSV Localization';
+                title = 'CSV Anatomy';
                 patientId = data.patientId ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
-            case 'designation':         
-                title = 'Designation';
+            case 'designation':
+                title = 'Epilepsy';
                 patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
-                console.log('Setting patientId for designation:', {
+                console.log('Setting patientId for epilepsy:', {
+                    finalPatientId: patientId,
+                    sources: {
+                        dataPatientId: data.patientId,
+                        statePatientId: data.state?.patientId,
+                        originalDataPatientId: data.originalData?.patientId
+                    }
+                });
+                break;
+            case 'resection':
+                title = 'Neurosurgery';
+                patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
+                console.log('Setting patientId for neurosurgery:', {
                     finalPatientId: patientId,
                     sources: {
                         dataPatientId: data.patientId,
@@ -639,7 +689,7 @@ const HomePage = () => {
                 patientId = data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
                 break;
             case 'stimulation':         
-                title = 'Stimulation';
+                title = 'Plan Type Selection';
                 patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
                 console.log('Setting patientId for stimulation:', {
                     finalPatientId: patientId,
@@ -651,27 +701,20 @@ const HomePage = () => {
                 });
                 break;
             case 'seizure-recreation':
+                title = 'Seizure Recreation';
+                patientId = data?.state?.patientId ? data.state.patientId : data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
+                break;
             case 'cceps':
-                return <ContactSelection
-                    key={currentTab.id}
-                    isFunctionalMapping={false}
-                    initialData={{}}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    savedState={ currentTab.state}
-                />;
+                title = 'CCEPs';
+                patientId = data?.state?.patientId ? data.state.patientId : data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
+                break;
             case 'functional-mapping':
-                return <ContactSelection
-                    key={currentTab.id}
-                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
-                    isFunctionalMapping={true}
-                    initialData={{}}
-                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
-                    savedState={currentTab.state}
-                />;
+                title = 'Functional Mapping';
+                patientId = data?.state?.patientId ? data.state.patientId : data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
+                break;
             case 'functional-test':
-                title = 'Test Selection';
-                patientId = data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
+                title = 'Neuropsychology';
+                patientId = data?.state?.patientId ? data.state.patientId : data.patientId ? data.patientId : generatePatientId(); // Use existing patient_id from parent localization
                 break;
             case 'database-lookup':     title = 'Lookup'; break;
             default:
@@ -795,6 +838,7 @@ const HomePage = () => {
 
         try {
             const { identifier, data } = await parseCSVFile(file, false, (msg) => setError(msg));
+            // TODO: add resection option
             if (identifier === Identifiers.LOCALIZATION) {
                 addTab('csv-localization', { name: file.name, data });
             } else if (identifier === Identifiers.DESIGNATION) {
@@ -802,7 +846,11 @@ const HomePage = () => {
             } else if (identifier === Identifiers.STIMULATION) {
                 addTab('csv-stimulation', { name: file.name, data });
             }else if (identifier === Identifiers.STIMULATION_FUNCTION) {
-                addTab('csv-functional-mapping', { name: file.name, data });
+                addTab('functional-mapping', { name: file.name, data });
+            }else if (identifier === Identifiers.STIMULATION_RECREATION) {
+                addTab('seizure-recreation', { name: file.name, data });
+            }else if (identifier === Identifiers.STIMULATION_CCEP) {
+                addTab('cceps', { name: file.name, data });
             }else if (identifier === Identifiers.TEST_PLANNING) {
                 addTab('csv-functional-test', { name: file.name, data });
             }
@@ -816,7 +864,7 @@ const HomePage = () => {
         setActiveTab('home');
     };
 
-    const openSavedFile = (type, fileData) => {
+    const openSavedFile = (type, fileData, active = true) => {
         if (type === 'localization') {
             console.log('Opening saved file:', fileData);
             
@@ -839,7 +887,9 @@ const HomePage = () => {
             console.log('Created new tab with state:', newTab.state);
             
             setTabs(prevTabs => [...prevTabs, newTab]);
-            setActiveTab(newTab.id);
+            if (active) {
+                setActiveTab(newTab.id);
+            }
         } 
         else if (type === 'designation') {
             console.log('Opening saved file:', fileData);
@@ -865,13 +915,13 @@ const HomePage = () => {
             setTabs(prevTabs => [...prevTabs, newTab]);
             setActiveTab(newTab.id);
         }
-        else if (type === 'csv-functional-test') {
-            console.log('Opening saved test selection file:', fileData);
-
+        else if (type === 'resection') {
+            console.log('Opening saved resection file:', fileData);
+            
             const newTab = {
                 id: Date.now().toString(),
                 title: fileData.name,
-                content: type,
+                content: 'resection',
                 data: fileData.data,
                 state: {
                     fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
@@ -879,8 +929,33 @@ const HomePage = () => {
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
-                    tests: fileData.data.tests,
-                    contacts: fileData.data.contacts
+                    electrodes: fileData.data,
+                    localizationData: fileData.originalData  // This should include the electrode type
+                }
+            };
+
+            console.log('Created new resection tab with state:', newTab.state);
+
+            setTabs(prevTabs => [...prevTabs, newTab]);
+            setActiveTab(newTab.id);
+        }
+        else if (type === 'csv-functional-test') {
+            const newTab = {
+                id: Date.now().toString(),
+                title: fileData.name,
+                content: type,
+                data: {
+                    data: fileData.data.data.contacts,
+                    tests: fileData.data.data.tests
+                },
+                state: {
+                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
+                    patientId: fileData.patientId,
+                    fileName: fileData.name,
+                    creationDate: fileData.creationDate || new Date().toISOString(),
+                    modifiedDate: fileData.modifiedDate || new Date().toISOString(),
+                    tests: fileData.data?.data.tests || fileData.data.tests,
+                    contacts: fileData.data?.data.contacts || fileData.data.contacts
                 }
             };
 
@@ -889,7 +964,7 @@ const HomePage = () => {
             setTabs(prevTabs => [...prevTabs, newTab]);
             setActiveTab(newTab.id);
         }
-        else if (type === 'csv-stimulation' || type === 'csv-functional-mapping') {
+        else if (type === 'cceps' || type === 'functional-mapping' || type === 'seizure-recreation') {
             console.log('Opening saved stimulation file:', fileData);
 
             const newTab = {
@@ -905,7 +980,7 @@ const HomePage = () => {
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
                     electrodes: fileData.data.data,
                     planOrder: fileData.data.planOrder,
-                    isFunctionalMapping: type === 'csv-functional-mapping'
+                    type: type
                 }
             };
 
@@ -978,14 +1053,28 @@ const HomePage = () => {
                     savedState={currentTab.state}
                 />;
             case 'designation':
-                return <ContactDesignation
+                return <Designation
                     key={currentTab.id}
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
             case 'csv-designation':
-                return <ContactDesignation
+                return <Designation
+                    key={currentTab.id}
+                    initialData={currentTab.data.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'resection':
+                return <Resection
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-resection':
+                return <Resection
                     key={currentTab.id}
                     initialData={currentTab.data.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
@@ -1000,18 +1089,29 @@ const HomePage = () => {
                 />;
             case 'seizure-recreation':
             case 'cceps':
+            case 'functional-mapping':
                 return <ContactSelection
-                    key={currentTab.id}
-                    isFunctionalMapping={false}
-                    initialData={{}}
+                    key={`${currentTab.id}-${currentTab.content}`}
+                    type={currentTab.content === 'functional-mapping' ? 'mapping' : 
+                          currentTab.content === 'seizure-recreation' ? 'recreation' : 'ccep'}
+                    initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
                     savedState={currentTab.state}
                 />;
             case 'csv-stimulation':
                 return <ContactSelection
-                    key={currentTab.id}
-                    isFunctionalMapping={false}
+                    key={`${currentTab.id}-csv-stimulation`}
+                    type={currentTab.data?.type || 'recreation'}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-functional-mapping':
+                return <ContactSelection
+                    key={`${currentTab.id}-csv-functional-mapping`}
+                    type="mapping"
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     switchContent={(newContent) => updateTabContent(currentTab.id, newContent)}
@@ -1099,12 +1199,16 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
     const [patients, setPatients] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const [showLegend, setShowLegend] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const { showError } = useError();
+    const { showWarning } = useWarning();
 
-    const loadPatients = async () => {
+    const loadPatients = async (page = 1) => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${backendURL}/api/patients/recent`, {
+            const response = await fetch(`${backendURL}/api/patients/recent?page=${page}&limit=7`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -1115,13 +1219,68 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
             }
 
             const data = await response.json();
-            setPatients(data);
+            setPatients(data.patients);
+            setTotalPages(data.totalPages);
+            setCurrentPage(data.currentPage);
         } catch (error) {
-            console.error('Error loading patients:', error);
-            showError('Failed to load patients');
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. Failed to load patients");
+            } else {
+                console.error('Error loading patients:', error);
+                showError('Failed to load patients');
+            }
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            loadPatients(newPage);
+        }
+    };
+
+    // Generate array of page numbers to display
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxVisiblePages = 5; // Maximum number of page buttons to show
+        
+        if (totalPages <= maxVisiblePages) {
+            // If total pages is less than max visible, show all pages
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Always show first page
+            pages.push(1);
+            // Calculate start and end of visible pages
+            let start = Math.max(2, currentPage - 1);
+            let end = Math.min(totalPages - 1, currentPage + 1);
+            // Adjust if at the start
+            if (currentPage <= 2) {
+                end = 4;
+            }
+            // Adjust if at the end
+            if (currentPage >= totalPages - 1) {
+                start = totalPages - 3;
+            }
+            // Add ellipsis if needed
+            if (start > 2) {
+                pages.push('...');
+            }            
+            // Add middle pages
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+            // Add ellipsis if needed
+            if (end < totalPages - 1) {
+                pages.push('...');
+            }
+            // Always show last page
+            pages.push(totalPages);
+        }
+        
+        return pages;
     };
     
     return (
@@ -1174,7 +1333,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                     document.getElementById('fileInput').click();
                                     break;
                                 case "Open-Database":
-                                    loadPatients();
+                                    loadPatients(1);
                                     setShowDatabaseModal(true);
                                     break;
                             }
@@ -1196,8 +1355,17 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                             <div className="bg-white p-6 rounded-lg shadow-xl w-4/5 max-w-3xl max-h-[80vh] overflow-y-auto">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-2xl font-bold">Select Patient</h2>
-                                    <button 
+                                    <div className="flex items-center">
+                                        <h2 className="text-2xl font-bold">Select Patient</h2>
+                                        <button 
+                                            onClick={() => setShowLegend(true)}
+                                            className="ml-3 text-gray-500 hover:text-gray-700 text-xl cursor-pointer"
+                                            title="Show Legend"
+                                        >
+                                            ?
+                                        </button>
+                                    </div>
+                                    <button
                                         onClick={() => setShowDatabaseModal(false)}
                                         className="text-gray-500 transition-colors duration-200 cursor-pointer hover:text-gray-700 text-xl"
                                     >
@@ -1214,38 +1382,89 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                         <p className="text-gray-600">No patients found. Create a new file to get started.</p>
                                     </div>
                                 ) : (
-                                    <div className="divide-y">
-                                        {patients.map(patient => (
-                                            <div 
-                                                key={patient.patient_id}
-                                                className="py-3 px-4 transition-colors duration-200 hover:bg-sky-50 cursor-pointer flex justify-between items-center"
-                                                onClick={() => {
-                                                    setSelectedPatient(patient);
-                                                    setShowDatabaseModal(false);
-                                                }}
-                                            >
-                                                <div className="flex-1">
-                                                    <div className="font-medium">{formatPatientDisplay(patient)}</div>
+                                    <>
+                                        <div className="divide-y">
+                                            {patients.map(patient => (
+                                                <div 
+                                                    key={patient.patient_id}
+                                                    className="py-3 px-4 transition-colors duration-200 hover:bg-sky-50 cursor-pointer flex justify-between items-center"
+                                                    onClick={() => {
+                                                        setSelectedPatient(patient);
+                                                        setShowDatabaseModal(false);
+                                                    }}
+                                                >
+                                                    <div className="flex-1">
+                                                        <div className="font-medium">{formatPatientDisplay(patient)}</div>
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {patient.has_localization && (
+                                                            <span className="mr-2 cursor-help" title="Anatomy File">📍</span>
+                                                        )}
+                                                        {patient.has_designation && (
+                                                            <span className="mr-2 cursor-help" title="Epilepsy File">📝</span>
+                                                        )}
+                                                        {patient.has_resection && (
+                                                            <span className="mr-2 cursor-help" title="Neurosurgery File">🔪</span>
+                                                        )}
+                                                        {(patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep) && (
+                                                            <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
+                                                        )}
+                                                        {patient.has_test_selection && (
+                                                            <span className="cursor-help" title="Neuropsychology File">🧪</span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div className="text-sm text-gray-500">
-                                                    {patient.has_localization && <span className="mr-2">📍</span>}
-                                                    {patient.has_designation && <span className="mr-2">📝</span>}
-                                                    {patient.has_stimulation && <span className="mr-2">⚡</span>}
-                                                    {patient.has_test_selection && <span>🧪</span>}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
 
-                                <div className="mt-6 flex justify-end">
-                                    <button
-                                        onClick={() => setShowDatabaseModal(false)}
-                                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded transition-colors duration-200 cursor-pointer hover:bg-gray-300"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
+                                        {/* Pagination Controls */}
+                                        <div className="mt-3 flex flex-col gap-4">
+                                            <div className="flex justify-center items-center gap-2">
+                                                <button
+                                                    onClick={() => handlePageChange(currentPage - 1)}
+                                                    disabled={currentPage === 1}
+                                                    className={`px-3 py-1 rounded transition-colors duration-200 ${
+                                                        currentPage === 1
+                                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                            : 'bg-sky-700 text-white hover:bg-sky-600 cursor-pointer'
+                                                    }`}
+                                                >
+                                                    ←
+                                                </button>
+                                                
+                                                {getPageNumbers().map((pageNum, index) => (
+                                                    pageNum === '...' ? (
+                                                        <span key={`ellipsis-${index}`} className="px-2 text-gray-500">...</span>
+                                                    ) : (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => handlePageChange(pageNum)}
+                                                            className={`px-3 py-1 rounded transition-colors duration-200 ${
+                                                                currentPage === pageNum
+                                                                    ? 'bg-sky-700 text-white'
+                                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                            }`}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    )
+                                                ))}
+                                                
+                                                <button
+                                                    onClick={() => handlePageChange(currentPage + 1)}
+                                                    disabled={currentPage === totalPages}
+                                                    className={`px-3 py-1 rounded transition-colors duration-200 ${
+                                                        currentPage === totalPages
+                                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                            : 'bg-sky-700 text-white hover:bg-sky-600 cursor-pointer'
+                                                    }`}
+                                                >
+                                                    →
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1257,6 +1476,8 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                             openSavedFile={openSavedFile}
                         />
                     )}
+
+                    <Legend isOpen={showLegend} onClose={() => setShowLegend(false)} />
                 </>
             ) : <SignInButtons />}
         </div>
@@ -1280,42 +1501,99 @@ const Activity = () => {
     );
 };
 
+const Legend = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold">File Type Legend</h2>
+                    <button 
+                        onClick={onClose}
+                        className="text-gray-500 hover:text-gray-700 text-xl"
+                    >
+                        ×
+                    </button>
+                </div>
+                <div className="space-y-3">
+                    <div className="flex items-center">
+                        <span className="text-xl mr-3">📍</span>
+                        <span>Anatomy File</span>
+                    </div>
+                    <div className="flex items-center">
+                        <span className="text-xl mr-3">📝</span>
+                        <span>Epilepsy File</span>
+                    </div>
+                    <div className="flex items-center">
+                        <span className="text-xl mr-3">🔪</span>
+                        <span>Neurosurgery File</span>
+                    </div>
+                    <div className="flex items-center">
+                        <span className="text-xl mr-3">⚡</span>
+                        <span>Stimulation File</span>
+                    </div>
+                    <div className="flex items-center">
+                        <span className="text-xl mr-3">🧪</span>
+                        <span>Neuropsychology File</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const PatientDetails = ({ patient, onClose, openSavedFile }) => {
     const { showError } = useError();
+    const { showWarning } = useWarning();
     const [clickedFileId, setClickedFileId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [showLegend, setShowLegend] = useState(false);
+    const [showStimulationMenu, setShowStimulationMenu] = useState(false);
     const buttons = [
         {
-            name: 'Localization',
+            name: 'Anatomy',
             type: 'localization',
             exists: patient.has_localization,
             fileId: patient.localization_file_id,
-            message: 'No localization file created yet'
+            message: 'No anatomy file created yet',
+            icon: '📍'
         },
         {
-            name: 'Designation',
+            name: 'Neurosurgery',
+            type: 'resection',
+            exists: patient.has_resection,
+            fileId: patient.resection_file_id,
+            message: 'No neurosurgery file created yet',
+            icon: '🔪'
+        },
+        {
+            name: 'Epilepsy',
             type: 'designation',
             exists: patient.has_designation,
             fileId: patient.designation_file_id,
-            message: 'No designation file created yet'
+            message: 'No epilepsy file created yet',
+            icon: '📝'
         },
         {
             name: 'Stimulation',
             type: 'stimulation',
-            exists: patient.has_stimulation,
-            fileId: patient.stimulation_file_id,
-            message: 'No stimulation file created yet'
+            exists: patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep,
+            fileId: null, // This will be set based on the selected type
+            message: 'No stimulation file created yet',
+            icon: '⚡'
         },
         {
-            name: 'Test Selection',
+            name: 'Neuropsychology',
             type: 'functional-test',
             exists: patient.has_test_selection,
             fileId: patient.test_selection_file_id,
-            message: 'No test selection file created yet'
+            message: 'No neuropsychology file created yet',
+            icon: '🧪'
         }
     ];
 
-    const handleButtonClick = async (clickedButton) => {
+    const handleButtonClick = async (clickedButton, selectedStimulationType = null) => {
         if (!clickedButton.exists) return;
 
         const token = localStorage.getItem('token');
@@ -1328,16 +1606,10 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             setIsLoading(true);
             setClickedFileId(clickedButton.fileId);
 
-            // First check if any tabs for this patient and type already exist
+            // First check if any tabs for this patient already exist
             const existingTabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const existingTab = existingTabs.find(tab => {
-                // For localization, check both 'localization' and 'csv-localization' types
-                if (clickedButton.type === 'localization') {
-                    return (tab.content === 'localization' || tab.content === 'csv-localization') && 
-                           tab.state?.patientId === patient.patient_id;
-                }
-                return tab.content === clickedButton.type && tab.state?.patientId === patient.patient_id;
-            });
+            const existingTab = existingTabs.find(tab => (tab.title === clickedButton.name) || (tab.title === selectedStimulationType) 
+                                                            && tab.state?.patientId === patient.patient_id);
 
             if (existingTab) {
                 // If tab exists, just switch to it
@@ -1351,8 +1623,28 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                 buttons
                     .filter(button => button.exists)
                     .map(async (button) => {
-                        // First check file type and get initial data
-                        console.log('Fetching file type data for file ID:', button.fileId);
+                        // For stimulation types, we need to handle each type separately
+                        if (button.type === 'stimulation') {
+                            const stimulationFiles = [];
+                            
+                            // Handle each stimulation type
+                            if (patient.stimulation_types.mapping) {
+                                const mappingFile = await loadStimulationFile('Functional Mapping', patient.stimulation_types.mapping);
+                                if (mappingFile) stimulationFiles.push(mappingFile);
+                            }
+                            if (patient.stimulation_types.recreation) {
+                                const recreationFile = await loadStimulationFile('Seizure Recreation', patient.stimulation_types.recreation);
+                                if (recreationFile) stimulationFiles.push(recreationFile);
+                            }
+                            if (patient.stimulation_types.ccep) {
+                                const ccepFile = await loadStimulationFile('CCEPs', patient.stimulation_types.ccep);
+                                if (ccepFile) stimulationFiles.push(ccepFile);
+                            }
+                            
+                            return stimulationFiles;
+                        }
+
+                        // For other file types, proceed as normal
                         const response = await fetch(`${backendURL}/api/files/check-type?fileId=${button.fileId}`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`
@@ -1362,7 +1654,6 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                         if (!response.ok) throw new Error('Failed to check file type');
                         const fileTypeData = await response.json();
 
-                        // Get file metadata from database
                         const metadataResponse = await fetch(`${backendURL}/api/files/dates-metadata?fileId=${button.fileId}`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`
@@ -1372,8 +1663,23 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                         if (!metadataResponse.ok) throw new Error('Failed to fetch file metadata');
                         const metadata = await metadataResponse.json();
 
-                        // Handle each file type based on the check-type response
                         switch (button.type) {
+                            case 'resection': {
+                                if (!fileTypeData.hasResection) {
+                                    throw new Error('No resection data found');
+                                }
+                                console.log('resection file type data:', fileTypeData.resectionData);
+                                return {
+                                    fileId: button.fileId,
+                                    name: button.name,
+                                    creationDate: metadata.creation_date || new Date().toISOString(),
+                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
+                                    patientId: patient.patient_id,
+                                    type: 'resection',
+                                    data: fileTypeData.resectionData.resection_data,
+                                    originalData: fileTypeData.resectionData.localization_data
+                                };
+                            }
                             case 'designation': {
                                 if (!fileTypeData.hasDesignation) {
                                     throw new Error('No designation data found');
@@ -1389,6 +1695,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                     originalData: fileTypeData.designationData.localization_data
                                 };
                             }
+                            
                             case 'localization': {
                                 if (fileTypeData.hasLocalization) {
                                     const localizationResponse = await fetch(`${backendURL}/api/files/localization?fileId=${button.fileId}`, {
@@ -1419,23 +1726,6 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                     data: { data: {} }
                                 };
                             }
-                            case 'stimulation': {
-                                if (!fileTypeData.hasStimulation) {
-                                    throw new Error('No stimulation data found');
-                                }
-                                return {
-                                    fileId: button.fileId,
-                                    name: button.name,
-                                    creationDate: metadata.creation_date || new Date().toISOString(),
-                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
-                                    patientId: patient.patient_id,
-                                    type: fileTypeData.stimulationData.is_mapping ? 'csv-functional-mapping' : 'csv-stimulation',
-                                    data: {
-                                        data: fileTypeData.stimulationData.stimulation_data,
-                                        planOrder: fileTypeData.stimulationData.plan_order
-                                    }
-                                };
-                            }
                             case 'functional-test': {
                                 if (!fileTypeData.hasTestSelection) {
                                     throw new Error('No test selection data found');
@@ -1448,8 +1738,10 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                     patientId: patient.patient_id,
                                     type: 'csv-functional-test',
                                     data: {
-                                        tests: fileTypeData.testSelectionData.tests,
-                                        contacts: fileTypeData.testSelectionData.contacts
+                                        data : {
+                                            tests: fileTypeData.testSelectionData.tests,
+                                            contacts: fileTypeData.testSelectionData.contacts
+                                        }
                                     }
                                 };
                             }
@@ -1459,22 +1751,36 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                     })
             );
 
+            // Flatten the array of files (since stimulation files are now an array)
+            const flattenedFiles = availableFiles.flat();
+
             // Add tabs for each available file sequentially
-            for (const file of availableFiles) {
+            for (const file of flattenedFiles) {
                 console.log('Opening file:', file);
                 await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay between each file
-                openSavedFile(file.type, file);
+                openSavedFile(file.type, file, false);
             }
 
-            // After opening all files, switch to the clicked file's tab
+            // After opening all files, switch to the appropriate tab
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const clickedTab = tabs.find(tab => 
-                tab.title === clickedButton.name && 
-                tab.state?.patientId === patient.patient_id
-            );
-            if (clickedTab) {
-                const tabId = clickedTab.id;
-                window.dispatchEvent(new CustomEvent('setActiveTab', { detail: { tabId } }));
+            let targetTab;
+            
+            if (selectedStimulationType) {
+                // If a specific stimulation type was selected, find that tab
+                targetTab = tabs.find(tab => 
+                    tab.title === selectedStimulationType && 
+                    tab.state?.patientId === patient.patient_id
+                );
+            } else {
+                // Otherwise, find the tab for the clicked button
+                targetTab = tabs.find(tab => 
+                    tab.title === clickedButton.name && 
+                    tab.state?.patientId === patient.patient_id
+                );
+            }
+            
+            if (targetTab) {
+                window.dispatchEvent(new CustomEvent('setActiveTab', { detail: { tabId: targetTab.id } }));
             }
             
             onClose();
@@ -1486,11 +1792,65 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
         }
     };
 
+    // Helper function to load stimulation files
+    const loadStimulationFile = async (type, fileId) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return null;
+
+            const response = await fetch(`${backendURL}/api/files/check-type?fileId=${fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to check file type');
+            const fileTypeData = await response.json();
+            
+            if (!fileTypeData.hasStimulation) return null;
+
+            const metadataResponse = await fetch(`${backendURL}/api/files/dates-metadata?fileId=${fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!metadataResponse.ok) throw new Error('Failed to fetch file metadata');
+            const metadata = await metadataResponse.json();
+
+            return {
+                fileId: fileId,
+                name: type,
+                patientId: patient.patient_id,
+                creationDate: metadata.creation_date || new Date().toISOString(),
+                modifiedDate: metadata.modified_date || new Date().toISOString(),
+                type: type === 'Functional Mapping' ? 'functional-mapping' : 
+                      type === 'Seizure Recreation' ? 'seizure-recreation' : 'cceps',
+                data: {
+                    data: fileTypeData.stimulationData.stimulation_data,
+                    planOrder: fileTypeData.stimulationData.plan_order
+                }
+            };
+        } catch (error) {
+            console.error('Error loading stimulation file:', error);
+            return null;
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white p-8 rounded-lg shadow-xl w-4/5 max-w-3xl">
+            <div className="bg-white p-8 rounded-lg shadow-xl w-5/6 max-w-5xl max-h-[80vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-2xl font-bold">{formatPatientDisplay(patient)}</h2>
+                    <div className="flex items-center">
+                        <h2 className="text-2xl font-bold">{formatPatientDisplay(patient)}</h2>
+                        <button 
+                            onClick={() => setShowLegend(true)}
+                            className="ml-3 text-gray-500 hover:text-gray-700 text-xl cursor-pointer"
+                            title="Show Legend"
+                        >
+                            ?
+                        </button>
+                    </div>
                     <button 
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700 text-xl"
@@ -1499,24 +1859,105 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                     </button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-6">
-                    {buttons.map((button) => (
-                        <div key={button.type} className="flex flex-col items-center">
+                <div className="grid grid-cols-4 gap-4 mb-8">
+                    <button
+                        onClick={() => handleButtonClick(buttons[0])}
+                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                            ${buttons[0].exists 
+                                ? 'bg-green-600 text-white hover:bg-green-700' 
+                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                        disabled={!buttons[0].exists || isLoading}
+                    >
+                        <span className="mr-2">{buttons[0].icon}</span>
+                        {buttons[0].name}
+                    </button>
+                    <button
+                        onClick={() => handleButtonClick(buttons[1])}
+                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                            ${buttons[1].exists 
+                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
+                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                        disabled={!buttons[1].exists || isLoading}
+                    >
+                        <span className="mr-2">{buttons[1].icon}</span>
+                        {buttons[1].name}
+                    </button>
+                    <button
+                        onClick={() => handleButtonClick(buttons[2])}
+                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                            ${buttons[2].exists 
+                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
+                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                        disabled={!buttons[2].exists || isLoading}
+                    >
+                        <span className="mr-2">{buttons[2].icon}</span>
+                        {buttons[2].name}
+                    </button>
+                    <button
+                        onClick={() => handleButtonClick(buttons[4])}
+                        className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                            ${buttons[4].exists 
+                                ? 'bg-sky-700 text-white hover:bg-sky-600' 
+                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                        disabled={!buttons[4].exists || isLoading}
+                    >
+                        <span className="mr-2">{buttons[4].icon}</span>
+                        {buttons[4].name}
+                    </button>
+                </div>
+                <div className="flex justify-center">
+                    {showStimulationMenu ? (
+                        <div className="flex gap-4 w-3/4">
                             <button
-                                onClick={() => handleButtonClick(button)}
-                                className={`w-full py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
-                                    ${button.exists 
-                                        ? 'bg-sky-700 text-white hover:bg-sky-600' 
-                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
-                                disabled={!button.exists || isLoading}
+                                onClick={() => handleButtonClick(buttons[3], 'Functional Mapping')}
+                                className={`flex-1 py-3 px-4 rounded-lg text-base font-semibold transition-colors duration-200 ${
+                                    patient.stimulation_types.mapping 
+                                        ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                }`}
+                                disabled={!patient.stimulation_types.mapping}
                             >
-                                {button.name}
+                                <span className="mr-2">⚡</span>
+                                Functional Mapping
                             </button>
-                            {!button.exists && (
-                                <p className="mt-2 text-sm text-gray-500">{button.message}</p>
-                            )}
+                            <button
+                                onClick={() => handleButtonClick(buttons[3], 'Seizure Recreation')}
+                                className={`flex-1 py-3 px-4 rounded-lg text-base font-semibold transition-colors duration-200 ${
+                                    patient.stimulation_types.recreation 
+                                        ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                }`}
+                                disabled={!patient.stimulation_types.recreation}
+                            >
+                                <span className="mr-2">⚡</span>
+                                Seizure Recreation
+                            </button>
+                            <button
+                                onClick={() => handleButtonClick(buttons[3], 'CCEPs')}
+                                className={`flex-1 py-3 px-4 rounded-lg text-base font-semibold transition-colors duration-200 ${
+                                    patient.stimulation_types.ccep 
+                                        ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                }`}
+                                disabled={!patient.stimulation_types.ccep}
+                            >
+                                <span className="mr-2">⚡</span>
+                                CCEPs
+                            </button>
                         </div>
-                    ))}
+                    ) : (
+                        <button
+                            onClick={() => setShowStimulationMenu(!showStimulationMenu)}
+                            className={`w-1/2 py-4 px-6 rounded-lg text-lg font-semibold transition-colors duration-200
+                                ${buttons[3].exists 
+                                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                            disabled={!buttons[3].exists || isLoading}
+                        >
+                            <span className="mr-2">{buttons[3].icon}</span>
+                            {buttons[3].name}
+                        </button>
+                    )}
                 </div>
                 {isLoading && (
                     <div className="mt-4 text-center text-gray-600">
@@ -1524,6 +1965,8 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                     </div>
                 )}
             </div>
+
+            <Legend isOpen={showLegend} onClose={() => setShowLegend(false)} />
         </div>
     );
 };
@@ -1532,7 +1975,10 @@ const RecentFiles = ({ onOpenFile, className }) => {
     const [recentPatients, setRecentPatients] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const [showLegend, setShowLegend] = useState(false);
+    const [showStimulationMenu, setShowStimulationMenu] = useState(null);
     const { showError } = useError();
+    const { showWarning } = useWarning();
     
     // Get addTab from HomePage context
     const addTab = window.addTab;
@@ -1557,11 +2003,15 @@ const RecentFiles = ({ onOpenFile, className }) => {
                     throw new Error('Failed to fetch recent patients');
                 }
 
-                const patients = await response.json();
-                setRecentPatients(patients.slice(0, 7));
+                const data = await response.json();
+                setRecentPatients(data.patients.slice(0, 7));
             } catch (error) {
-                console.error('Error fetching recent patients:', error);
-                showError('Failed to load recent patients');
+                if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                    showWarning("No internet connection. Failed to load recent patients");
+                } else {
+                    console.error('Error fetching recent patients:', error);
+                    showError('Failed to load recent patients');
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -1576,13 +2026,22 @@ const RecentFiles = ({ onOpenFile, className }) => {
     
     return (
         <div className={`justify-center ${className}`}>
-            <h3 className="text-xl font-bold
-                           md:text-2xl
-                           lg:text-3xl
-                           xl:text-4xl">
-                Recent Patients
-            </h3>
-            <div className="bg-slate-200 rounded-xl p-2 mt-2">
+            <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold
+                               md:text-2xl
+                               lg:text-3xl
+                               xl:text-4xl">
+                    Recent Patients
+                </h3>
+                <button 
+                    onClick={() => setShowLegend(true)}
+                    className="text-gray-500 hover:text-gray-700 text-xl cursor-pointer"
+                    title="Show Legend"
+                >
+                    ?
+                </button>
+            </div>
+            <div className="bg-sky-200 rounded-xl p-2 mt-2">
                 {isLoading ? (
                     <div className="text-gray-600">Loading...</div>
                 ) : recentPatients.length > 0 ? (
@@ -1601,10 +2060,21 @@ const RecentFiles = ({ onOpenFile, className }) => {
                                     {formatPatientDisplay(patient)}
                                 </div>
                                 <div className="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                                    {patient.has_localization && <span className="mr-2">📍</span>}
-                                    {patient.has_designation && <span className="mr-2">📝</span>}
-                                    {patient.has_stimulation && <span className="mr-2">⚡</span>}
-                                    {patient.has_test_selection && <span>🧪</span>}
+                                    {patient.has_localization && (
+                                        <span className="mr-2 cursor-help" title="Anatomy File">📍</span>
+                                    )}
+                                    {patient.has_designation && (
+                                        <span className="mr-2 cursor-help" title="Epilepsy File">📝</span>
+                                    )}
+                                    {patient.has_resection && (
+                                        <span className="mr-2 cursor-help" title="Neurosurgery File">🔪</span>
+                                    )}
+                                    {(patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep) && (
+                                        <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
+                                    )}
+                                    {patient.has_test_selection && (
+                                        <span className="cursor-help" title="Neuropsychology File">🧪</span>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -1621,6 +2091,8 @@ const RecentFiles = ({ onOpenFile, className }) => {
                     openSavedFile={onOpenFile}
                 />
             )}
+
+            <Legend isOpen={showLegend} onClose={() => setShowLegend(false)} />
         </div>
     );
 };
@@ -1746,6 +2218,7 @@ const Approved = () => {
 const App = () => {
     return (
         <ErrorProvider>
+        <WarningProvider>
             <Router>
                 <Routes>
                     <Route path="/" element={<HomePage />} />
@@ -1761,6 +2234,7 @@ const App = () => {
                     <Route path="/usage-docs/:path" element={<UserDocumentation/>} />
                 </Routes>
             </Router>
+        </WarningProvider>
         </ErrorProvider>
     );
 };

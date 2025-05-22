@@ -1,4 +1,5 @@
 import { transpose } from "../matlab_functions.js";
+import { describe, test, expect } from 'vitest';
 
 describe("transpose", () => {
     test("should transpose a square matrix", () => {

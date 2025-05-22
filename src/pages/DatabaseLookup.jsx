@@ -848,7 +848,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 </div>
 
                 {/* Suggestions Dropdown */}
-                {activeSuggestions && suggestions.length > 0 && (
+                {activeSuggestions && suggestions && suggestions.length > 0 && (
                     <ul className="bg-white border border-gray-300 rounded shadow max-h-60 overflow-y-auto absolute z-10 w-full">
                         {suggestions.map((sug, i) => (
                             <li

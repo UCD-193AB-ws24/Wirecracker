@@ -1,4 +1,5 @@
 import { unique } from "../matlab_functions.js";
+import { describe, test, expect } from 'vitest';
 
 describe("unique", () => {
     test("should return an empty array when given an empty array", () => {

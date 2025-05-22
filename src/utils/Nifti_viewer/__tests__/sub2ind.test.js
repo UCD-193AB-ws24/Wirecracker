@@ -1,4 +1,5 @@
 import { sub2ind } from "../matlab_functions.js";
+import { describe, test, expect } from 'vitest';
 
 describe("sub2ind", () => {
     test("should return correct linear index for 2D array", () => {

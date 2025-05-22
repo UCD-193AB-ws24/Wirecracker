@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { demoContactsData, demoTestData } from "./demoContactsData";
 import { saveTestCSVFile } from "../../utils/CSVParser";
 import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
+import { useWarning } from "../../context/WarningContext";
 import mapConsecutive from "../../utils/MapConsecutive";
 
 const backendURL = config.backendURL;
@@ -10,10 +10,10 @@ const backendURL = config.backendURL;
 const FunctionalTestSelection = ({
     initialData = {},
     onStateChange,
-    switchContent,
     savedState = {},
 }) => {
     const { showError } = useError();
+    const { showWarning } = useWarning();
     const [allAvailableTests, setAllAvailableTests] = useState([] || savedState.allTests);
     
     const [contactPairs, setContactPairs] = useState(() => {
@@ -33,10 +33,14 @@ const FunctionalTestSelection = ({
         }
         if (contactsData) {
             return contactsData.map(electrode => {
-                return mapConsecutive(electrode.contacts, 2,
-                    (contacts) => { return contacts; });
+                // Create pairs of consecutive contacts where at least one has a surgeon mark
+                return mapConsecutive(electrode.contacts, 2, contacts => {
+                    // Return the pair if either contact has a surgeon mark
+                    return (contacts[0].surgeonMark && contacts[1].surgeonMark) ? contacts : null;
+                });
             })
             .flat()
+            .filter(Boolean)
             .sort((a, b) => a[0].order - b[0].order);
         }
         return [];
@@ -84,7 +88,10 @@ const FunctionalTestSelection = ({
                 const { data } = await res.json();
                 setAllAvailableTests(data);
             } catch (err) {
-                console.error("Failed to fetch lobe options:", err);
+                if (err.name === "NetworkError" || err.message.toString().includes("NetworkError")) {
+                    showError("No internet connection. Unable to load tests");
+                }
+                console.error("Failed to fetch tests:", err);
             }
         };
 
@@ -259,15 +266,17 @@ const FunctionalTestSelection = ({
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save test selection:', result.error);
-                        showError(`Failed to save test selection: ${result.error}`);
-                        return;
+                        throw new Error(result.error || 'Failed to save test selection');
                     }
 
-                    // Update the state with new modified date
-                    setState(prevState => ({
-                        ...prevState,
-                        modifiedDate: new Date().toISOString()
-                    }));
+                    // Only update the state with new modified date if the save was successful
+                    // and we got a new modified date back
+                    if (result.modifiedDate) {
+                        setState(prevState => ({
+                            ...prevState,
+                            modifiedDate: result.modifiedDate
+                        }));
+                    }
 
                     // Show success feedback if this was a save operation
                     if (!download) {
@@ -278,25 +287,81 @@ const FunctionalTestSelection = ({
                     console.log('Test selection saved successfully');
                 } catch (error) {
                     console.error('Error saving test selection:', error);
-                    showError(`Error saving test selection: ${error.message}`);
-                    return;
+                    throw error;
                 }
             }
-
+        } catch (error) {
+            if (error.name === "NetworkError" || (error.message && error.message.toString().includes("NetworkError"))) {
+                if (download) {
+                    showWarning("No internet connection. The progress is not saved on the database.");
+                } else {
+                    showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+                }
+            } else {
+                console.error("Error exporting contacts:", error);
+                showError(`Error exporting contacts: ${error.message || 'Unknown error occurred'}`);
+            }
+        } finally {
             // Then export to CSV if download is true
             if (download) {
                 saveTestCSVFile(tests, contacts, download);
             }
+        }
+    };
+
+    const handleOpenStimulation = async () => {
+        try {
+            // Format the data for stimulation
+            const stimulationContacts = initialData.data?.data || initialData.data;
+            let stimulationData = stimulationContacts.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map((contact, index) => {
+                    let pair = index;
+                    if (index == 0) pair = 2;
+                    return {
+                        ...contact,
+                        pair: pair,
+                        isPlanning: false,
+                        duration: 3.0,
+                        frequency: 105.225,
+                        current: 2.445,
+                    }
+                }),
+            }));
+
+            // Create a new tab with the stimulation data
+            const event = new CustomEvent('addStimulationTab', {
+                detail: { 
+                    data: stimulationData,
+                    patientId: savedState.patientId,
+                    state: {
+                        patientId: savedState.patientId,
+                        fileId: savedState.fileId,
+                        fileName: savedState.fileName,
+                        creationDate: savedState.creationDate,
+                        modifiedDate: new Date().toISOString(),
+                        testSelectionModifiedDate: savedState.modifiedDate,
+                        fromTestSelection: true
+                    }
+                }
+            });
+            window.dispatchEvent(event);
+
+            await exportTests(tests, initialData.data?.data || initialData.data, false);
         } catch (error) {
-            console.error("Error exporting contacts:", error);
-            showError(`Error exporting contacts: ${error.message}`);
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+            } else {
+                console.error('Error opening stimulation:', error);
+                showError('Failed to open stimulation. Please try again.');
+            }
         }
     };
 
     return (
         <div className="p-12 bg-gray-50 min-h-auto">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">
-                Function Mapping Test Selection
+                Neuropsychology
             </h1>
 
             {/* Auto Assign Button */}
@@ -321,11 +386,6 @@ const FunctionalTestSelection = ({
                             <span className="text-gray-600 text-sm">
                                 {contactPair[0].associatedLocation} - {contactPair[1].associatedLocation}
                             </span>
-                        </div>
-                        <div className="text-gray-500 text-sm">
-                            Duration: {contactPair[0].duration} sec | Frequency:{" "}
-                            {contactPair[0].frequency} Hz | Current: {contactPair[0].current}{" "}
-                            mA
                         </div>
 
                         {/* Display added tests */}
@@ -409,7 +469,7 @@ const FunctionalTestSelection = ({
                 ))}
             </div>
 
-            {/* Test Selection Popup */}
+            {/* Neuropsychology Popup */}
             {showPopup && selectedContact && (
                 <div className="fixed inset-0 bg-black/25 flex items-center justify-center">
                     <div className="bg-white p-6 rounded-lg shadow-lg w-[500px] max-h-[450px]">
@@ -516,7 +576,7 @@ const FunctionalTestSelection = ({
                 <div className="relative">
                     <button
                         className="py-2 px-4 bg-green-500 text-white font-bold rounded hover:bg-green-700 border border-green-700 shadow-lg"
-                        onClick={() => exportTests(tests, initialData.data[0].contacts, false)}
+                        onClick={() => exportTests(tests, initialData.data?.data || initialData.data, false)}
                     >
                         Save
                     </button>
@@ -528,20 +588,15 @@ const FunctionalTestSelection = ({
                 </div>
                 <button
                     className="py-2 px-4 bg-blue-500 text-white font-bold rounded hover:bg-blue-700 border border-blue-700 shadow-lg"
-                    onClick={() => exportTests(tests, initialData.data[0].contacts)}
+                    onClick={() => exportTests(tests, initialData.data?.data || initialData.data)}
                 >
                     Export
                 </button>
-            </div>
-
-            {/* Floating Back Button at the Bottom Left */}
-            <div className="fixed bottom-2 left-2 z-50
-                            lg:bottom-6 lg:left-6">
                 <button
-                    className="py-1 px-2 border border-sky-800 bg-sky-600 text-white text-sm text-center font-bold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800
-                               lg:py-2 lg:px-4 lg:text-base"
-                    onClick={() => switchContent('stimulation')}>
-                    Back
+                    className="py-2 px-4 bg-purple-500 text-white font-bold rounded hover:bg-purple-700 border border-purple-700 shadow-lg"
+                    onClick={handleOpenStimulation}
+                >
+                    Open in Stimulation
                 </button>
             </div>
         </div>

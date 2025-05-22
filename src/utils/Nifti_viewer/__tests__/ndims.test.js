@@ -1,4 +1,5 @@
 import { ndims } from '../matlab_functions.js';
+import { describe, test, expect } from 'vitest';
 
 describe('ndims function', () => {
     test('number of dimensions for a 1D array', () => {

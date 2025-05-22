@@ -8,8 +8,9 @@ import { saveStimulationCSVFile } from "../../utils/CSVParser";
 import mapConsecutive from "../../utils/MapConsecutive";
 import config from "../../../config.json" with { type: 'json' };
 import { useError } from '../../context/ErrorContext';
+import { useWarning } from '../../context/WarningContext';
 
-const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, switchContent, isFunctionalMapping = false }) => {
+const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, switchContent, type = 'mapping' }) => {
     const { showError } = useError();
     const [electrodes, setElectrodes] = useState(savedState.electrodes || initialData.data || demoContactData)
     const [planningContacts, setPlanningContacts] = useState(() => {
@@ -19,7 +20,10 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
             return contactsData.map(electrode => {
                 return mapConsecutive(electrode.contacts, 2,
                     (contacts) => {
-                        return contacts[0].isPlanning ? null : contacts;
+                        if (contacts[0].isPlanning) {
+                            return contacts;
+                        }
+                        return null;
                     });
             })
             .flat()
@@ -128,7 +132,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
             <div className="flex min-h-screen p-6 space-x-6">
                 <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} submitPlanning={submitPlanning} onStateChange={setState} savedState={state} setElectrodes={setElectrodes}/>
 
-                <PlanningPane state={state} electrodes={electrodes} contactPairs={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} setElectrodes={setElectrodes} onStateChange={setState} savedState={state} isFunctionalMapping={isFunctionalMapping} />
+                <PlanningPane state={state} electrodes={electrodes} contactPairs={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} setElectrodes={setElectrodes} onStateChange={setState} savedState={state} type={type} />
             </div>
             <Container className="">
                 <Button
@@ -138,17 +142,6 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
                     <div>T</div>
                 </Button>
             </Container>
-
-            {/* Floating Back Button at the Bottom Left */}
-            <div className="fixed bottom-2 left-2 z-50
-                            lg:bottom-6 lg:left-6">
-                <button
-                    className="py-1 px-2 border border-sky-800 bg-sky-600 text-white text-sm text-center font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-800
-                               lg:py-2 lg:px-4 lg:text-base"
-                    onClick={() => switchContent('stimulation')}>
-                    Back
-                </button>
-            </div>
         </DndProvider>
     );
 };
@@ -179,19 +172,22 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
         return mapConsecutive(electrode.contacts, 2, (contacts) => { // List for every contact pair
             if (!contacts) return null;
 
-            // Filter out the non-marked contacts.
-            const shouldAppear1 = !(droppedContacts.some((c) => c.id === contacts[0].id)) && 
-                                  (contacts[0].mark || contacts[1].surgeonMark);
-            const shouldAppear2 = (contacts[1].mark || contacts[1].surgeonMark);
+            // Only show contacts that haven't been dropped to planning
+            const notDropped = !(droppedContacts.some((c) => c.id === contacts[0].id));
+
+            // In default state, only show pairs where both contacts have surgeonMark
+            const bothSurgeonMarked = contacts[0].surgeonMark && contacts[1].surgeonMark;
 
             return (
                 !(contacts[0].isPlanning) && (
                     areAllVisible ? (
-                        <Contact key={contacts[0].id}
-                            contacts={contacts}
-                            onClick={() => onClick(contacts)} />
+                        notDropped && (
+                            <Contact key={contacts[0].id}
+                                contacts={contacts}
+                                onClick={() => onClick(contacts)} />
+                        )
                     ) : (
-                        (shouldAppear1 || shouldAppear2) && (
+                        notDropped && bothSurgeonMarked && (
                             <Contact key={contacts[0].id}
                                 contacts={contacts}
                                 onClick={() => onClick(contacts)} />
@@ -244,7 +240,7 @@ const Contact = ({ contacts, onClick }) => {
     } else {
         classes += "bg-stone-300 ";
     }
-    if (contacts[0].surgeonMark || contacts[1].surgeonMark) {
+    if (contacts[0].surgeonMark && contacts[1].surgeonMark) {
         classes += "border-2 border-stone-500";
     } else {
         classes += "border border-gray-300";
@@ -263,10 +259,11 @@ const Contact = ({ contacts, onClick }) => {
 };
 
 // Planning pane on the right
-const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, submitFlag, setSubmitFlag, setElectrodes, onStateChange, savedState, isFunctionalMapping = false }) => {
+const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, submitFlag, setSubmitFlag, setElectrodes, onStateChange, savedState, type = 'ccep' }) => {
     const { showError } = useError();
     const [hoverIndex, setHoverIndex] = useState(null);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+    const { showWarning } = useWarning();
 
     let index = hoverIndex; // For synchronization between hover and drop
 
@@ -296,188 +293,84 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
         }),
     }));
 
-    const createTestSelectionTab = async () => {
-        if (Object.keys(contactPairs).length === 0) return;
-
+    const handleSave = async () => {
         try {
-            console.log('Starting test selection tab creation...');
-            console.log('Current state:', {
-                fileId: state.fileId,
-                patientId: state.patientId,
-                fileName: state.fileName
-            });
-
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.error('No authentication token found');
-                showError('User not authenticated. Please log in to save stimulation.');
-                return;
-            }
-
-            // Fetch patient_id from the parent file if not already in state
-            if (!state.patientId) {
-                console.log('Fetching patient_id from parent file...');
-                const parentFileResponse = await fetch(`${config.backendURL}/api/files/patient/${state.fileId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                const parentFileData = await parentFileResponse.json();
-                console.log('Parent file metadata response:', parentFileData);
-
-                if (!parentFileData.patientId) {
-                    console.error('Failed to fetch parent file metadata:', parentFileData.error);
-                    showError('Failed to fetch parent file metadata. Please try again.');
-                    return;
-                }
-
-                // Update state with the patient ID
-                onStateChange({
-                    ...state,
-                    patientId: parentFileData.patientId
-                });
-            }
-
-            const parentPatientId = state.patientId;
-            console.log('Using patient_id:', parentPatientId);
-
-            await handleSave();
-
-            // Clean up the contacts
-            const functionalTestData = contacts.map(contact => {
-                const updatedContact = electrodes
-                    .flatMap(electrode => electrode.contacts)
-                    .find(c => c.id === contact.id);
-
-                const pair = electrodes
-                    .find(electrode => electrode.label === contact.electrodeLabel)
-                    ?.contacts.find(c => c.index === contact.pair);
-
-                return {
-                    __contactDescription__: contact.__contactDescription__,
-                    __electrodeDescription__: contact.__electrodeDescription__,
-                    associatedLocation: contact.associatedLocation,
-                    electrodeLabel: contact.electrodeLabel,
-                    id: contact.id,
-                    index: contact.index,
-                    mark: contact.mark,
-                    pair: pair,
-                    surgeonMark: contact.surgeonMark,
-                    duration: updatedContact?.duration,
-                    frequency: updatedContact?.frequency,
-                    current: updatedContact?.current,
-                }
-            });
-
-            // Check if a test selection tab already exists in the UI
-            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const existingTab = tabs.find(tab => 
-                tab.content === 'functional-test' && 
-                tab.state?.patientId === parentPatientId
-            );
-            
-            if (existingTab) {
-                // Compare the current stimulation data with the existing tab's data
-                const currentStimulationData = functionalTestData;
-                const existingStimulationData = existingTab.state.contacts;
-                
-                // Check if the stimulation data has changed
-                const hasStimulationChanged = JSON.stringify(currentStimulationData) !== JSON.stringify(existingStimulationData);
-                
-                if (hasStimulationChanged) {
-                    // Close the existing tab
-                    const closeEvent = new CustomEvent('closeTab', {
-                        detail: { tabId: existingTab.id }
-                    });
-                    window.dispatchEvent(closeEvent);
-
-                    // Create a new tab with updated data
-                    const event = new CustomEvent('addFunctionalTestTab', {
-                        detail: { 
-                            data: { 
-                                contacts: functionalTestData, 
-                                tests: existingTab.state.tests || {} // Preserve existing tests
-                            },
-                            patientId: parentPatientId,
-                            state: {
-                                patientId: parentPatientId,
-                                fileId: existingTab.state.fileId,
-                                fileName: existingTab.state.fileName,
-                                creationDate: existingTab.state.creationDate,
-                                modifiedDate: new Date().toISOString()
-                            },
-                            originalData: {
-                                patientId: parentPatientId
-                            }
-                        }
-                    });
-                    window.dispatchEvent(event);
-                } else {
-                    // Just set the existing tab as active
-                    const activateEvent = new CustomEvent('setActiveTab', {
-                        detail: { tabId: existingTab.id }
-                    });
-                    window.dispatchEvent(activateEvent);
-                }
-            } else {
-                // Check if test data exists in the database for this patient
-                const testResponse = await fetch(`${config.backendURL}/api/by-patient-test/${parentPatientId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!testResponse.ok) {
-                    throw new Error('Failed to check for existing test data');
-                }
-
-                const testResult = await testResponse.json();
-                
-                // Create a new tab with the test selection data
-                const event = new CustomEvent('addFunctionalTestTab', {
-                    detail: { 
-                        data: { 
-                            contacts: functionalTestData, 
-                            tests: testResult.exists ? testResult.data.tests : {}
-                        },
-                        patientId: parentPatientId,
-                        state: {
-                            patientId: parentPatientId,
-                            fileId: testResult.exists ? testResult.fileId : null
-                        }
-                    }
-                });
-                window.dispatchEvent(event);
-            }
-            console.log('Test selection tab creation completed successfully');
+            await exportState(state, electrodes, type, false);
+            setShowSaveSuccess(true);
+            setTimeout(() => setShowSaveSuccess(false), 2000);
         } catch (error) {
-            console.error('Error creating test selection tab:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                cause: error.cause
-            });
-            showError('Failed to create test selection tab. Please try again.');
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+            } else {
+                console.error('Error saving:', error);
+                showError(error.message);
+            }
         }
     };
 
-    const handleSave = async () => {
+    const handleExport = () => {
         try {
-            await exportState(state, electrodes, isFunctionalMapping, false);
-            setShowSaveSuccess(true);
-            setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
+            exportState(state, electrodes, type, true);
         } catch (error) {
-            console.error('Error saving:', error);
-            showError(error.message);
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+            } else {
+                console.error('Error exporting:', error);
+                showError(error.message);
+            }
+        }
+    };
+
+    // Get display name for stimulation type
+    const getStimulationTypeDisplay = () => {
+        switch(type) {
+            case 'mapping':
+                return 'Functional Mapping';
+            case 'recreation':
+                return 'Seizure Recreation';
+            case 'ccep':
+                return 'CCEPs';
+            default:
+                return 'Stimulation';
         }
     };
 
     return (
         <div ref={drop} className={`p-4 w-1/4 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
-            <h2 className="text-2xl font-bold mb-4">Planning Pane</h2>
+            <div className="flex justify-between items-center mb-4">
+                <div>
+                    <h2 className="text-xl font-semibold">Planning</h2>
+                    <p className="text-sm text-gray-600">{getStimulationTypeDisplay()}</p>
+                </div>
+                <div className="flex space-x-2">
+                    <div className="relative">
+                        <button
+                            className={`py-2 px-4 bg-green-500 text-white font-bold rounded ${
+                                contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700 border border-green-700"
+                            }`}
+                            onClick={handleSave}
+                            disabled={contactPairs.length === 0}
+                        >
+                            Save
+                        </button>
+                        {showSaveSuccess && (
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap z-50">
+                                Save successful!
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        className={`py-2 px-4 bg-sky-500 text-white font-bold rounded ${
+                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-sky-700 border border-sky-700"
+                        }`}
+                        onClick={handleExport}
+                        disabled={contactPairs.length === 0}
+                    >
+                        Export
+                    </button>
+                </div>
+            </div>
             {contactPairs.length === 0 ? (
                 <p className="text-lg text-gray-500">Drag contacts here</p>
             ) : (
@@ -495,40 +388,6 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
                     )}
                 </ul>
             )}
-            <div className="flex space-x-2 absolute right-10 bottom-10">
-                {isFunctionalMapping ? (
-                    <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
-                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                            }`} onClick={createTestSelectionTab}>
-                        select tests
-                    </button>
-                ) : (
-                    <div />
-                )}
-
-                <div className="relative">
-                    <button
-                        className={`py-2 px-4 bg-green-500 text-white font-bold rounded ${
-                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700 border border-green-700"
-                        }`}
-                        onClick={handleSave}
-                        disabled={contactPairs.length === 0}
-                    >
-                        Save
-                    </button>
-                    {showSaveSuccess && (
-                        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap z-50">
-                            Save successful!
-                        </div>
-                    )}
-                </div>
-
-                <button className={`py-2 px-4 bg-blue-500 text-white font-bold rounded ${
-                        contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700 border border-blue-700"
-                        }`} onClick={() => exportState(state, electrodes, isFunctionalMapping, true)}>
-                    Export
-                </button>
-            </div>
         </div>
     );
 };
@@ -608,7 +467,7 @@ const PlanningContact = ({ contacts, onDropBack, onStateChange, savedState, setE
     } else {
         classes += "bg-stone-300 ";
     }
-    if (contacts[0].surgeonMark || contacts[1].surgeonMark) {
+    if (contacts[0].surgeonMark && contacts[1].surgeonMark) {
         classes += "border-2 border-stone-500";
     } else {
         classes += "border border-gray-300";
@@ -660,9 +519,9 @@ const PlanningContact = ({ contacts, onDropBack, onStateChange, savedState, setE
     );
 };
 
-const exportState = async (state, electrodes, isFunctionalMapping, download = true) => {
+const exportState = async (state, electrodes, type, download = true) => {
+    let planOrder = state.planningContacts.map(contacts => contacts[0].id);
     try {
-        let planOrder = state.planningContacts.map(contacts => contacts[0].id);
         // First save to database if we have a file ID
         if (state.fileId) {
             console.log('Saving stimulation plan to database...');
@@ -675,7 +534,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
             // Get user ID from session
             const token = localStorage.getItem('token');
             if (!token) {
-                throw new Error('User not authenticated. Please log in to save designations.');
+                throw new Error('User not authenticated. Please log in to save.');
             }
             
             try {
@@ -690,7 +549,7 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
                     body: JSON.stringify({
                         electrodes: electrodes,
                         planOrder: planOrder,
-                        isFunctionalMapping: isFunctionalMapping,
+                        type: type,
                         fileId: state.fileId,
                         fileName: state.fileName,
                         creationDate: state.creationDate,
@@ -703,21 +562,22 @@ const exportState = async (state, electrodes, isFunctionalMapping, download = tr
                 console.log('Save stimulation response:', result);
                 if (!result.success) {
                     console.error('Failed to save stimulation:', result.error);
-                    throw new Error(`Failed to save stimulation: ${result.error}`);
+                    throw error;
                 }
 
                 console.log('Stimulation saved successfully');
             } catch (error) {
                 console.error('Error saving stimulation:', error);
-                throw new Error(`Error saving stimulation: ${error.message}`);
+                throw error;
             }
         }
-
-        // Then export to CSV as before
-        saveStimulationCSVFile(electrodes, planOrder, isFunctionalMapping, download);
     } catch (error) {
         console.error('Error exporting contacts:', error);
-        throw new Error(`Error exporting contacts: ${error.message}`);
+        throw error;
+    } finally {
+        if (download) {
+            saveStimulationCSVFile(electrodes, planOrder, type, download);
+        }
     }
 };
 

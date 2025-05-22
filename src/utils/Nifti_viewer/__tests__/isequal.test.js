@@ -1,10 +1,16 @@
 import { isequal } from "../matlab_functions.js";
+import { describe, test, expect } from 'vitest';
 
 describe("isequal", () => {
     test("should return true for identical arrays", () => {
         expect(isequal([1, 2, 3], [1, 2, 3])).toBe(true);
         expect(isequal([], [])).toBe(true);
     });
+
+    test("should return true for same object", () => {
+        const arr = [6, 5, 4];
+        expect(isequal(arr, arr)).toBe(true);
+    })
 
     test("should return false for arrays with different lengths", () => {
         expect(isequal([1, 2, 3], [1, 2])).toBe(false);
