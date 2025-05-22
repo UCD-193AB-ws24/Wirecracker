@@ -13,6 +13,8 @@ import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
 import { parseCSVFile, Identifiers } from './utils/CSVParser';
 import Localization from './pages/Localization';
 import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
+import Designation from './pages/ContactDesignation/DesignationPage';
+import Resection from './pages/ContactDesignation/ResectionPage';
 import { FcGoogle } from 'react-icons/fc';
 import config from '../config.json' with { type: 'json' };
 import { ErrorProvider, useError } from './context/ErrorContext';
@@ -508,6 +510,18 @@ const HomePage = () => {
 
     // Add event listener for stimulation tab creation
     useEffect(() => {
+        const handleAddResectionTab = (event) => {
+            addTab('resection', event.detail);
+        };
+
+        window.addEventListener('addResectionTab', handleAddResectionTab);
+        return () => {
+            window.removeEventListener('addResectionTab', handleAddResectionTab);
+        };
+    }, []);
+
+    // Add event listener for stimulation tab creation
+    useEffect(() => {
         const handleAddStimulationTab = (event) => {
             const { data, state, title } = event.detail;
             let type;
@@ -631,10 +645,22 @@ const HomePage = () => {
                 title = 'CSV Localization';
                 patientId = data.patientId ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
-            case 'designation':         
+            case 'designation':
                 title = 'Designation';
                 patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
                 console.log('Setting patientId for designation:', {
+                    finalPatientId: patientId,
+                    sources: {
+                        dataPatientId: data.patientId,
+                        statePatientId: data.state?.patientId,
+                        originalDataPatientId: data.originalData?.patientId
+                    }
+                });
+                break;
+            case 'resection':
+                title = 'Resection';
+                patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
+                console.log('Setting patientId for resection:', {
                     finalPatientId: patientId,
                     sources: {
                         dataPatientId: data.patientId,
@@ -809,6 +835,7 @@ const HomePage = () => {
 
         try {
             const { identifier, data } = await parseCSVFile(file, false, (msg) => setError(msg));
+            // TODO: add resection option
             if (identifier === Identifiers.LOCALIZATION) {
                 addTab('csv-localization', { name: file.name, data });
             } else if (identifier === Identifiers.DESIGNATION) {
@@ -859,7 +886,7 @@ const HomePage = () => {
             setTabs(prevTabs => [...prevTabs, newTab]);
             setActiveTab(newTab.id);
         } 
-        else if (type === 'designation') {
+        else if (type === 'designation' || type === 'resection') {
             console.log('Opening saved file:', fileData);
             
             const newTab = {
@@ -996,14 +1023,28 @@ const HomePage = () => {
                     savedState={currentTab.state}
                 />;
             case 'designation':
-                return <ContactDesignation
+                return <Designation
                     key={currentTab.id}
                     initialData={currentTab.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}
                     savedState={currentTab.state}
                 />;
             case 'csv-designation':
-                return <ContactDesignation
+                return <Designation
+                    key={currentTab.id}
+                    initialData={currentTab.data.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'resection':
+                return <Resection
+                    key={currentTab.id}
+                    initialData={currentTab.data}
+                    onStateChange={(newState) => updateTabState(currentTab.id, newState)}
+                    savedState={currentTab.state}
+                />;
+            case 'csv-resection':
+                return <Resection
                     key={currentTab.id}
                     initialData={currentTab.data.data}
                     onStateChange={(newState) => updateTabState(currentTab.id, newState)}

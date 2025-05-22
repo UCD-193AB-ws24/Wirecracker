@@ -1,11 +1,30 @@
-import { parseCSVFile } from '../../utils/CSVParser';
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import load_untouch_nii from '../../utils/Nifti_viewer/load_untouch_nifti.js'
 import nifti_anatomical_conversion from '../../utils/Nifti_viewer/nifti_anatomical_conversion.js'
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import { parseCSVFile } from '../../utils/CSVParser';
 import { useError } from '../../context/ErrorContext';
 import { niftiStorage } from '../../utils/IndexedDBStorage';
+import { saveDesignationCSVFile } from "../../utils/CSVParser";
+import config from "../../../config.json" with { type: 'json' };
 
-const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
+const backendURL = config.backendURL;
+
+/**
+ * @module Resection
+ */
+
+/**
+ * Resection page for neurosurgeon to mark contacts that need to be tested
+ * @component
+ * @param {Object} [initialData] - Initial data for electrodes
+ * @param {Function} onStateChange - Callback for state changes
+ * @param {Object} [savedState] - Saved state data
+ * @returns {JSX.Element} Resection component
+ */
+const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
+    /**
+     * Store if NIFTI image is loaded or not
+     */
     const [imageLoaded, setImageLoaded] = useState(savedState.isLoaded || false);
 
     useEffect(() => {
@@ -15,8 +34,341 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
         });
     }, [imageLoaded]);
 
+
+    const { showError } = useError();
+    const [state, setState] = useState(savedState);
+    const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+
+    /**
+     * Store original localization for saving / exporting later
+     */
+    const [localizationData, setLocalizationData] = useState(() => {
+        if (savedState && savedState.localizationData) {
+            return structuredClone(savedState.localizationData);
+        }
+        return initialData?.data.originalData ? structuredClone(initialData.data.originalData) : null;
+    });
+
+    /**
+     * Store electrodes data
+     */
+    const [electrodes, setElectrodes] = useState(() => {
+        if (savedState && savedState.electrodes) {
+            return structuredClone(savedState.electrodes);
+        }
+
+        if (initialData && initialData.data.electrodes) {
+            return structuredClone(initialData.data.electrodes);
+        }
+    });
+
+    // Save state changes
+    useEffect(() => {
+        onStateChange(state);
+    }, [state]);
+
+    useEffect(() => {
+        const newState = {
+            ...state,
+            electrodes: electrodes,
+            localizationData: localizationData
+        };
+        setState(newState);
+    }, [electrodes, localizationData]);
+
+    /**
+     * Handles contact click event
+     * @param {string} contactId - ID of the clicked contact
+     * @param {Function} change - Function to modify contact state
+     */
+    const onClick = (contactId, change) => {
+        setElectrodes(prevElectrodes => {
+            return prevElectrodes.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map(contact => {
+                    if (contact.id === contactId) {
+                        return change(contact);
+                    }
+                    return contact;
+                }),
+            }));
+        });
+    };
+
+    /**
+     * Handles saving resection data
+     * @async
+     */
+    const handleSave = async () => {
+        try {
+            // First save to database if we have a file ID
+            if (state.fileId) {
+                console.log('Saving resection with patientId:', {
+                    fromState: state.patientId,
+                    fromLocalizationData: localizationData?.patientId,
+                    fileId: state.fileId
+                });
+
+                // Get user ID from session
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showError('User not authenticated. Please log in to save resection.');
+                    return;
+                }
+
+                try {
+                    // First save/update file metadata
+                    // Reusing the link for designation because these two page shares the same data structure
+                    const response = await fetch(`${backendURL}/api/save-designation`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        },
+                        body: JSON.stringify({
+                            designationData: electrodes,
+                            localizationData: localizationData,
+                            fileId: state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString(),
+                            patientId: state.patientId
+                        }),
+                    });
+
+                    const result = await response.json();
+                    if (!result.success) {
+                        console.error('Failed to save resection:', result.error);
+                        showError(`Failed to save resection: ${result.error}`);
+                        return;
+                    }
+
+                    // Update the state with new modified date
+                    setState(prevState => ({
+                        ...prevState,
+                        modifiedDate: new Date().toISOString()
+                    }));
+
+                    // Show success feedback
+                    setShowSaveSuccess(true);
+                    setTimeout(() => setShowSaveSuccess(false), 3000); // Hide after 3 seconds
+
+                    console.log('Resection saved successfully');
+                } catch (error) {
+                    console.error('Error saving resection:', error);
+                    showError(`Error saving resection: ${error.message}`);
+                    return;
+                }
+            }
+
+            // Then export to CSV as before
+            if (localizationData) {
+                // If we have localization data, use it to create a CSV with the same format
+                saveDesignationCSVFile(electrodes, localizationData, false);
+            } else {
+                // Fall back to the simple logging if no localization data
+                for (let electrode of electrodes) {
+                    for (let contact of electrode.contacts) {
+                        console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
+                    }
+                }
+            }
+        } catch (error) {
+            showError('Error saving data on database. Changes are not saved');
+        }
+    };
+
+    /**
+     * Handles exporting resection data
+     * @async
+     */
+    const handleExport = async () => {
+        try {
+            // First save to database if we have a file ID
+            if (state.fileId) {
+                console.log('Saving designation to database...');
+
+                // Get user ID from session
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showError('User not authenticated. Please log in to save designations.');
+                    return;
+                }
+
+                try {
+                    // First save/update file metadata
+                    const response = await fetch(`${backendURL}/api/save-designation`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        },
+                        body: JSON.stringify({
+                            designationData: electrodes,
+                            localizationData: localizationData,
+                            fileId: state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString(),
+                            patientId: state.patientId
+                        }),
+                    });
+
+                    const result = await response.json();
+                    if (!result.success) {
+                        console.error('Failed to save designation:', result.error);
+                        showError(`Failed to save designation: ${result.error}`);
+                        return;
+                    }
+
+                    // Update the state with new modified date
+                    setState(prevState => ({
+                        ...prevState,
+                        modifiedDate: new Date().toISOString()
+                    }));
+
+                    // Show success feedback if this was a save operation
+                        setShowSaveSuccess(true);
+
+                    console.log('Designation saved successfully');
+                } catch (error) {
+                    console.error('Error saving designation:', error);
+                    showError(`Error saving designation: ${error.message}`);
+                    return;
+                }
+            }
+
+            // Then export to CSV as before
+            if (localizationData) {
+                // If we have localization data, use it to create a CSV with the same format
+                saveDesignationCSVFile(electrodes, localizationData, true);
+            } else {
+                // Fall back to the simple logging if no localization data
+                for (let electrode of electrodes) {
+                    for (let contact of electrode.contacts) {
+                        console.log(`${contact.id} is marked ${contact.mark} and surgeon has marked: ${contact.surgeonMark}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error exporting contacts:', error);
+            showError(`Error exporting contacts: ${error.message}`);
+        }
+    };
+
+    /**
+     * Handles dispatching event to open stimulation tab
+     * @async
+     */
+    const handleOpenStimulation = async () => {
+        try {
+            await handleSave();
+
+            let stimulationData = electrodes.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map((contact, index) => {
+                    let pair = index;
+                    if (index === 0) pair = 2;
+                    return {
+                        ...contact,
+                        pair: pair,
+                        isPlanning: false,
+                        duration: 3.0,
+                        frequency: 105.225,
+                        current: 2.445,
+                    }
+                }),
+            }));
+
+            // Check for existing stimulation tabs
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            const existingTab = tabs.find(tab =>
+                (tab.content === 'csv-stimulation' || tab.content === 'stimulation') &&
+                tab.state?.patientId === state.patientId
+            );
+
+            if (existingTab) {
+                // Compare the current stimulation data with the existing tab's data
+                const currentStimulationData = stimulationData;
+                const existingStimulationData = existingTab.state.electrodes;
+
+                // Check if the stimulation data has changed
+                const hasStimulationChanged = JSON.stringify(currentStimulationData) !== JSON.stringify(existingStimulationData);
+
+                if (hasStimulationChanged) {
+                    // Close the existing tab
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(closeEvent);
+
+                    // Create a new tab with updated data
+                    const event = new CustomEvent('addStimulationTab', {
+                        detail: {
+                            data: stimulationData,
+                            patientId: state.patientId,
+                            state: {
+                                patientId: state.patientId,
+                                fileId: state.fileId,
+                                fileName: state.fileName,
+                                creationDate: state.creationDate,
+                                modifiedDate: new Date().toISOString()
+                            }
+                        }
+                    });
+                    window.dispatchEvent(event);
+                } else {
+                    // Just set the existing tab as active
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
+                }
+            } else {
+                // Check if stimulation data exists in the database for this patient
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showError('User not authenticated. Please log in to open stimulation.');
+                    return;
+                }
+
+                const response = await fetch(`${backendURL}/api/by-patient-stimulation/${state.patientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to check for existing stimulation data');
+                }
+
+                const result = await response.json();
+
+                // Create a new tab with the stimulation data
+                const event = new CustomEvent('addStimulationTab', {
+                    detail: {
+                        data: result.exists ? result.data.stimulation_data : stimulationData,
+                        patientId: state.patientId,
+                        state: {
+                            patientId: state.patientId,
+                            fileId: result.exists ? result.fileId : state.fileId,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString()
+                        }
+                    }
+                });
+                window.dispatchEvent(event);
+            }
+        } catch (error) {
+            console.error('Error opening stimulation:', error);
+            showError('Failed to open stimulation. Please try again.');
+        }
+    };
+
     return (
         <div className="flex-1 h-full">
+            {/* Show image if it is loaded. Otherwise show tile that is similar to one in designation page */}
             <div className="flex flex-col md:flex-row p-2 bg-gray-100">
                 <NIFTIimage
                 isLoaded={imageLoaded}
@@ -49,38 +401,118 @@ const Resection = ({ electrodes, onClick, onStateChange, savedState = {} }) => {
                     </ul>
                 </div>
             )}
+            {/* Floating Save and Export Buttons at the Bottom Right */}
+            <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1
+                            lg:bottom-6 lg:right-6 lg:flex-row lg:gap-2">
+                <div className="flex flex-row gap-1
+                                lg:gap-2">
+                    <div className="relative">
+                        <button
+                            className="grow py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-700 border border-sky-700 shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                            onClick={handleSave}
+                        >
+                            Save
+                        </button>
+                        {showSaveSuccess && (
+                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap z-50">
+                                Save successful!
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        className="grow py-1 px-2 bg-green-500 text-white font-semibold rounded border border-green-600 hover:bg-green-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                        onClick={handleExport}
+                    >
+                        Export
+                    </button>
+                    <button
+                        className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                        onClick={handleOpenStimulation}>
+                        Open in Stimulation Page
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };
 
+/**
+ * NIFTIimage component for displaying and interacting with NIfTI images
+ * @component
+ * @param {boolean} isLoaded - State variable to tell if the image is loaded or not to the parent component
+ * @param {Function} onLoad - Callback when image loads
+ * @param {Array} electrodes - Array of electrode data
+ * @param {Function} onContactClick - Contact click handler
+ * @param {Function} onStateChange - State change handler
+ * @param {Object} [savedState] - Saved state data
+ * @returns {JSX.Element} NIFTIimage component
+ */
 const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChange, savedState = {} }) => {
     const { showError } = useError();
     const fixedMainViewSize = 700;
     const fixedSubViewSize = 520;
 
+    /**
+     * Store nii image to save it locally using indexedDB
+     */
     const [niiData, setNiiData] = useState(null);
+
+    /**
+     * Coordinates of the contacts, used to display contacts on NIFTI image
+     */
     const [coordinates, setCoordinates] = useState(savedState.coordinate || []);
+
     const [successMessage, setSuccessMessage] = useState('');
+
+    /**
+     * Currently displayed contacts
+     */
     const [markers, setMarkers] = useState([]);
+
+    // Current slice, maximum slice, and perspective of main canvas
     const [sliceIndex, setSliceIndex] = useState(savedState.canvas_main_slice || 0);
     const [maxSlices, setMaxSlices] = useState(savedState.canvas_main_maxSlice || 0);
     const [direction, setDirection] = useState(savedState.canvas_main_direction || 'Axial');
-    const [subCanvas0Direction, setSubCanvas0Direction] = useState(savedState.canvas_sub0_direction || 'Coronal');
+
+    // Current slice, maximum slice, and perspective of sub canvas at the top
     const [subCanvas0SliceIndex, setSubCanvas0SliceIndex] = useState(savedState.canvas_sub0_slice || 0);
     const [maxSubCanvas0Slices, setMaxSubCanvas0Slices] = useState(savedState.canvas_sub0_maxSlice || 0);
-    const [subCanvas1Direction, setSubCanvas1Direction] = useState(savedState.canvas_sub1_direction || 'Sagittal');
+    const [subCanvas0Direction, setSubCanvas0Direction] = useState(savedState.canvas_sub0_direction || 'Coronal');
+
+    // Current slice, maximum slice, and perspective of sub canvas at the bottom
     const [subCanvas1SliceIndex, setSubCanvas1SliceIndex] = useState(savedState.canvas_sub0_slice || 0);
     const [maxSubCanvas1Slices, setMaxSubCanvas1Slices] = useState(savedState.canvas_sub0_maxSlice || 0);
+    const [subCanvas1Direction, setSubCanvas1Direction] = useState(savedState.canvas_sub1_direction || 'Sagittal');
+
+    /**
+     * Marker that was hovered to display the detail information of it
+     */
     const [hoveredMarker, setHoveredMarker] = useState(savedState.canvas_hoveredMarker || null);
+
+    /**
+     * To display the loading widget
+     */
     const [isLoadingNifti, setIsLoadingNifti] = useState(false);
 
+    /**
+     * Currently selected contacts using rectangle selection tool
+     */
     const [selectedContacts, setSelectedContacts] = useState([]);
+
+    // Data to render rectangle selection tool
     const [isSelecting, setIsSelecting] = useState(false);
     const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
     const [selectionEnd, setSelectionEnd] = useState({ x: 0, y: 0 });
 
+    /**
+     * Currently focused contact. Focusing is done by double clicking on a contact
+     */
     const [focus, setFocus] = useState(savedState.focusedContact || null);
 
+    // Cache functionality related to boost the rendering speed
     const mainCanvasRef = useRef(null);
     const subCanvas0Ref = useRef(null);
     const subCanvas1Ref = useRef(null);
@@ -123,7 +555,9 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     useEffect(() => { maxSubCanvas0SlicesRef.current = maxSubCanvas0Slices; }, [maxSubCanvas0Slices]);
     useEffect(() => { maxSubCanvas1SlicesRef.current = maxSubCanvas1Slices; }, [maxSubCanvas1Slices]);
 
-    useEffect(() => {
+    // Effects for state change. Separated to avoid setting element that did not change again and again
+    // Grouped by related items
+    useEffect(() => { // For bottom sub canvas
         onStateChange({
             ...savedState,
             canvas_sub1_slice: subCanvas1SliceIndex,
@@ -132,7 +566,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         });
     }, [subCanvas1SliceIndex, maxSubCanvas1Slices, subCanvas1Direction, isLoaded]);
 
-    useEffect(() => {
+    useEffect(() => { // For top sub canvas
         onStateChange({
             ...savedState,
             canvas_sub0_slice: subCanvas0SliceIndex,
@@ -141,7 +575,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         });
     }, [subCanvas0SliceIndex, maxSubCanvas0Slices, subCanvas0Direction, isLoaded]);
 
-    useEffect(() => {
+    useEffect(() => { // For main canvas
         onStateChange({
             ...savedState,
             canvas_main_slice: sliceIndex,
@@ -151,17 +585,28 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         });
     }, [sliceIndex, maxSlices, direction, hoveredMarker, isLoaded]);
 
-    useEffect(() => {
+    useEffect(() => { // For coordinates
         onStateChange({
             ...savedState,
             coordinate: coordinates,
         });
     }, [coordinates]);
 
+    /**
+     * Clear canvas image cache. Invoked when new NIFTI image / coordinates are loaded
+     */
     const clearImageDataCache = () => {
         imageDataCache.current = {};
     };
 
+    /**
+     * Redraw specified canvas. This function will try to reuse cache if it exists
+     * @param {React.RefObject} canvasRef - Canvas ref
+     * @param {Number} dir - Perspective of the canvas
+     * @param {Number} slice - Current slice of the canvas
+     * @param {Number} viewSize - Size (width or height) of the canvas. It is assumed to be square
+     * @param {String} cacheKey - Key that prepend caches for the canvas to help identify
+     */
     const redrawCanvas = (canvasRef, dir, slice, viewSize, cacheKey) => {
         const canvas = canvasRef.current;
         if (!canvas || !niiData) return;
@@ -169,6 +614,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         if (canvas.rafId) cancelAnimationFrame(canvas.rafId);
         canvas.rafId = requestAnimationFrame(() => {
             const ctx = canvas.getContext('2d');
+            // Find cache. If not, make one
             const cacheEntry = imageDataCache.current[cacheKey];
             if (cacheEntry) {
                 ctx.putImageData(cacheEntry, 0, 0);
@@ -179,7 +625,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                 ctx.putImageData(imageData, 0, 0);
             }
 
-            // Selection rectangle
+            // Render the result onto the canvas
             if (canvasRef === mainCanvasRef && isSelecting) {
                 ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
                 ctx.lineWidth = 2;
@@ -197,7 +643,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         });
     };
 
-    // Function to transform RAS coordinates to NIfTI coordinates
+    /**
+     * Transforms RAS coordinates to NIfTI coordinates (left top = 0,0)
+     * @param {Object} coord - Coordinate object for a contact. Required to have x, y, z, Electrode label, and contact number
+     * @returns {Object} Transformed coordinates
+     */
     const transformCoordinates = (coord) => {
         if (!niiData) return coord; // Return original if NIfTI data is not loaded
 
@@ -219,7 +669,13 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         };
     };
 
-    // Function to draw markers on the canvas
+    /**
+     * Draws markers on canvas
+     * @param {CanvasRenderingContext2D} ctx - Canvas
+     * @param {number} dir - Direction of the canvas
+     * @param {number} slice - Slice index
+     * @param {number} viewSize - Canvas size
+     */
     const drawMarkers = (ctx, dir, slice, viewSize) => {
         if (!niiData || coordinates.length === 0) return;
 
@@ -239,7 +695,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
             let dist = 0;
             const threshold = 1
             switch (dir) {
-                case 1:
+                case 1: // Sagittal
                     dist = x - slice;
                     if (Math.abs(dist) < threshold) {
                         canvasX = (y * scale) + offsetX;
@@ -249,7 +705,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                         originalCoord[2] = x;
                     }
                     break;
-                case 2:
+                case 2: // Coronal
                     dist = y - slice;
                     if (Math.abs(dist) < threshold) {
                         canvasX = (x * scale) + offsetX;
@@ -259,7 +715,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                         originalCoord[2] = y;
                     }
                     break;
-                case 3:
+                case 3: // Axial
                     dist = z - slice;
                     if (Math.abs(dist) < threshold) {
                         canvasX = (x * scale) + offsetX;
@@ -321,18 +777,27 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         setMarkers(newMarkers);
     };
 
+    /**
+     * Redraws main canvas
+     */
     const redrawMainCanvas = () => {
         const dir = getDirectionDimension();
         const cacheKey = `main-${dir}-${sliceIndex}-${fixedMainViewSize}`;
         redrawCanvas(mainCanvasRef, dir, sliceIndex, fixedMainViewSize, cacheKey);
     };
 
+    /**
+     * Redraws sub-canvas 0 at the bottom
+     */
     const redrawSubCanvas0 = () => {
         const dir = getDirectionDimension(subCanvas0Direction);
         const cacheKey = `sub-${dir}-${subCanvas0SliceIndex}-${fixedSubViewSize}`;
         redrawCanvas(subCanvas0Ref, dir, subCanvas0SliceIndex, fixedSubViewSize, cacheKey);
     };
 
+    /**
+     * Redraws sub-canvas 1 at the bottom
+     */
     const redrawSubCanvas1 = () => {
         const dir = getDirectionDimension(subCanvas1Direction);
         const cacheKey = `sub-${dir}-${subCanvas1SliceIndex}-${fixedSubViewSize}`;
@@ -344,6 +809,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     useEffect(redrawSubCanvas0, [subCanvas0SliceIndex, subCanvas0Direction, niiData, coordinates, focus, selectedContacts]);
     useEffect(redrawSubCanvas1, [subCanvas1SliceIndex, subCanvas1Direction, niiData, coordinates, focus, selectedContacts]);
 
+    /**
+     * Handles mouse down event on main canvas. For clicking on marker and start of selection tool
+     * @param {MouseEvent} event - Mouse event
+     * @param {React.RefObject} canvasRef - Canvas ref
+     */
     const handleMouseDown = (event, canvasRef) => {
         if (canvasRef !== mainCanvasRef) return;
 
@@ -364,6 +834,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         }
     };
 
+    /**
+     * Handles mouse up event on main canvas. Handle end end of selection
+     * @param {MouseEvent} event - Mouse event
+     * @param {React.RefObject} canvasRef - Canvas ref
+     */
     const handleMouseUp = (event, canvasRef) => {
         if (canvasRef !== mainCanvasRef || !isSelecting) return;
 
@@ -388,7 +863,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         }
     };
 
-    // Handle mouse move to detect hover over markers
+    /**
+     * Handles mouse move event on canvas. For selection tool and detail view of contact when hovering on top of contact
+     * @param {MouseEvent} event - Mouse event
+     * @param {React.RefObject} canvasRef - Canvas ref
+     */
     const handleMouseMove = (event, canvasRef) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -416,7 +895,6 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         setHoveredMarker(hovered ? hovered : hoveredMarker);
     };
 
-    // Handle mouse leave to clear hovered marker
     const handleMouseLeave = () => {
         const canvas = mainCanvasRef.current;
         if (canvas) {
@@ -424,6 +902,10 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         }
     };
 
+    /**
+     * Handle focusing on a contact.
+     * Will change slices of all the canvases so that it will display the focused contact
+     */
     const focusOnContact = () => {
         if (!focus) return
 
@@ -453,7 +935,13 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     };
     useEffect(focusOnContact, [focus, niiData, coordinates]);
 
-    // Unified scroll handler using refs
+    /**
+     * Handles canvas click event
+     * @param {WheelEvent} event - Mouse event
+     * @param {Function} setter - Call back function to set slice on the canvas
+     * @param {React.RefObject} currentSliceRef - Reference for current slice
+     * @param {React.RefObject} maxRef - Reference for max slice index
+     */
     const handleScroll = (event, setter, currentSliceRef, maxRef) => {
         event.preventDefault();
         const delta = Math.sign(event.deltaY);
@@ -461,6 +949,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         setter(newSlice);
     };
 
+    /**
+     * Handles main canvas click event. Handle marking and focusing
+     * @param {MouseEvent} event - Mouse event
+     * @param {React.RefObject} canvasRef - Canvas ref
+     */
     const handleCanvasClick = (event, canvasRef) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -472,7 +965,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         markers.forEach(marker => {
             const distance = Math.sqrt((clickX - marker.x) ** 2 + (clickY - marker.y) ** 2);
             if (distance <= 6) {
-                switch (event.detail) {
+                switch (event.detail) { // Identify if it is first click or second click
                     case 1:
                         if (selectedContacts.length > 0 && selectedContacts.includes(marker.contact.id)) {
                             selectedContacts.forEach(contactId => {
@@ -542,6 +1035,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         });
     };
 
+    // Register all the event handler for main canvas
     useEffect(() => {
         if (!isLoaded) return;
 
@@ -571,6 +1065,10 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         }
     }, [isLoaded, markers]);
 
+    /**
+     * Handles sub canvas click event. Handle switching perspectives
+     * @param {Number} clickedSubIndex - Which sub canvas that got the click. 0 or 1
+     */
     const handleSubCanvasClick = useCallback((clickedSubIndex) => {
         // Get current directions before any updates
         const oldMainDirection = direction;
@@ -603,6 +1101,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         setSliceIndex(oldSubCanvasSliceIndex);
     }, [direction, sliceIndex, subCanvas0SliceIndex, subCanvas1SliceIndex, subCanvas0Direction, subCanvas1Direction, niiData]);
 
+    // Register all the event handler for sub canvas 0
     useEffect(() => {
         if (!isLoaded) return;
 
@@ -620,6 +1119,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         }
     }, [isLoaded, handleSubCanvasClick]); // Include direction in dependencies
 
+    // Register all the event handler for sub canvas 1
     useEffect(() => {
         if (!isLoaded) return;
 
@@ -637,6 +1137,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         }
     }, [isLoaded, handleSubCanvasClick]); // Include direction in dependencies
 
+    /**
+     * Convert string representation of direction to number representation of direction
+     * @param {String} [dir] - Direction to convert to number from. Default to direction of main canvas
+     * @returns {Number} Number assigned to each direction. 1, 2, or 3
+     */
     const getDirectionDimension = (dir = direction) => {
         switch(dir) {
             case 'Axial': return 3;
@@ -646,6 +1151,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         }
     };
 
+    /**
+     * Load NIFTI image and sets up the canvas accordingly
+     * @param {Event} event - File input event
+     * @async
+     */
     const handleNIfTIFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -696,6 +1206,11 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         }
     };
 
+    /**
+     * Handles upload of CSV file for coordinates
+     * @param {Event} event - File input event
+     * @async
+     */
     const handleCSVFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -726,6 +1241,12 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         setHoveredMarker(null);
     };
 
+    /**
+     * Gets canvas dimensions for given direction
+     * @param {Object} nii - NIfTI data
+     * @param {number} dir - Direction/dimension
+     * @returns {Array} [cols, rows] dimensions
+     */
     const getCanvasDimensions = (nii, dir) => {
         switch(dir) {
             case 1: return [nii.hdr.dime.dim[2], nii.hdr.dime.dim[3]];
@@ -735,6 +1256,15 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
         }
     };
 
+
+    /**
+     * Scales image data and populate it in specified canvas
+     * @param {ImageData} imageData - Image data to populate
+     * @param {Object} nii - NIfTI data
+     * @param {number} dir - Perspective of the canvas
+     * @param {number} slice - Slice index
+     * @param {number} imageSize - Desired length of the longer side
+     */
     const populateImageData = (imageData, nii, dir, slice, imageSize) => {
         const [cols, rows] = getCanvasDimensions(nii, dir);
         const maxDim = imageSize || Math.max(cols, rows);
@@ -931,6 +1461,13 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
     );
 };
 
+/**
+ * Contact component for displaying individual electrode contacts
+ * @component
+ * @param {Object} contact - Data for the contact
+ * @param {Function} onClick - Handler to reflect the change on contact that was clicked
+ * @returns {JSX.Element} A tile that shows information about the contact
+ */
 const Contact = ({ contact, onClick }) => {
 
     return (
@@ -954,6 +1491,11 @@ const Contact = ({ contact, onClick }) => {
     );
 };
 
+/**
+ * Gets CSS class for contact based on mark status
+ * @param {Object} contact - Data for the contact
+ * @returns {string} CSS classes for the contact
+ */
 function getMarkColor(contact) {
     let mark = "";
     switch (contact.mark) {
@@ -980,6 +1522,11 @@ function getMarkColor(contact) {
     return mark;
 }
 
+/**
+ * Gets display name for contact mark status
+ * @param {Object} contact - Contact data
+ * @returns {string} Display name for mark status
+ */
 function getMarkName(contact) {
     switch (contact.mark) {
         case 0:
