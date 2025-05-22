@@ -73,6 +73,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const channel = JSON.parse(localStorage.getItem("Designation_Resection_Sync_Channel"));
         if (channel[state.patientId]) {
             setElectrodes(channel[state.patientId]);
+            handleSave();
         }
 
         delete channel[state.patientId];
