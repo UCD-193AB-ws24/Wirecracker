@@ -287,7 +287,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
      */
     const handleOpenStimulation = async () => {
         try {
-            let stimulationData = modifiedElectrodes.map(electrode => ({
+            let stimulationData = electrodes.map(electrode => ({
                 ...electrode,
                 contacts: electrode.contacts.map((contact, index) => {
                     let pair = index;
@@ -330,7 +330,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
             }
         }
     };
-    
+
     return (
         <div className="flex-1 h-full">
             {/* Show image if it is loaded. Otherwise show tile that is similar to one in designation page */}

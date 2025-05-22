@@ -861,7 +861,7 @@ const HomePage = () => {
         setActiveTab('home');
     };
 
-    const openSavedFile = (type, fileData) => {
+    const openSavedFile = (type, fileData, active = true) => {
         if (type === 'localization') {
             console.log('Opening saved file:', fileData);
             
@@ -884,7 +884,9 @@ const HomePage = () => {
             console.log('Created new tab with state:', newTab.state);
             
             setTabs(prevTabs => [...prevTabs, newTab]);
-            setActiveTab(newTab.id);
+            if (active) {
+                setActiveTab(newTab.id);
+            }
         } 
         else if (type === 'designation' || type === 'resection') {
             console.log('Opening saved file:', fileData);
@@ -1558,7 +1560,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
 
             // First check if any tabs for this patient already exist
             const existingTabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const existingTab = existingTabs.find(tab => tab.state?.patientId === patient.patient_id);
+            const existingTab = existingTabs.find(tab => tab.title === clickedButton.name && tab.state?.patientId === patient.patient_id);
 
             if (existingTab) {
                 // If tab exists, just switch to it
@@ -1690,7 +1692,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             for (const file of flattenedFiles) {
                 console.log('Opening file:', file);
                 await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay between each file
-                openSavedFile(file.type, file);
+                openSavedFile(file.type, file, false);
             }
 
             // After opening all files, switch to the appropriate tab
@@ -1712,8 +1714,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             }
             
             if (targetTab) {
-                const tabId = targetTab.id;
-                window.dispatchEvent(new CustomEvent('setActiveTab', { detail: { tabId } }));
+                window.dispatchEvent(new CustomEvent('setActiveTab', { detail: { tabId: targetTab.id } }));
             }
             
             onClose();
