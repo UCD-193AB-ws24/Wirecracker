@@ -383,7 +383,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
             // First check if any test selection tabs for this patient already exist
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
             const existingTab = tabs.find(tab => 
-                tab.content === 'functional-test' && 
+                (tab.content === 'functional-test' || tab.content === 'csv-functional-test') && 
                 tab.state?.patientId === state.patientId
             );
 
