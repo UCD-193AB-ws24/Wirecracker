@@ -91,7 +91,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
     // Update electrodes if there are any update from designation tab stored in the channel
     useEffect(() => {
-        const channel = JSON.parse(localStorage.getItem("Designation_Resection_Sync_Channel"));
+        const channel = JSON.parse(localStorage.getItem("Designation_Resection_Sync_Channel") || '{}');
         if (channel[state.patientId]) {
             setElectrodes(channel[state.patientId]);
             handleSave();
