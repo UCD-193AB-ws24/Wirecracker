@@ -309,6 +309,54 @@ const FunctionalTestSelection = ({
         }
     };
 
+    const handleOpenStimulation = async () => {
+        try {
+            // Format the data for stimulation
+            let stimulationData = initialData.data.contacts.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map((contact, index) => {
+                    let pair = index;
+                    if (index == 0) pair = 2;
+                    return {
+                        ...contact,
+                        pair: pair,
+                        isPlanning: false,
+                        duration: 3.0,
+                        frequency: 105.225,
+                        current: 2.445,
+                    }
+                }),
+            }));
+
+            // Create a new tab with the stimulation data
+            const event = new CustomEvent('addStimulationTab', {
+                detail: { 
+                    data: stimulationData,
+                    patientId: savedState.patientId,
+                    state: {
+                        patientId: savedState.patientId,
+                        fileId: savedState.fileId,
+                        fileName: savedState.fileName,
+                        creationDate: savedState.creationDate,
+                        modifiedDate: new Date().toISOString(),
+                        testSelectionModifiedDate: savedState.modifiedDate,
+                        fromTestSelection: true
+                    }
+                }
+            });
+            window.dispatchEvent(event);
+
+            await exportTests(tests, initialData.data.contacts, false);
+        } catch (error) {
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+            } else {
+                console.error('Error opening stimulation:', error);
+                showError('Failed to open stimulation. Please try again.');
+            }
+        }
+    };
+
     return (
         <div className="p-12 bg-gray-50 min-h-screen">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">
@@ -546,6 +594,12 @@ const FunctionalTestSelection = ({
                     onClick={() => exportTests(tests, initialData.data.contacts)}
                 >
                     Export
+                </button>
+                <button
+                    className="py-2 px-4 bg-purple-500 text-white font-bold rounded hover:bg-purple-700 border border-purple-700 shadow-lg"
+                    onClick={handleOpenStimulation}
+                >
+                    Open in Stimulation
                 </button>
             </div>
         </div>

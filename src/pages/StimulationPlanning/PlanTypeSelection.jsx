@@ -44,11 +44,17 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
             );
 
             if (existingTab) {
-                // Compare modified dates
+                // Compare modified dates based on source
                 const existingModifiedDate = new Date(existingTab.state.modifiedDate);
-                const designationModifiedDate = new Date(initialData.state.designationModifiedDate);
+                let sourceModifiedDate;
+                
+                if (initialData.state?.fromDesignation) {
+                    sourceModifiedDate = new Date(initialData.state.designationModifiedDate);
+                } else if (initialData.state?.fromTestSelection) {
+                    sourceModifiedDate = new Date(initialData.state.testSelectionModifiedDate);
+                }
 
-                if (existingModifiedDate > designationModifiedDate) {
+                if (existingModifiedDate > sourceModifiedDate) {
                     // Switch to existing tab and close plan type selection
                     const activateEvent = new CustomEvent('setActiveTab', {
                         detail: { tabId: existingTab.id }
@@ -95,9 +101,15 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                     
                     if (result.success && result.exists && result.data.type === type) {
                         const dbModifiedDate = new Date(result.data.modified_date);
-                        const designationModifiedDate = new Date(initialData.state.designationModifiedDate);
+                        let sourceModifiedDate;
+                        
+                        if (initialData.state?.fromDesignation) {
+                            sourceModifiedDate = new Date(initialData.state.designationModifiedDate);
+                        } else if (initialData.state?.fromTestSelection) {
+                            sourceModifiedDate = new Date(initialData.state.testSelectionModifiedDate);
+                        }
 
-                        if (dbModifiedDate > designationModifiedDate) {
+                        if (dbModifiedDate > sourceModifiedDate) {
                             // Create tab from database file
                             const event = new CustomEvent('addStimulationTab', {
                                 detail: {
@@ -192,7 +204,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                                    ${initialData.state?.fromDesignation 
                                        ? 'bg-gray-400 cursor-not-allowed' 
                                        : 'bg-sky-600 hover:bg-sky-700 cursor-pointer'}`}
-                        onClick={() => !initialData.state?.fromDesignation && handlePlanTypeSelect('mapping')}
+                        onClick={() => initialData.state?.fromTestSelection && handlePlanTypeSelect('mapping')}
                         disabled={initialData.state?.fromDesignation}>
                         Functional Mapping
                     </button>
