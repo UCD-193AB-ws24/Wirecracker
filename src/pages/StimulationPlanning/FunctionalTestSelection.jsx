@@ -269,11 +269,14 @@ const FunctionalTestSelection = ({
                         throw result.error; // Let error bubble up
                     }
 
-                    // Update the state with new modified date
-                    setState(prevState => ({
-                        ...prevState,
-                        modifiedDate: new Date().toISOString()
-                    }));
+                    // Only update the state with new modified date if the save was successful
+                    // and we got a new modified date back
+                    if (result.modifiedDate) {
+                        setState(prevState => ({
+                            ...prevState,
+                            modifiedDate: result.modifiedDate
+                        }));
+                    }
 
                     // Show success feedback if this was a save operation
                     if (!download) {

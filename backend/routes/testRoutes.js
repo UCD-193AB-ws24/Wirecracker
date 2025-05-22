@@ -29,17 +29,6 @@ router.post('/save-test-selection', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing patient ID' });
     }
 
-    // Handle file record
-    try {
-      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
-    } catch (error) {
-      console.error('Error saving file metadata:', error);
-      return res.status(500).json({ 
-        success: false, 
-        error: `Failed to save file metadata: ${error.message}`
-      });
-    }
-    
     // Check for existing test selection with this patient_id
     const { data: existingFile, error: fileError } = await supabase
       .from('files')
@@ -73,26 +62,68 @@ router.post('/save-test-selection', async (req, res) => {
       }
 
       if (existingTestSelection) {
-        // Update the test selection record
-        const { error: updateError } = await supabase
-          .from('test_selection')
-          .update({
-            tests: tests,
-            contacts: contacts
-          })
-          .eq('file_id', existingFile.file_id);
-          
-        if (updateError) {
-          console.error('Error updating test selection:', updateError);
-          return res.status(500).json({ 
-            success: false, 
-            error: `Failed to update existing test selection: ${updateError.message}`
+        // Compare test selection data
+        const isTestsDifferent = JSON.stringify(existingTestSelection.tests) !== JSON.stringify(tests);
+        const isContactsDifferent = JSON.stringify(existingTestSelection.contacts) !== JSON.stringify(contacts);
+
+        // Only update if there are changes
+        if (isTestsDifferent || isContactsDifferent) {
+          // Handle file record update with new modified date
+          try {
+            await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
+          } catch (error) {
+            console.error('Error saving file metadata:', error);
+            return res.status(500).json({ 
+              success: false, 
+              error: `Failed to save file metadata: ${error.message}`
+            });
+          }
+
+          // Update the test selection record
+          const { error: updateError } = await supabase
+            .from('test_selection')
+            .update({
+              tests: tests,
+              contacts: contacts
+            })
+            .eq('file_id', existingFile.file_id);
+            
+          if (updateError) {
+            console.error('Error updating test selection:', updateError);
+            return res.status(500).json({ 
+              success: false, 
+              error: `Failed to update existing test selection: ${updateError.message}`
+            });
+          }
+          console.log('Successfully updated test selection with changes');
+          res.status(200).json({ 
+            success: true,
+            message: 'Test selection data saved successfully',
+            fileId: existingFile.file_id,
+            modifiedDate: modifiedDate
+          });
+        } else {
+          console.log('No changes detected in test selection data, skipping update');
+          res.status(200).json({ 
+            success: true,
+            message: 'No changes detected in test selection data',
+            fileId: existingFile.file_id
           });
         }
-        console.log('Successfully updated test selection');
       } else {
         // Insert new test selection record
         console.log('Creating new test selection record...');
+        // Handle file record for new test selection
+        try {
+          await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
+        } catch (error) {
+          console.error('Error saving file metadata:', error);
+          return res.status(500).json({ 
+            success: false, 
+            error: `Failed to save file metadata: ${error.message}`
+          });
+        }
+
         const { error: insertError } = await supabase
           .from('test_selection')
           .insert({
@@ -109,10 +140,27 @@ router.post('/save-test-selection', async (req, res) => {
           });
         }
         console.log('Successfully created new test selection');
+        res.status(200).json({ 
+          success: true,
+          message: 'Test selection data saved successfully',
+          fileId: existingFile.file_id,
+          modifiedDate: modifiedDate
+        });
       }
     } else {
       // Insert new test selection record
       console.log('Creating new test selection record...');
+      // Handle file record for new test selection
+      try {
+        await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
+      } catch (error) {
+        console.error('Error saving file metadata:', error);
+        return res.status(500).json({ 
+          success: false, 
+          error: `Failed to save file metadata: ${error.message}`
+        });
+      }
+
       const { error: insertError } = await supabase
         .from('test_selection')
         .insert({
@@ -129,13 +177,13 @@ router.post('/save-test-selection', async (req, res) => {
         });
       }
       console.log('Successfully created new test selection');
+      res.status(200).json({ 
+        success: true,
+        message: 'Test selection data saved successfully',
+        fileId: fileId,
+        modifiedDate: modifiedDate
+      });
     }
-    
-    res.status(200).json({ 
-      success: true,
-      message: 'Test selection data saved successfully',
-      fileId: existingFile ? existingFile.file_id : fileId
-    });
   } catch (error) {
     console.error('Error in save-test-selection endpoint:', error);
     res.status(500).json({ 
