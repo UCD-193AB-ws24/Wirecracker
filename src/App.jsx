@@ -369,7 +369,7 @@ const FileUtils = {
             if (fileTypeData.hasDesignation) {
                 console.log('Found designation data:', fileTypeData.designationData);
                 openSavedFile('designation', {
-                    name: file.filename || 'Unnamed Designation',
+                    name: file.filename || 'Unnamed Epilepsy',
                     fileId: file.file_id,
                     fileName: file.filename,
                     creationDate: file.creation_date,
@@ -646,9 +646,9 @@ const HomePage = () => {
                 patientId = data.patientId ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'designation':
-                title = 'Designation';
+                title = 'Epilepsy';
                 patientId = data.patientId || data.state?.patientId || data.originalData?.patientId;
-                console.log('Setting patientId for designation:', {
+                console.log('Setting patientId for epilepsy:', {
                     finalPatientId: patientId,
                     sources: {
                         dataPatientId: data.patientId,
@@ -1394,7 +1394,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                                             <span className="mr-2 cursor-help" title="Anatomy File">📍</span>
                                                         )}
                                                         {patient.has_designation && (
-                                                            <span className="mr-2 cursor-help" title="Designation File">📝</span>
+                                                            <span className="mr-2 cursor-help" title="Epilepsy File">📝</span>
                                                         )}
                                                         {patient.has_resection && (
                                                             <span className="mr-2 cursor-help" title="Neurosurgery File">🔪</span>
@@ -1516,7 +1516,7 @@ const Legend = ({ isOpen, onClose }) => {
                     </div>
                     <div className="flex items-center">
                         <span className="text-xl mr-3">📝</span>
-                        <span>Designation File</span>
+                        <span>Epilepsy File</span>
                     </div>
                     <div className="flex items-center">
                         <span className="text-xl mr-3">🔪</span>
@@ -1561,11 +1561,11 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             icon: '🔪'
         },
         {
-            name: 'Designation',
+            name: 'Epilepsy',
             type: 'designation',
             exists: patient.has_designation,
             fileId: patient.designation_file_id,
-            message: 'No designation file created yet',
+            message: 'No epilepsy file created yet',
             icon: '📝'
         },
         {
@@ -2059,7 +2059,7 @@ const RecentFiles = ({ onOpenFile, className }) => {
                                         <span className="mr-2 cursor-help" title="Anatomy File">📍</span>
                                     )}
                                     {patient.has_designation && (
-                                        <span className="mr-2 cursor-help" title="Designation File">📝</span>
+                                        <span className="mr-2 cursor-help" title="Epilepsy File">📝</span>
                                     )}
                                     {patient.has_resection && (
                                         <span className="mr-2 cursor-help" title="Neurosurgery File">🔪</span>

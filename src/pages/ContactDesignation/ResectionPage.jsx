@@ -378,7 +378,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 // If the user never made designation page before with the patient
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    showError('User not authenticated. Please log in to open designation.');
+                    showError('User not authenticated. Please log in to open epilepsy.');
                     return;
                 }
 
@@ -489,7 +489,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
                                     lg:py-2 lg:px-4 lg:text-base"
                         onClick={handleOpenDesignation}>
-                        Open in Designation Page
+                        Open in Epilepsy Page
                     </button>
                 </div>
             </div>

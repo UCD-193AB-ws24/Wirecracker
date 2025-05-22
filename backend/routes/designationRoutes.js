@@ -35,7 +35,7 @@ router.post('/save-designation', async (req, res) => {
       filename = '%neurosurgery%';
     }
     else {  
-      filename = '%designation%';
+      filename = '%epilepsy%';
     }
 
     // Check for existing designation with this patient_id
@@ -218,7 +218,7 @@ router.get('/by-patient/:patientId', async (req, res) => {
       filename = '%neurosurgery%';
     }
     else {
-      filename = '%designation%';
+      filename = '%epilepsy%';
     }
 
     // Get the file ID for this patient's designation

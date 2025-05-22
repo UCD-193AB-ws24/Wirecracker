@@ -534,7 +534,7 @@ const exportState = async (state, electrodes, type, download = true) => {
             // Get user ID from session
             const token = localStorage.getItem('token');
             if (!token) {
-                throw new Error('User not authenticated. Please log in to save designations.');
+                throw new Error('User not authenticated. Please log in to save.');
             }
             
             try {

@@ -154,7 +154,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 // Get user ID from session
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    showError('User not authenticated. Please log in to save designations.');
+                    showError('User not authenticated. Please log in to save epilepsy.');
                     return;
                 }
 
@@ -180,7 +180,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save designation:', result.error);
-                        showError(`Failed to save designation: ${result.error}`);
+                        showError(`Failed to save epilepsy: ${result.error}`);
                         return;
                     }
 
@@ -203,7 +203,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         showWarning("No internet connection. The progress is not saved. Make sure to download your progress.");
                     } else {
                         console.error('Error saving designation:', error);
-                        showError(`Error saving designation: ${error.message}`);
+                        showError(`Error saving epilepsy: ${error.message}`);
                     }
                     return;
                 }
@@ -244,7 +244,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 // Get user ID from session
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    showError('User not authenticated. Please log in to save designations.');
+                    showError('User not authenticated. Please log in to save epilepsy.');
                     return;
                 }
 
@@ -270,7 +270,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     const result = await response.json();
                     if (!result.success) {
                         console.error('Failed to save designation:', result.error);
-                        showError(`Failed to save designation: ${result.error}`);
+                        showError(`Failed to save epilepsy: ${result.error}`);
                         return;
                     }
 
@@ -292,7 +292,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         showWarning("No internet connection. The progress is not saved on the database.");
                     } else {
                         console.error('Error saving designation:', error);
-                        showError(`Error saving designation: ${error.message}`);
+                        showError(`Error saving epilepsy: ${error.message}`);
                         return;
                     }
                 }
@@ -315,7 +315,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 showWarning("No internet connection. The progress is not saved on the database.");
             } else {
                 console.error('Error saving designation:', error);
-                showError(`Error saving designation: ${error.message}`);
+                showError(`Error saving epilepsy: ${error.message}`);
                 return;
             }
         }

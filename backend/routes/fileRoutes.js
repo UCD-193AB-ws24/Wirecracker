@@ -344,7 +344,7 @@ router.get("/patients/recent", async (req, res) => {
                 acc[curr.patient_id].has_localization = true;
                 acc[curr.patient_id].localization_file_id = curr.file_id;
                 acc[curr.patient_id].localization_creation_date = curr.creation_date;
-            } else if (filename.includes('designation')) {
+            } else if (filename.includes('epilepsy')) {
                 acc[curr.patient_id].has_designation = true;
                 acc[curr.patient_id].designation_file_id = curr.file_id;
             } else if (filename.includes('neurosurgery')) {
