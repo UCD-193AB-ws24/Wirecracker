@@ -11,7 +11,7 @@ dotenv.config();
 
 const app = express();
 
-const config = process.env.NODE_ENV === 'production' ? prodConfig : devConfig;
+const config = process.env.NODE_ENV === 'development' ? devConfig : prodConfig;
 
 const PORT = config.PORT || 5000;
 const frontendURL = config.frontendURL;

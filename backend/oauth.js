@@ -15,7 +15,7 @@ const router = express.Router();
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-const config = process.env.NODE_ENV === 'production' ? prodConfig : devConfig;
+const config = process.env.NODE_ENV === 'development' ? devConfig : prodConfig;
 const frontendURL = config.frontendURL;
 
 // Session Middleware
