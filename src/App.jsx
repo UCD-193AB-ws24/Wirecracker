@@ -1560,7 +1560,8 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
 
             // First check if any tabs for this patient already exist
             const existingTabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const existingTab = existingTabs.find(tab => tab.title === clickedButton.name && tab.state?.patientId === patient.patient_id);
+            const existingTab = existingTabs.find(tab => (tab.title === clickedButton.name) || (tab.title === selectedStimulationType) 
+                                                            && tab.state?.patientId === patient.patient_id);
 
             if (existingTab) {
                 // If tab exists, just switch to it
