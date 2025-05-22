@@ -359,7 +359,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                             patientId: state.patientId,
                             state: {
                                 patientId: state.patientId,
-                                fileId: state.fileId,
+                                fileId: existingTab.state?.fileId || null,
                                 fileName: state.fileName,
                                 creationDate: state.creationDate,
                                 modifiedDate: new Date().toISOString()
@@ -404,7 +404,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         patientId: state.patientId,
                         state: {
                             patientId: state.patientId,
-                            fileId: result.exists ? result.fileId : state.fileId,
+                            fileId: result.exists ? result.fileId : null,
                             fileName: state.fileName,
                             creationDate: state.creationDate,
                             modifiedDate: new Date().toISOString()

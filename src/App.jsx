@@ -1656,12 +1656,10 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
 
                         switch (button.type) {
                             case 'resection': {
-                                if (fileTypeData.hasResection) {
-                                    console.log('resection file type data:', fileTypeData.resectionData);
-                                }
-                                else {
+                                if (!fileTypeData.hasResection) {
                                     throw new Error('No resection data found');
                                 }
+                                console.log('resection file type data:', fileTypeData.resectionData);
                                 return {
                                     fileId: button.fileId,
                                     name: button.name,
