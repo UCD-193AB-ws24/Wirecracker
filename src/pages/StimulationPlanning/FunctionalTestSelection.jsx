@@ -358,14 +358,15 @@ const FunctionalTestSelection = ({
     };
 
     return (
-        <div className="p-12 bg-gray-50 min-h-screen">
+        <div className="p-12 bg-gray-50 min-h-auto">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">
                 Neuropsychology
             </h1>
 
             {/* Auto Assign Button */}
             <button
-                className="mb-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 transition"
+                className="mb-4 px-6 py-2 border border-sky-800 bg-sky-600 text-white font-semibold rounded-lg
+                           transition-colors duration-200 cursor-pointer hover:bg-blue-800"
                 onClick={autoAssignTests}
             >
                 Auto-Assign Best Tests

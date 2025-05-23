@@ -798,12 +798,19 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
     };
 
     return (
-        <div className="flex flex-col p-4 space-y-4 relative">
+        <div className="flex flex-col mx-10 p-4 space-y-4 relative">
             <h2 className="text-2xl font-semibold">Database Lookup</h2>
 
             {/* Search Bar */}
             <form onSubmit={handleSearch} onReset={handleReset}>
-                <div className="flex w-full mb-4 relative">
+                <div className="flex gap-2 w-full mb-4 relative">
+                    <button
+                        type="button"
+                        className="px-4 py-2 border border-gray-400 rounded hover:bg-gray-100"
+                        onClick={() => setShowFilters(!showFilters)}
+                    >
+                        {showFilters ? "Hide Filters" : "Show Filters"}
+                    </button>
                     <input
                         type="text"
                         className="flex-grow p-2 border rounded-l-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -828,16 +835,9 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     </button>
                     <button
                         type="reset"
-                        className="ml-2 px-4 py-2 border border-gray-400 rounded hover:bg-gray-100"
+                        className="px-4 py-2 border border-gray-400 rounded hover:bg-gray-100"
                     >
                         Reset
-                    </button>
-                    <button
-                        type="button"
-                        className="ml-2 px-4 py-2 border border-gray-400 rounded hover:bg-gray-100"
-                        onClick={() => setShowFilters(!showFilters)}
-                    >
-                        {showFilters ? "Hide Filters" : "Show Filters"}
                     </button>
                     {isLoading && (
                         <div className="absolute right-0 -bottom-6 text-sm text-gray-500">
@@ -867,7 +867,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
             <div className="flex gap-4">
                 {showFilters && (
-                    <div className="w-1/4 space-y-4">
+                    <div className="w-1/6 space-y-4">
                         <h3 className="text-lg font-semibold">Filters</h3>
 
                         {/* Hemisphere Checkboxes */}
@@ -889,7 +889,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                             onChange={() =>
                                                 handleHemisphereChange(side)
                                             }
-                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            className="rounded border-gray-300 text-blue-600
+                                                       cursor-pointer focus:ring-blue-500"
                                         />
                                         {side.charAt(0).toUpperCase() +
                                             side.slice(1)}
@@ -917,7 +918,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                             onChange={() =>
                                                 handleLobeChange(lobe)
                                             }
-                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            className="rounded border-gray-300 text-blue-600
+                                                       cursor-pointer focus:ring-blue-500"
                                         />
                                         {lobe}
                                     </label>

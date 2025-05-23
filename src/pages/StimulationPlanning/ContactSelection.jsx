@@ -128,7 +128,7 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
 
     return (
         <DndProvider backend={HTML5Backend}>
-            <div className="flex h-screen p-6 space-x-6">
+            <div className="flex min-h-screen p-6 space-x-6">
                 <ContactList electrodes={electrodes} onDrop={handleDropBackToList} onClick={handleDropToPlanning} droppedContacts={planningContacts} areAllVisible={areAllVisible} submitPlanning={submitPlanning} onStateChange={setState} savedState={state} setElectrodes={setElectrodes}/>
 
                 <PlanningPane state={state} electrodes={electrodes} contactPairs={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} setElectrodes={setElectrodes} onStateChange={setState} savedState={state} type={type} />
@@ -230,7 +230,7 @@ const Contact = ({ contacts, onClick }) => {
         }),
     }));
 
-    let classes = `min-w-[100px] p-4 border rounded-lg shadow cursor-pointer ${
+    let classes = `w-[100px] p-4 border rounded-lg shadow cursor-pointer ${
                 isDragging ? "opacity-50" : "opacity-100"} `;
     if (contacts[0].mark == 1 || contacts[1].mark == 1) {
         classes += "bg-rose-300 ";

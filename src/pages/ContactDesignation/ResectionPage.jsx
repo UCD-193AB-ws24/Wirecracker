@@ -424,7 +424,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
     };
 
     return (
-        <div className="flex-1 h-full">
+        <div className="flex-1 min-h-full bg-gray-100">
             {/* Show image if it is loaded. Otherwise show tile that is similar to one in designation page */}
             <div className="flex flex-col md:flex-row p-2 bg-gray-100">
                 <NIFTIimage
@@ -436,7 +436,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 savedState={savedState} />
             </div>
             {!imageLoaded && (
-                <div className="flex-1 p-4 lg:p-8 bg-gray-100 h-full">
+                <div className="flex-1 p-4 lg:p-8">
                     <ul className="space-y-3 lg:space-y-6">
                         {electrodes.map((electrode) => (
                             <li key={electrode.label} className="p-3 lg:p-6 bg-white border border-gray-200 rounded-lg shadow-sm">

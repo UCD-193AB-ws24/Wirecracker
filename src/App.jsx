@@ -239,11 +239,14 @@ const UserProfile = ({ onSignOut }) => {
     };
 
     return (
-        <div className="flex items-center gap-4 px-4 py-2 border-b bg-gray-50">
-            <span className="text-sky-700 font-semibold">{userName}</span>
+        <div className="flex justify-end items-center gap-2 px-2 py-1 border-b bg-gray-50
+                        lg:gap-4 lg:px-4 lg:py-2">
+            <span className="text-sky-700 font-semibold text-xs lg:text-sm">{userName}</span>
             <button 
                 onClick={handleSignOut}
-                className="px-4 py-2 text-sm text-red-600 cursor-pointer hover:text-red-800 font-medium"
+                className="px-2 py-1 text-xs text-red-600 text-sm font-medium
+                           transition-colors duration-200 cursor-pointer hover:text-red-800
+                           lg:px-4 lg:py-2 lg:text-sm"
             >
                 Sign Out
             </button>
@@ -1002,10 +1005,10 @@ const HomePage = () => {
         switch (currentTab.content) {
             case 'home':
                 return (
-                    <div className="bg-sky-50 h-full px-2 flex flex-col-reverse items-center
-                                    md:px-5
-                                    lg:px-10 lg:flex-row lg:items-baseline
-                                    xl:px-15">
+                    <div className="bg-gray-100 h-full px-7 flex flex-col-reverse justify-end items-center
+                                    md:px-14
+                                    lg:px-24 lg:flex-row lg:justify-start lg:items-start
+                                    xl:px-35">
                         {token ? (
                             <>
                                 <div className="lg:basis-6 lg:flex-auto mt-15 flex flex-col">
@@ -1280,23 +1283,20 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
     };
     
     return (
-        <div className="px-2 self-center flex flex-col justify-center items-center m-auto
+        <div className="px-2 mt-[3vb] flex flex-col justify-center items-center
                         md:px-7
-                        lg:px-12 lg:basis-7 lg:flex-auto
+                        lg:px-12 lg:mt-[10vb] lg:basis-7 lg:flex-auto
                         xl:px-15">
             <Logo />
             {token ? (
                 <>
-                    <button className="bg-white text-blue-500 border-solid border-1 border-blue-300 rounded-full w-64 py-3"
-                            onClick={() => window.dispatchEvent(new CustomEvent('addDatabaseLookupTab'))}>
-                        Search the Database
-                    </button>
                     <button
-                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                        className="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-800
                                    md:w-40 md:text-sm
                                    lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                    xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
-                        onClick={onNewLocalization}>
+                        onClick={onNewLocalization}
+                    >
                         Create New Patient
                     </button>
                     <input
@@ -1306,14 +1306,14 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                         style={{ display: 'none' }}
                         id="fileInput"
                     />
-                    <Dropdown 
-                        closedText="Open File"
-                        openText="Open File ▾"
-                        closedClassName="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                    <Dropdown
+                        closedText="Open Patient Files"
+                        openText="Open Patient Files ▾"
+                        closedClassName="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-800
                                          md:w-40 md:text-sm
                                          lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                          xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
-                        openClassName="border-solid border-1 border-sky-700 bg-sky-100 text-sky-700 font-semibold rounded-xl w-64 mt-3 py-1 text-xs cursor-pointer
+                        openClassName="border-solid border border-sky-800 bg-sky-800 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-700
                                        md:w-40 md:text-sm
                                        lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                        xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
@@ -1338,6 +1338,15 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                             }
                         }}
                     />
+                    <button
+                        className="border-solid border border-sky-800 bg-sky-600 text-white font-semibold rounded-xl w-34 mt-3 py-1 text-xs align-middle transition-colors duration-200 cursor-pointer hover:bg-sky-800
+                                   md:w-40 md:text-sm
+                                   lg:w-48 lg:mt-4 lg:py-2 lg:text-md
+                                   xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
+                        onClick={() => window.dispatchEvent(new CustomEvent('addDatabaseLookupTab'))}
+                    >
+                        Structure-Function-Test Lookup
+                    </button>
                     {error && <p className="text-red-500 mt-2">{error}</p>}
 
                     {/* Database Patients Modal */}
@@ -1364,11 +1373,11 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                 </div>
                                 
                                 {isLoading ? (
-                                    <div className="text-center py-8">
+                                    <div className="text-center py-3 md:py-4 lg:py-6 xl:py-8">
                                         <p className="text-gray-600">Loading patients...</p>
                                     </div>
                                 ) : patients.length === 0 ? (
-                                    <div className="text-center py-8">
+                                    <div className="text-center py-3 md:py-4 lg:py-6 xl:py-8">
                                         <p className="text-gray-600">No patients found. Create a new file to get started.</p>
                                     </div>
                                 ) : (
@@ -1476,7 +1485,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
 
 const Activity = () => {
     return (
-        <div>
+        <div className="lg:mt-20 xl:mt-25">
             <h2 className="text-xl font-bold my-1 whitespace-nowrap
                            md:text-2xl
                            lg:text-3xl lg:my-2
@@ -2025,15 +2034,18 @@ const RecentFiles = ({ onOpenFile, className }) => {
                 </h3>
                 <button 
                     onClick={() => setShowLegend(true)}
-                    className="text-gray-500 hover:text-gray-700 text-xl cursor-pointer"
+                    className="text-gray-500 text-base
+                               transition-colors duration-200 cursor-pointer hover:text-gray-700
+                               lg:text-lg
+                               xl:text-xl"
                     title="Show Legend"
                 >
                     ?
                 </button>
             </div>
-            <div className="bg-sky-200 rounded-xl p-2 mt-2">
+            <div className="bg-gray-200 rounded-xl p-2 mt-2">
                 {isLoading ? (
-                    <div className="text-gray-500">Loading...</div>
+                    <div className="text-gray-600">Loading...</div>
                 ) : recentPatients.length > 0 ? (
                     <div>
                         {recentPatients.map((patient) => (
@@ -2070,7 +2082,7 @@ const RecentFiles = ({ onOpenFile, className }) => {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-gray-500">No patients available</div>
+                    <div className="text-gray-600">No patients available</div>
                 )}
             </div>
 
@@ -2125,7 +2137,7 @@ const SignInButtons = () => {
                             xl:m-10">
                 <Link to="/signup">
                     <button
-                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 mr-2 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                        className="border-solid border border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 mr-2 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
                                    md:w-28 md:mr-3 md:text-sm
                                    lg:w-32 lg:py-2 lg:mr-4 lg:text-md
                                    xl:w-40 xl:py-3 xl:mr-5 xl:text-xl"
@@ -2135,7 +2147,7 @@ const SignInButtons = () => {
                 </Link>
                 <Link to="/login">
                     <button
-                        className="border-solid border-1 border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
+                        className="border-solid border border-sky-700 bg-sky-700 text-white font-semibold rounded-xl w-24 py-1 text-xs transition-colors duration-200 cursor-pointer hover:bg-sky-100 hover:text-sky-700
                                    md:w-28 md:text-sm
                                    lg:w-32 lg:py-2 lg:text-md
                                    xl:w-40 xl:py-3 xl:text-xl"
@@ -2153,7 +2165,7 @@ const ToReview = () => {
 
     return (
         <div
-            className="text-violet-500 text-base font-semibold flex gap-x-2 cursor-pointer
+            className="text-violet-800 text-base font-semibold flex gap-x-2 cursor-pointer
                        md:text-lg
                        lg:text-xl
                        xl:text-2xl"
@@ -2162,7 +2174,7 @@ const ToReview = () => {
             {isReviewOpen ? (
                 <>
                     <div className="before:content-['▾']"></div>
-                    <div className="mb-5 whitespace-nowrap">
+                    <div className="mb-2 lg:mb-4 xl:mb-5 whitespace-nowrap">
                         <div>To Review</div>
                     </div>
                 </>
@@ -2182,7 +2194,7 @@ const Approved = () => {
 
     return (
         <div
-            className="text-green-500 text-base font-semibold flex gap-x-2 cursor-pointer
+            className="text-green-800 text-base font-semibold flex gap-x-2 cursor-pointer
                        md:text-lg
                        lg:text-xl
                        xl:text-2xl"
@@ -2191,7 +2203,7 @@ const Approved = () => {
             {isApprovedOpen ? (
                 <>
                     <div className="before:content-['▾']"></div>
-                    <div className="mb-5">
+                    <div className="mb-2 lg:mb-4 xl:mb-5 whitespace-nowrap">
                         <div>Approved</div>
                     </div>
                 </>

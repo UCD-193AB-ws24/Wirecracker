@@ -786,8 +786,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
     return (
         <div className="localization-container">
             <div className="header">
-                <div className="flex justify-between items-center w-full">
-                    <div className="flex items-center gap-4">
+                <div className="flex justify-between items-center w-full p-2 md:p-3 lg:p-4 xl:p-6">
+                    <div className="flex items-center gap-2 lg:gap-3 xl:gap-4">
                         <h1 className="text-2xl font-bold">Anatomy</h1>
                         <input
                             type="text"
@@ -798,26 +798,34 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                         />
                     </div>
                     
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 lg:gap-3 xl:gap-4">
                         {!readOnly && (
                             <>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-xs lg:text-sm text-gray-600">
                                 <div>Created: {new Date(creationDate).toLocaleString()}</div>
                                 <div>Modified: {new Date(modifiedDate).toLocaleString()}</div>
                             </div>
                             {showSaveSuccess && (
-                                <div className="text-green-500 font-medium">
+                                <div className="text-green-500 text-sm lg:text-base font-medium">
                                     Save successful!
                                 </div>
                             )}
                             <button
-                                className="w-40 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded p-2"
+                                className="w-20 border border-sky-800 bg-sky-600 text-white text-sm font-semibold rounded p-1
+                                           transition-colors duration-200 cursor-pointer hover:bg-sky-800
+                                           md:w-26
+                                           lg:w-32 lg:text-base lg:p-2
+                                           xl:w-40"
                                 onClick={() => handleSaveLocalization(false)}
                             >
                                 Save
                             </button>
                     <button
-                                className="w-40 bg-green-500 hover:bg-green-600 text-white font-semibold rounded p-2"
+                                className="w-20 border border-green-600 bg-green-500 text-white text-sm font-semibold rounded p-1
+                                           transition-colors duration-200 cursor-pointer hover:bg-green-600
+                                           md:w-26
+                                           lg:w-32 lg:text-base lg:p-2
+                                           xl:w-40"
                                 onClick={() => handleSaveLocalization(true)}
                     >
                                 Export
@@ -861,15 +869,14 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             />
 
             {!readOnly && (
-            <Container>
-                    <Button
-                        tooltip="Add Electrode"
-                        styles={{ backgroundColor: darkColors.lightBlue, color: lightColors.white }}
-                        onClick={() => setShowElectrodeModal(true)}
-                    >
-                        +
-                    </Button>
-                </Container>
+                <button
+                    className="fixed bottom-20 right-7 z-50 rounded-full size-10
+                               border border-sky-800 bg-sky-600 text-white font-semibold text-center
+                               transition-colors duration-200 cursor-pointer hover:bg-sky-800"
+                    onClick={() => setShowElectrodeModal(true)}
+                >
+                    +
+                </button>
             )}
 
             <EditElectrodeModal
@@ -881,9 +888,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 }}
             />
 
-            <div className="fixed bottom-6 right-6 z-50 flex gap-4">
+            <div className="fixed bottom-2 right-2 z-50 flex gap-1
+                            lg:bottom-6 lg:right-6 lg:gap-2">
                 <button
-                    className="py-2 px-4 bg-green-500 text-white font-bold rounded-md hover:bg-green-600 transition-colors duration-200 shadow-lg"
+                    className="py-1 px-2 bg-green-500 text-white font-semibold rounded-md shadow-lg
+                               transition-colors duration-200 cursor-pointer hover:bg-green-600
+                               lg:py-2 lg:px-4"
                     onClick={createResectionTab}
                 >
                     Open in Neurosurgery
@@ -892,11 +902,12 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 {isSharedFile && (
                     <button
                         onClick={() => setShowApprovalModal(true)}
-                        className={`py-2 px-4 font-bold rounded-md transition-colors duration-200 shadow-lg ${
-                            hasChanges 
-                                ? "bg-violet-600 hover:bg-violet-700 text-white"
-                                : "bg-green-600 hover:bg-green-700 text-white"
-                        }`}
+                        className={`py-1 px-2 border text-white font-semibold rounded-md transition-colors duration-200 shadow-lg
+                                    lg:py-2 lg:px-4 cursor-pointer
+                                    ${hasChanges 
+                                        ? "border-violet-600 bg-violet-500 hover:bg-violet-600"
+                                        : "border-green-600 bg-green-500 hover:bg-green-600"
+                                    }`}
                     >
                         {hasChanges ? 'Submit Changes' : 'Approve File'}
                     </button>
@@ -904,20 +915,22 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             </div>
 
             {showApprovalModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md">
-                        <h2 className="text-xl font-bold mb-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-100">
+                    <div className="bg-white p-3 lg:p-6 rounded-lg shadow-xl max-w-md">
+                        <h2 className="text-base font-bold mb-2
+                                       lg:text-xl lg:mb-4">
                             {hasChanges ? 'Submit Changes' : 'Approve File'}
                         </h2>
-                        <p className="mb-6 text-gray-600">
+                        <p className="mb-3 lg:mb-6 text-gray-600">
                             {hasChanges 
                                 ? 'Are you done suggesting changes to this file? The owner will be notified of your suggestions.'
                                 : 'Once you approve this file, you will not be able to view or suggest changes unless the owner shares it with you again.'}
                         </p>
-                        <div className="flex justify-end gap-4">
+                        <div className="flex justify-end gap-2 lg:gap-4">
                             <button
                                 onClick={() => setShowApprovalModal(false)}
-                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                className="px-2 py-1 text-gray-600 hover:text-gray-800
+                                           lg:px-4 lg:py-2"
                             >
                                 Cancel
                             </button>
@@ -930,7 +943,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                                         await handleApproveFile();
                                     }
                                 }}
-                                className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                className="px-3 py-1 border border-green-600 bg-green-500 text-white rounded hover:bg-green-600
+                                           lg:px-6 lg:py-2"
                             >
                                 {hasChanges ? 'Submit' : 'Approve'}
                             </button>
