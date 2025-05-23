@@ -7,9 +7,17 @@ import "../../docs/styles/github-markdown-light.css";
 const backendURL = __APP_CONFIG__.backendURL;
 
 /**
+ * @module UserDocumentation
+ */
+
+/**
  * A component for displaying user documentation from markdown files.
  * @component
- * @param {Object} [props] - Component props
+ * @param {Object} [initialData] - Initial data. Contain path and content. If content is defined,
+ *                  this component will not fetch and display the passed content. Otherwise will fetch the path.
+ * @param {Function} onStateChange - Call back function to let parent component know about state change
+ * @param {Object} [savedState] - Saved state. Contain path and content. If content is defined,
+ *                  this component will not fetch and display the passed content. Otherwise will fetch the path.
  * @returns {JSX.Element} Rendered documentation component
  * @example
  * // Basic usage
@@ -18,7 +26,14 @@ const backendURL = __APP_CONFIG__.backendURL;
  * // To open this page as new tab, dispatch event as follows
  * const event = new CustomEvent('addDocumentationTab', {
  *     detail: {
- *         path: 'stimulation'
+ *
+ *         // String
+ *         path: 'stimulation',
+ *
+ *         // Markdown String
+ *         // If content is defined, the component will display that instead of fetching the path.
+ *         // Otherwise it will fetch using the path
+ *         content: "Content"
  *     }
  * });
  * window.dispatchEvent(event);
