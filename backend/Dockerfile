@@ -9,6 +9,9 @@ RUN npm install
 # Copy config files to the root
 COPY config.*.json ../
 
+# Copy documentations
+COPY docs ../docs
+
 # Copy backend file
 COPY . .
 

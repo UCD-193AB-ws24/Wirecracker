@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
 router.use(cors());
@@ -13,14 +15,9 @@ router.get('/usage-docs/:docPath', async (req, res) => {
         const safePath = docPath.replace(/\.\.\//g, '').replace(/\//g, '');
 
         // Path to markdown files directory
-        const projectRoot = path.join('.', '..');
+        const projectRoot = path.join('.', '..', '..');
         const docsDir = path.join(projectRoot, 'docs');
         let filePath = path.join(docsDir, `${safePath}.md`);
-
-        // If no extension provided, try with .md
-        if (!fs.existsSync(filePath)) {
-            filePath = path.join(docsDir, safePath, 'index.md');
-        }
 
         // Check if file exists
         if (!fs.existsSync(filePath)) {
