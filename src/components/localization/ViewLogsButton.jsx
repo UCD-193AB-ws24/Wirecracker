@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import Popup from 'reactjs-popup';
 import Localization from '../../pages/Localization.jsx';
 import { useError } from '../../context/ErrorContext.jsx'
-import config from "../../../config.json" with { type: 'json' };
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 const ViewLogsButton = ({ fileId, onHighlightChange }) => {
     const [showLogs, setShowLogs] = useState(false);

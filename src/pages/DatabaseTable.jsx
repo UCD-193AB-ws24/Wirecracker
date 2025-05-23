@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import config from "../../config.json" with { type: 'json' };
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 const DatabaseTable = () => {
     const { table } = useParams();

@@ -5,9 +5,8 @@ import { parseCSVFile } from '../../utils/CSVParser';
 import { useError } from '../../context/ErrorContext';
 import { niftiStorage } from '../../utils/IndexedDBStorage';
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
-import config from "../../../config.json" with { type: 'json' };
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 /**
  * @module Resection

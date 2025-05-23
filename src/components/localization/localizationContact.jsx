@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import config from "../../../config.json" with { type: 'json' };
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 const LocalizationContact = ({
     label,

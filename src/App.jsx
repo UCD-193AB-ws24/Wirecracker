@@ -16,12 +16,11 @@ import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
 import Designation from './pages/ContactDesignation/DesignationPage';
 import Resection from './pages/ContactDesignation/ResectionPage';
 import { FcGoogle } from 'react-icons/fc';
-import config from '../config.json' with { type: 'json' };
 import { ErrorProvider, useError } from './context/ErrorContext';
 import { WarningProvider, useWarning } from './context/WarningContext';
 import DBLookup from './pages/DatabaseLookup';
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 // Shared utility to format patient display
 const formatPatientDisplay = (patient) => {

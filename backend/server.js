@@ -4,13 +4,16 @@ import cors from 'cors';
 import { Resend } from 'resend';
 import routes from './routes/index.js';
 import oauthRoutes from './oauth.js';
-import config from "../config.json" with { type: 'json' };
+import devConfig from '../config.dev.json' with { type: 'json' };
+import prodConfig from '../config.prod.json' with { type: 'json' };
 
 dotenv.config();
 
 const app = express();
-const PORT = config.PORT || 5000;
 
+const config = process.env.NODE_ENV === 'development' ? devConfig : prodConfig;
+
+const PORT = config.PORT || 5000;
 const frontendURL = config.frontendURL;
 const backendURL = config.backendURL;
 
@@ -50,8 +53,10 @@ app.post('/send-verification-email', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on ${backendURL}`); 
-});
+if (process.env.NODE_ENV === 'development') {
+    app.listen(PORT, () => {
+        console.log(`Server running on ${backendURL}`);
+    });
+}
 // Vercel's server-less things
 export default app;

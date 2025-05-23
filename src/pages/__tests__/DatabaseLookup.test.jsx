@@ -4,9 +4,8 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 import DBLookup from "../DatabaseLookup";
 import * as d3 from "d3";
 import React from "react";
-import config from "../../../config.json" with { type: "json" };
 
-const backendURL = config.backendURL;
+const backendURL = __APP_CONFIG__.backendURL;
 
 // Mock fetch
 global.fetch = vi.fn();

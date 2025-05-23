@@ -302,14 +302,29 @@ test_selection |o--|| files : ""
        "backendURL": "[your back-end url]"
    }
    ```
-5. Install NPM packages for backend and start it
-   ```sh
-   (cd backend; npm install; npm start)&
-   ```
-6. Install NPM packages for frontend and start it 
-   ```sh
-   npm install; npm run dev
-   ```
+5. Start it
+   - Using docker
+     ```sh
+     docker compose up --build
+     ```
+   - Manually
+     1. Install npm packages on frontend
+        ```sh
+        npm install
+        ```
+     3. Run frontend
+        ```sh
+        npm run dev
+        ```
+     4. On separate console, install npm packages on backend
+        ```sh
+        cd backend; npm install
+        ```
+     5. Run backend
+        ```sh
+        npm run dev
+        ```
+   
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
