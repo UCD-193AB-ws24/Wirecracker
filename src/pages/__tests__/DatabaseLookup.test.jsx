@@ -1,4 +1,3 @@
-// __tests__/DBLookup.test.js
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import DBLookup from "../DatabaseLookup";
