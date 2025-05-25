@@ -12,6 +12,15 @@ export default defineConfig(({ mode }) => ({
   test: {
     globals: true,
     environment: "jsdom",
+    coverage: {
+      exclude:[
+        ...configDefaults.exclude,
+        'docs/*',
+        'data/*',
+        'postcss.config.mjs',
+        'backend/tables/*'
+      ]
+    }
   },
   define: {
     __APP_CONFIG__: mode === 'development' ? configDev : configProd
