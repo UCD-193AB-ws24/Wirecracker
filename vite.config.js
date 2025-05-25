@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { configDefaults } from 'vitest/config'
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/postcss";
 import configDev from "./config.dev.json" with { type: 'json' };
