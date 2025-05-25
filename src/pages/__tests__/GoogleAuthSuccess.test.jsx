@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import GoogleAuthSuccess from '../GoogleAuthSuccess';
 import { MemoryRouter } from 'react-router-dom';
@@ -31,7 +31,7 @@ describe('GoogleAuthSuccess Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders loading message', () => {
+  test('renders loading message', () => {
     const { getByText } = render(
       <MemoryRouter>
         <GoogleAuthSuccess />
@@ -40,7 +40,7 @@ describe('GoogleAuthSuccess Component', () => {
     expect(getByText('Signing in...')).toBeDefined();
   });
 
-  it('stores token and navigates to home when token exists in URL', () => {
+  test('stores token and navigates to home when token exists in URL', () => {
     const testToken = 'test-token-123';
     window.location.search = `?token=${testToken}`;
 
@@ -54,7 +54,7 @@ describe('GoogleAuthSuccess Component', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
-  it('navigates to home even when no token exists in URL', () => {
+  test('navigates to home even when no token exists in URL', () => {
     window.location.search = '';
 
     render(
@@ -67,7 +67,7 @@ describe('GoogleAuthSuccess Component', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
-  it('handles multiple query parameters correctly', () => {
+  test('handles multiple query parameters correctly', () => {
     const testToken = 'test-token-456';
     window.location.search = `?foo=bar&token=${testToken}&baz=qux`;
 
