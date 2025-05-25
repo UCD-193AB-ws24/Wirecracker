@@ -1280,36 +1280,55 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
     const { showError } = useError();
     const [clickedFileId, setClickedFileId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    const buttons = [
-        {
+
+    // Dynamically generate buttons for all file types present in patient.files
+    const fileTypeMap = {
+        localization: {
             name: 'Localization',
             type: 'localization',
-            exists: patient.has_localization,
-            fileId: patient.localization_file_id,
+            icon: '📍',
             message: 'No localization file created yet'
         },
-        {
+        designation: {
             name: 'Designation',
             type: 'designation',
-            exists: patient.has_designation,
-            fileId: patient.designation_file_id,
+            icon: '📝',
             message: 'No designation file created yet'
         },
-        {
+        stimulation: {
             name: 'Stimulation',
             type: 'stimulation',
-            exists: patient.has_stimulation,
-            fileId: patient.stimulation_file_id,
+            icon: '⚡',
             message: 'No stimulation file created yet'
         },
-        {
+        'test selection': {
             name: 'Test Selection',
             type: 'functional-test',
-            exists: patient.has_test_selection,
-            fileId: patient.test_selection_file_id,
+            icon: '🧪',
             message: 'No test selection file created yet'
         }
-    ];
+    };
+
+    // Map files to button objects
+    const buttons = Object.values(fileTypeMap).map(({ name, type, icon, message }) => {
+        // Find the file for this type
+        const file = (patient.files || []).find(f => {
+            const fname = f.filename.toLowerCase();
+            if (type === 'localization') return fname.includes('localization');
+            if (type === 'designation') return fname.includes('designation');
+            if (type === 'stimulation') return fname.includes('stimulation');
+            if (type === 'functional-test') return fname.includes('test') || fname.includes('functional');
+            return false;
+        });
+        return {
+            name,
+            type,
+            exists: !!file,
+            fileId: file ? file.file_id : null,
+            message,
+            icon
+        };
+    });
 
     const handleButtonClick = async (clickedButton) => {
         if (!clickedButton.exists) return;
@@ -1342,141 +1361,116 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                 return;
             }
 
-            // If no existing tab found, proceed with loading all files for this patient
-            const availableFiles = await Promise.all(
-                buttons
-                    .filter(button => button.exists)
-                    .map(async (button) => {
-                        // First check file type and get initial data
-                        console.log('Fetching file type data for file ID:', button.fileId);
-                        const response = await fetch(`${backendURL}/api/files/check-type?fileId=${button.fileId}`, {
+            // If no existing tab found, proceed with loading the file for this button
+            // (Only open the clicked file, not all files)
+            const button = clickedButton;
+            // First check file type and get initial data
+            const response = await fetch(`${backendURL}/api/files/check-type?fileId=${button.fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!response.ok) throw new Error('Failed to check file type');
+            const fileTypeData = await response.json();
+
+            // Get file metadata from database
+            const metadataResponse = await fetch(`${backendURL}/api/files/dates-metadata?fileId=${button.fileId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!metadataResponse.ok) throw new Error('Failed to fetch file metadata');
+            const metadata = await metadataResponse.json();
+
+            // Handle each file type based on the check-type response
+            switch (button.type) {
+                case 'designation': {
+                    if (!fileTypeData.hasDesignation) {
+                        throw new Error('No designation data found');
+                    }
+                    openSavedFile('designation', {
+                        fileId: button.fileId,
+                        name: button.name,
+                        creationDate: metadata.creation_date || new Date().toISOString(),
+                        modifiedDate: metadata.modified_date || new Date().toISOString(),
+                        patientId: patient.patient_id,
+                        data: fileTypeData.designationData.designation_data,
+                        originalData: fileTypeData.designationData.localization_data
+                    });
+                    break;
+                }
+                case 'localization': {
+                    if (fileTypeData.hasLocalization) {
+                        const localizationResponse = await fetch(`${backendURL}/api/files/localization?fileId=${button.fileId}`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
                         });
-                        
-                        if (!response.ok) throw new Error('Failed to check file type');
-                        const fileTypeData = await response.json();
-
-                        // Get file metadata from database
-                        const metadataResponse = await fetch(`${backendURL}/api/files/dates-metadata?fileId=${button.fileId}`, {
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            }
+                        if (!localizationResponse.ok) throw new Error('Failed to fetch localization data');
+                        const localizationData = await localizationResponse.json();
+                        const transformedData = FileUtils.transformLocalizationData(localizationData);
+                        openSavedFile('localization', {
+                            fileId: button.fileId,
+                            name: button.name,
+                            creationDate: metadata.creation_date || new Date().toISOString(),
+                            modifiedDate: metadata.modified_date || new Date().toISOString(),
+                            patientId: patient.patient_id,
+                            data: { data: transformedData }
                         });
-                        
-                        if (!metadataResponse.ok) throw new Error('Failed to fetch file metadata');
-                        const metadata = await metadataResponse.json();
-
-                        // Handle each file type based on the check-type response
-                        switch (button.type) {
-                            case 'designation': {
-                                if (!fileTypeData.hasDesignation) {
-                                    throw new Error('No designation data found');
-                                }
-                                return {
-                                    fileId: button.fileId,
-                                    name: button.name,
-                                    creationDate: metadata.creation_date || new Date().toISOString(),
-                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
-                                    patientId: patient.patient_id,
-                                    type: 'designation',
-                                    data: fileTypeData.designationData.designation_data,
-                                    originalData: fileTypeData.designationData.localization_data
-                                };
-                            }
-                            case 'localization': {
-                                if (fileTypeData.hasLocalization) {
-                                    const localizationResponse = await fetch(`${backendURL}/api/files/localization?fileId=${button.fileId}`, {
-                                        headers: {
-                                            'Authorization': `Bearer ${token}`
-                                        }
-                                    });
-                                    if (!localizationResponse.ok) throw new Error('Failed to fetch localization data');
-                                    const localizationData = await localizationResponse.json();
-                                    const transformedData = FileUtils.transformLocalizationData(localizationData);
-                                    return {
-                                        fileId: button.fileId,
-                                        name: button.name,
-                                        creationDate: metadata.creation_date || new Date().toISOString(),
-                                        modifiedDate: metadata.modified_date || new Date().toISOString(),
-                                        patientId: patient.patient_id,
-                                        type: 'localization',
-                                        data: { data: transformedData }
-                                    };
-                                }
-                                return {
-                                    fileId: button.fileId,
-                                    name: button.name,
-                                    creationDate: metadata.creation_date || new Date().toISOString(),
-                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
-                                    patientId: patient.patient_id,
-                                    type: 'localization',
-                                    data: { data: {} }
-                                };
-                            }
-                            case 'stimulation': {
-                                if (!fileTypeData.hasStimulation) {
-                                    throw new Error('No stimulation data found');
-                                }
-                                return {
-                                    fileId: button.fileId,
-                                    name: button.name,
-                                    creationDate: metadata.creation_date || new Date().toISOString(),
-                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
-                                    patientId: patient.patient_id,
-                                    type: fileTypeData.stimulationData.is_mapping ? 'csv-functional-mapping' : 'csv-stimulation',
-                                    data: {
-                                        data: fileTypeData.stimulationData.stimulation_data,
-                                        planOrder: fileTypeData.stimulationData.plan_order
-                                    }
-                                };
-                            }
-                            case 'functional-test': {
-                                if (!fileTypeData.hasTestSelection) {
-                                    throw new Error('No test selection data found');
-                                }
-                                return {
-                                    fileId: button.fileId,
-                                    name: button.name,
-                                    creationDate: metadata.creation_date || new Date().toISOString(),
-                                    modifiedDate: metadata.modified_date || new Date().toISOString(),
-                                    patientId: patient.patient_id,
-                                    type: 'csv-functional-test',
-                                    data: {
-                                        tests: fileTypeData.testSelectionData.tests,
-                                        contacts: fileTypeData.testSelectionData.contacts
-                                    }
-                                };
-                            }
-                            default:
-                                throw new Error(`Unknown file type: ${button.type}`);
+                    } else {
+                        openSavedFile('localization', {
+                            fileId: button.fileId,
+                            name: button.name,
+                            creationDate: metadata.creation_date || new Date().toISOString(),
+                            modifiedDate: metadata.modified_date || new Date().toISOString(),
+                            patientId: patient.patient_id,
+                            data: { data: {} }
+                        });
+                    }
+                    break;
+                }
+                case 'stimulation': {
+                    if (!fileTypeData.hasStimulation) {
+                        throw new Error('No stimulation data found');
+                    }
+                    openSavedFile(fileTypeData.stimulationData.is_mapping ? 'csv-functional-mapping' : 'csv-stimulation', {
+                        fileId: button.fileId,
+                        name: button.name,
+                        creationDate: metadata.creation_date || new Date().toISOString(),
+                        modifiedDate: metadata.modified_date || new Date().toISOString(),
+                        patientId: patient.patient_id,
+                        data: {
+                            data: fileTypeData.stimulationData.stimulation_data,
+                            planOrder: fileTypeData.stimulationData.plan_order
                         }
-                    })
-            );
-
-            // Add tabs for each available file sequentially
-            for (const file of availableFiles) {
-                console.log('Opening file:', file);
-                await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay between each file
-                openSavedFile(file.type, file);
+                    });
+                    break;
+                }
+                case 'functional-test': {
+                    if (!fileTypeData.hasTestSelection) {
+                        throw new Error('No test selection data found');
+                    }
+                    openSavedFile('csv-functional-test', {
+                        fileId: button.fileId,
+                        name: button.name,
+                        creationDate: metadata.creation_date || new Date().toISOString(),
+                        modifiedDate: metadata.modified_date || new Date().toISOString(),
+                        patientId: patient.patient_id,
+                        data: {
+                            tests: fileTypeData.testSelectionData.tests,
+                            contacts: fileTypeData.testSelectionData.contacts
+                        }
+                    });
+                    break;
+                }
+                default:
+                    throw new Error(`Unknown file type: ${button.type}`);
             }
 
-            // After opening all files, switch to the clicked file's tab
-            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const clickedTab = tabs.find(tab => 
-                tab.title === clickedButton.name && 
-                tab.state?.patientId === patient.patient_id
-            );
-            if (clickedTab) {
-                const tabId = clickedTab.id;
-                window.dispatchEvent(new CustomEvent('setActiveTab', { detail: { tabId } }));
-            }
-            
             onClose();
         } catch (error) {
-            console.error('Error loading files:', error);
-            showError(`Failed to load files: ${error.message}`);
+            console.error('Error loading file:', error);
+            showError(`Failed to load file: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -1494,7 +1488,6 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                         ×
                     </button>
                 </div>
-                
                 <div className="grid grid-cols-2 gap-6">
                     {buttons.map((button) => (
                         <div key={button.type} className="flex flex-col items-center">
@@ -1506,7 +1499,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                                         : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
                                 disabled={!button.exists || isLoading}
                             >
-                                {button.name}
+                                {button.icon} {button.name}
                             </button>
                             {!button.exists && (
                                 <p className="mt-2 text-sm text-gray-500">{button.message}</p>
@@ -1534,7 +1527,7 @@ const RecentFiles = ({ onOpenFile, className }) => {
     const addTab = window.addTab;
     
     useEffect(() => {
-        const fetchRecentPatients = async () => {
+        const fetchAssignedPatients = async () => {
             setIsLoading(true);
             try {
                 const token = localStorage.getItem('token');
@@ -1542,28 +1535,57 @@ const RecentFiles = ({ onOpenFile, className }) => {
                     setRecentPatients([]);
                     return;
                 }
-
-                const response = await fetch(`${backendURL}/api/patients/recent`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                const response = await fetch(`${backendURL}/api/assigned-patients-files`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch recent patients');
-                }
-
-                const patients = await response.json();
+                if (!response.ok) throw new Error('Failed to fetch assigned patients');
+                const groupedFiles = await response.json();
+                // Flatten and aggregate file types for each patient
+                const patients = Object.entries(groupedFiles).map(([patient_id, files]) => {
+                    // Aggregate file types
+                    let has_localization = false, has_designation = false, has_stimulation = false, has_test_selection = false;
+                    let localization_file_id = null, designation_file_id = null, stimulation_file_id = null, test_selection_file_id = null, localization_creation_date = null;
+                    files.forEach(file => {
+                        const filename = file.filename.toLowerCase();
+                        if (filename.includes('localization')) {
+                            has_localization = true;
+                            localization_file_id = file.file_id;
+                            localization_creation_date = file.creation_date;
+                        } else if (filename.includes('designation')) {
+                            has_designation = true;
+                            designation_file_id = file.file_id;
+                        } else if (filename.includes('stimulation')) {
+                            has_stimulation = true;
+                            stimulation_file_id = file.file_id;
+                        } else if (filename.includes('test') || filename.includes('functional')) {
+                            has_test_selection = true;
+                            test_selection_file_id = file.file_id;
+                        }
+                    });
+                    return {
+                        patient_id,
+                        files,
+                        has_localization,
+                        has_designation,
+                        has_stimulation,
+                        has_test_selection,
+                        localization_file_id,
+                        designation_file_id,
+                        stimulation_file_id,
+                        test_selection_file_id,
+                        localization_creation_date,
+                        latest_file: files.reduce((a, b) => new Date(a.modified_date) > new Date(b.modified_date) ? a : b)
+                    };
+                }).sort((a, b) => new Date(b.latest_file.modified_date) - new Date(a.latest_file.modified_date));
                 setRecentPatients(patients.slice(0, 7));
             } catch (error) {
-                console.error('Error fetching recent patients:', error);
-                showError('Failed to load recent patients');
+                console.error('Error fetching assigned patients:', error);
+                showError('Failed to load patients');
             } finally {
                 setIsLoading(false);
             }
         };
-        
-        fetchRecentPatients();
+        fetchAssignedPatients();
     }, [showError]);
     
     const handlePatientClick = (patient) => {

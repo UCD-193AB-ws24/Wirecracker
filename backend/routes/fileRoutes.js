@@ -604,4 +604,47 @@ router.post("/share", async (req, res) => {
     }
 });
 
+// Get all files for all patients where the user has a file assignment
+router.get("/assigned-patients-files", async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: "No authentication token provided" });
+    }
+    try {
+        // Get user_id from session
+        const { data: session } = await supabase
+            .from('sessions')
+            .select('user_id')
+            .eq('token', token)
+            .single();
+        if (!session?.user_id) {
+            return res.status(401).json({ error: "Invalid or expired session" });
+        }
+        // Get all patient_ids where user has a file assignment
+        const { data: assignments, error: assignmentError } = await supabase
+            .from('file_assignments')
+            .select('patient_id')
+            .eq('user_id', session.user_id);
+        if (assignmentError) throw assignmentError;
+        const patientIds = [...new Set(assignments.map(a => a.patient_id))];
+        if (patientIds.length === 0) return res.json([]);
+        // Get all files for these patient_ids
+        const { data: files, error: filesError } = await supabase
+            .from('files')
+            .select('*')
+            .in('patient_id', patientIds);
+        if (filesError) throw filesError;
+        // Group files by patient_id
+        const grouped = {};
+        files.forEach(file => {
+            if (!grouped[file.patient_id]) grouped[file.patient_id] = [];
+            grouped[file.patient_id].push(file);
+        });
+        res.json(grouped);
+    } catch (error) {
+        console.error('Error fetching assigned patients files:', error);
+        res.status(500).json({ error: "Error fetching assigned patients files" });
+    }
+});
+
 export default router;
