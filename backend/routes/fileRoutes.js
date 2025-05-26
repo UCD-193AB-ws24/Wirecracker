@@ -500,4 +500,104 @@ router.post("/files/share-with-neurosurgeon", async (req, res) => {
     }
 });
 
+// Share file with epileptologist
+router.post("/files/share-with-epileptologist", async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: "No authentication token provided" });
+    }
+
+    const { fileId, email, designationData, localizationData } = req.body;
+    if (!fileId || !email) {
+        return res.status(400).json({ error: "File ID and email are required" });
+    }
+
+    try {
+        // Get the current user's session
+        const { data: session } = await supabase
+            .from('sessions')
+            .select('user_id')
+            .eq('token', token)
+            .single();
+
+        if (!session?.user_id) {
+            return res.status(401).json({ error: "Invalid or expired session" });
+        }
+
+        // Get the target user's ID from their email
+        const { data: targetUser, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (userError || !targetUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Get the original file's data
+        const { data: originalFile, error: fileError } = await supabase
+            .from('files')
+            .select('*')
+            .eq('file_id', fileId)
+            .single();
+
+        if (fileError || !originalFile) {
+            return res.status(404).json({ error: "File not found" });
+        }
+
+        // Create a new file for epilepsy
+        const { data: newFile, error: insertError } = await supabase
+            .from('files')
+            .insert({
+                filename: 'Epilepsy',
+                owner_user_id: targetUser.id,
+                patient_id: originalFile.patient_id,
+                creation_date: new Date().toISOString(),
+                modified_date: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (insertError) throw insertError;
+
+        // Create file assignment for the new file
+        const { error: assignmentError } = await supabase
+            .from('file_assignments')
+            .insert({
+                file_id: newFile.file_id,
+                user_id: targetUser.id,
+                patient_id: originalFile.patient_id,
+                role: 'owner',
+                has_seen: false,
+                is_completed: false,
+                completed_at: null
+            });
+
+        if (assignmentError) throw assignmentError;
+
+        // Create the designation record for the epilepsy file
+        if (designationData && localizationData) {
+            const { error: designationError } = await supabase
+                .from('designation')
+                .insert({
+                    file_id: newFile.file_id,
+                    designation_data: designationData,
+                    localization_data: localizationData
+                });
+
+            if (designationError) throw designationError;
+        }
+
+        res.json({ 
+            success: true, 
+            message: "File shared successfully",
+            newFileId: newFile.file_id
+        });
+    } catch (error) {
+        console.error('Error sharing file:', error);
+        res.status(500).json({ error: "Error sharing file" });
+    }
+});
+
 export default router;
