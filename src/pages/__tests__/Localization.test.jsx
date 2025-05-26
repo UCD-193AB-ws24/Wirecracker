@@ -33,6 +33,8 @@ vi.mock("../../App", () => ({
 const mockNavigate = vi.fn();
 const mockOnStateChange = vi.fn();
 const mockOnHighlightChange = vi.fn();
+const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 
 describe("Localization Component", () => {
   const initialData = {
@@ -133,12 +135,13 @@ describe("Localization Component", () => {
   });
 
   test("adds a new electrode", async () => {
-    const { container } = render(
+    render(
       <MemoryRouter>
         <Localization onStateChange={mockOnStateChange} />
       </MemoryRouter>,
     );
 
+    // Add electrode
     await act(async () => {
       fireEvent.click(screen.getByText("+"));
     });
@@ -150,44 +153,209 @@ describe("Localization Component", () => {
       fireEvent.change(newElectrodeDesc, {
         target: { value: "New Electrode" },
       });
-    });
-
-    await act(async () => {
-      // Access the component instance through the container
-      const localizationComponent = container.querySelector(
-        ".localization-container",
-      );
-      localizationComponent.__reactProps$?.children?.props?.addElectrode(
-        mockFormData,
-      );
+      const newElectrodeNum = screen.getByLabelText("Number of Contacts");
+      fireEvent.change(newElectrodeNum, { target: { value: "20" } });
+      fireEvent.click(screen.getByText("Add", { selector: "button" }));
     });
 
     expect(mockOnStateChange).toHaveBeenCalled();
   });
 
-  test("handles contact update", async () => {
-    const { container } = render(
+  test("Overwrite existing electrode", async () => {
+    render(
+      <MemoryRouter>
+        <Localization onStateChange={mockOnStateChange} />
+      </MemoryRouter>,
+    );
+
+    // Add electrode
+    await act(async () => {
+      fireEvent.click(screen.getByText("+"));
+    });
+
+    await act(async () => {
+      const newElectrodeLabel = screen.getByLabelText("Electrode Label");
+      fireEvent.change(newElectrodeLabel, { target: { value: "E3" } });
+      const newElectrodeDesc = screen.getByLabelText("Description");
+      fireEvent.change(newElectrodeDesc, {
+        target: { value: "New Electrode" },
+      });
+      const newElectrodeNum = screen.getByLabelText("Number of Contacts");
+      fireEvent.change(newElectrodeNum, { target: { value: "20" } });
+      fireEvent.click(screen.getByText("Add", { selector: "button" }));
+    });
+
+    // Edit the electrode
+    await act(async () => {
+      fireEvent.click(screen.getByText("+"));
+    });
+
+    await act(async () => {
+      const newElectrodeLabel = screen.getByLabelText("Electrode Label");
+      fireEvent.change(newElectrodeLabel, { target: { value: "E3" } });
+      const newElectrodeDesc = screen.getByLabelText("Description");
+      fireEvent.change(newElectrodeDesc, {
+        target: { value: "New Electrode" },
+      });
+      const newElectrodeNum = screen.getByLabelText("Number of Contacts");
+      fireEvent.change(newElectrodeNum, { target: { value: "25" } });
+      fireEvent.click(screen.getByText("Add", { selector: "button" }));
+    });
+
+    expect(mockOnStateChange).toHaveBeenCalled();
+  });
+
+  test("Overwrite existing electrode with contact changed", async () => {
+    render(
       <MemoryRouter>
         <Localization
-          initialData={initialData}
           onStateChange={mockOnStateChange}
+          initialData={initialData}
+        />
+      </MemoryRouter>,
+    );
+
+    // Edit the electrode
+    await act(async () => {
+      fireEvent.click(screen.getByText("+"));
+    });
+
+    await act(async () => {
+      const newElectrodeLabel = screen.getByLabelText("Electrode Label");
+      fireEvent.change(newElectrodeLabel, { target: { value: "E1" } });
+      const newElectrodeDesc = screen.getByLabelText("Description");
+      fireEvent.change(newElectrodeDesc, {
+        target: { value: "Electrode 1" },
+      });
+      const newElectrodeNum = screen.getByLabelText("Number of Contacts");
+      fireEvent.change(newElectrodeNum, { target: { value: "25" } });
+      fireEvent.click(screen.getByText("Add", { selector: "button" }));
+    });
+
+    // Edit the electrode again
+    await act(async () => {
+      fireEvent.click(screen.getByText("+"));
+    });
+
+    await act(async () => {
+      const newElectrodeLabel = screen.getByLabelText("Electrode Label");
+      fireEvent.change(newElectrodeLabel, { target: { value: "E1" } });
+      const newElectrodeDesc = screen.getByLabelText("Description");
+      fireEvent.change(newElectrodeDesc, {
+        target: { value: "Electrode 1" },
+      });
+      const newElectrodeNum = screen.getByLabelText("Number of Contacts");
+      fireEvent.change(newElectrodeNum, { target: { value: "1" } });
+      fireEvent.click(screen.getByText("Add", { selector: "button" }));
+    });
+
+    expect(mockOnStateChange).toHaveBeenCalled();
+  });
+
+  test("Update contact", async () => {
+    render(
+      <MemoryRouter>
+        <Localization
+          onStateChange={mockOnStateChange}
+          initialData={initialData}
         />
       </MemoryRouter>,
     );
 
     await act(async () => {
-      // Access the component instance through the container
-      const localizationComponent = container.querySelector(
-        ".localization-container",
-      );
-      localizationComponent.__reactProps$?.children?.props?.handleContactUpdate(
-        "E1",
-        1,
-        { contactDescription: "Updated Contact", associatedLocation: "GM" },
-      );
+      fireEvent.click(screen.getByText('E1', { selector: 'div' }));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('1', { selector: 'div' }));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Select type...'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('GM'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save', { selector: '#ContactChangeButton' }));
     });
 
     expect(mockOnStateChange).toHaveBeenCalled();
+  });
+
+  test("Update contact in shared file", async () => {
+    render(
+      <MemoryRouter>
+        <Localization
+          onStateChange={mockOnStateChange}
+          initialData={initialData}
+          isSharedFile={true}
+        />
+      </MemoryRouter>,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('E1', { selector: 'div' }));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('1', { selector: 'div' }));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Select type...'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('GM/GM'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save', { selector: '#ContactChangeButton' }));
+    });
+
+    expect(mockOnStateChange).toHaveBeenCalled();
+  });
+
+  test("handle error during changing contact data", async () => {
+    render(
+      <MemoryRouter>
+        <Localization
+          onStateChange={mockOnStateChange}
+          initialData={initialData}
+          isSharedFile={true}
+        />
+      </MemoryRouter>,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('E1', { selector: 'div' }));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('1', { selector: 'div' }));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Select type...'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('GM/GM'));
+    });
+
+    global.fetch.mockImplementationOnce(() =>
+      Promise.reject(new Error("NetworkError")),
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save', { selector: '#ContactChangeButton' }));
+    });
+
+    expect(mockOnStateChange).toHaveBeenCalled();
+    expect(mockConsoleError).toHaveBeenCalled();
   });
 
   test("saves localization data", async () => {
@@ -207,6 +375,25 @@ describe("Localization Component", () => {
     expect(fetch).toHaveBeenCalled();
     expect(saveCSVFile).toHaveBeenCalled();
     expect(screen.getByText("Save successful!")).toBeDefined();
+  });
+
+  test("saves localization data on shared file", async () => {
+    render(
+      <MemoryRouter>
+        <Localization
+          initialData={initialData}
+          onStateChange={mockOnStateChange}
+          isSharedFile={true}
+        />
+      </MemoryRouter>,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Save"));
+    });
+
+    expect(fetch).toHaveBeenCalled();
+    expect(mockConsoleLog).toHaveBeenCalled();
   });
 
   test("handles save error", async () => {
@@ -482,7 +669,7 @@ describe("Localization Component", () => {
       });
       const newElectrodeNum = screen.getByLabelText("Number of Contacts");
       fireEvent.change(newElectrodeNum, { target: { value: "20" } });
-      fireEvent.click(screen.getByText(/Update/i, { selector: "button" }));
+      fireEvent.click(screen.getByText("Update", { selector: "button" }));
     });
 
     // TODO FAILING

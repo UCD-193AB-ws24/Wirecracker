@@ -180,7 +180,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             
             setModifiedDate(new Date().toISOString());
             console.log('Contact updated successfully');
-        } catch (error) {
+        } catch (error) { // No reason to have try catch here. Could not find way to fail.
             console.error('Error in handleContactUpdate:', error);
             console.error('Error details:', {
                 message: error.message,
