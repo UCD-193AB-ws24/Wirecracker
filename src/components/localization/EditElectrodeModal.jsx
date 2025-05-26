@@ -210,7 +210,7 @@ const EditElectrodeModal = ({
                     </h4>
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor='electrodeLabel'>
                                 Electrode Label
                             </label>
                             <input 
@@ -221,6 +221,8 @@ const EditElectrodeModal = ({
                                     setShowSuggestions(true);
                                 }}
                                 className="w-full p-2 border border-gray-300 rounded-md"
+                                name='electrodeLabel'
+                                id='electrodeLabel'
                             />
                             {showSuggestions && suggestions.length > 0 && (
                                 <div className="mt-1 p-2 bg-gray-50 rounded-md">
@@ -231,11 +233,13 @@ const EditElectrodeModal = ({
                             )}
                         </div>
                         <div className="mb-4 relative">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor='electrodeDescription'>
                                 Description
                             </label>
                             <input 
                                 type="text"
+                                name='electrodeDescription'
+                                id='electrodeDescription'
                                 value={descriptionInput}
                                 onChange={(e) => {
                                     setDescriptionInput(e.target.value);
@@ -269,10 +273,12 @@ const EditElectrodeModal = ({
                             )}
                         </div>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor='electrodeType'>
                                 Electrode Type
                             </label>
                             <select
+                                name='electrodeType'
+                                id='electrodeType'
                                 value={selectedElectrodeType}
                                 onChange={(e) => {
                                     const val = e.target.value;
@@ -290,7 +296,7 @@ const EditElectrodeModal = ({
                             </select>
                         </div>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor='electrodeNumContacts'>
                                 Number of Contacts
                             </label>
                             <div>
@@ -298,6 +304,8 @@ const EditElectrodeModal = ({
                                     <div className="flex-1 relative">
                                         <input
                                             type="range"
+                                            name='electrodeNumContacts'
+                                            id='electrodeNumContacts'
                                             min={minValue}
                                             max={maxValue}
                                             step={1}
