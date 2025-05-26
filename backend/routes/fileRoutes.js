@@ -600,4 +600,102 @@ router.post("/files/share-with-epileptologist", async (req, res) => {
     }
 });
 
+// Share file with neuropsychologist
+router.post('/files/share-with-neuropsychologist', async (req, res) => {
+    const { fileId, email, testSelectionData } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'No token provided' });
+    }
+
+    if (!fileId || !email) {
+        return res.status(400).json({ error: 'File ID and email are required' });
+    }
+
+    try {
+        // Get current user's session
+        const { data: session } = await supabase
+            .from('sessions')
+            .select('user_id')
+            .eq('token', token)
+            .single();
+        if (!session?.user_id) {
+            return res.status(401).json({ error: 'Invalid session' });
+        }
+
+        // Get target user's ID
+        const { data: targetUser, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+        if (userError || !targetUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Get the original file's data
+        const { data: originalFile, error: fileError } = await supabase
+            .from('files')
+            .select('*')
+            .eq('file_id', fileId)
+            .single();
+        if (fileError || !originalFile) {
+            return res.status(404).json({ error: 'Original file not found' });
+        }
+
+        // Create a new file for neuropsychology
+        const { data: newFile, error: insertError } = await supabase
+            .from('files')
+            .insert({
+                filename: 'Neuropsychology',
+                owner_user_id: targetUser.id,
+                patient_id: originalFile.patient_id,
+                creation_date: new Date().toISOString(),
+                modified_date: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (insertError) throw insertError;
+
+        // Create file assignment
+        const { error: assignmentError } = await supabase
+            .from('file_assignments')
+            .insert({
+                file_id: newFile.file_id,
+                user_id: targetUser.id,
+                patient_id: originalFile.patient_id,
+                role: 'owner',
+                has_seen: false,
+                is_completed: false,
+                completed_at: null
+            });
+
+        if (assignmentError) throw assignmentError;
+
+        // Create the test selection record for the neuropsychology file
+        if (testSelectionData) {
+            const { error: testSelectionError } = await supabase
+                .from('test_selection')
+                .insert({
+                    file_id: newFile.file_id,
+                    tests: testSelectionData.tests,
+                    contacts: testSelectionData.contacts
+                });
+
+            if (testSelectionError) throw testSelectionError;
+        }
+
+        res.json({ 
+            success: true, 
+            message: "File shared successfully",
+            newFileId: newFile.file_id
+        });
+    } catch (error) {
+        console.error('Error sharing file with neuropsychologist:', error);
+        res.status(500).json({ error: 'Failed to share file with neuropsychologist' });
+    }
+});
+
 export default router;

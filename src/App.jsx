@@ -939,22 +939,24 @@ const HomePage = () => {
             setActiveTab(newTab.id);
         }
         else if (type === 'csv-functional-test') {
+            const tests = fileData.data?.tests || fileData.data.data?.tests || [];
+            const contacts = fileData.data?.contacts || fileData.data.data?.contacts || [];
             const newTab = {
                 id: Date.now().toString(),
                 title: fileData.name,
                 content: type,
                 data: {
-                    data: fileData.data.data.contacts,
-                    tests: fileData.data.data.tests
+                    data: tests, // Pass the array of electrodes
+                    tests: tests
                 },
                 state: {
-                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
+                    fileId: parseInt(fileData.fileId),
                     patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
-                    tests: fileData.data?.data.tests || fileData.data.tests,
-                    contacts: fileData.data?.data.contacts || fileData.data.contacts
+                    tests: tests,
+                    contacts: contacts
                 }
             };
 
