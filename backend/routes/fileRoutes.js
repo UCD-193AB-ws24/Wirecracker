@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { supabase } from './utils.js';
+import { supabase, handleFileRecord } from './utils.js';
 
 const router = express.Router();
 router.use(cors());
@@ -47,47 +47,7 @@ router.post("/files/metadata", async (req, res) => {
     const { fileId, fileName, creationDate, modifiedDate, patientId } = req.body;
   
     try {
-      const { data: session } = await supabase
-        .from('sessions')
-        .select('user_id')
-        .eq('token', token)
-        .single();
-  
-      if (!session?.user_id) {
-        return res.status(401).json({ error: "Invalid or expired session" });
-      }
-  
-      const { data: existingFile } = await supabase
-        .from('files')
-        .select('*')
-        .eq('file_id', fileId)
-        .single();
-  
-      if (existingFile) {
-        const { error } = await supabase
-          .from('files')
-          .update({
-            filename: fileName,
-            modified_date: modifiedDate
-          })
-          .eq('file_id', fileId);
-  
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('files')
-          .insert({
-            file_id: fileId,
-            owner_user_id: session.user_id,
-            filename: fileName,
-            creation_date: creationDate,
-            modified_date: modifiedDate,
-            patient_id: patientId
-          });
-  
-        if (error) throw error;
-      }
-  
+      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, token, patientId);
       res.json({ success: true });
     } catch (error) {
       console.error('Error saving file metadata:', error);
