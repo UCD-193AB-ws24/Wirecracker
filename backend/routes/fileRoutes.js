@@ -259,7 +259,28 @@ router.get("/patients/recent", async (req, res) => {
             return res.status(401).json({ error: "Invalid or expired session" });
         }
 
-        // Get all files for each patient
+        // First get all patient IDs that the user has access to through file assignments
+        const { data: fileAssignments, error: assignmentError } = await supabase
+            .from('file_assignments')
+            .select('patient_id')
+            .eq('user_id', session.user_id)
+            .not('patient_id', 'is', null);
+
+        if (assignmentError) throw assignmentError;
+
+        // Extract unique patient IDs
+        const patientIds = [...new Set(fileAssignments.map(assignment => assignment.patient_id))];
+
+        if (patientIds.length === 0) {
+            return res.json({
+                patients: [],
+                totalPatients: 0,
+                currentPage: page,
+                totalPages: 0
+            });
+        }
+
+        // Get all files for these patients
         const { data: files, error } = await supabase
             .from('files')
             .select(`
@@ -267,10 +288,10 @@ router.get("/patients/recent", async (req, res) => {
                 file_id,
                 filename,
                 creation_date,
-                modified_date
+                modified_date,
+                owner_user_id
             `)
-            .eq('owner_user_id', session.user_id)
-            .not('patient_id', 'is', null)
+            .in('patient_id', patientIds)
             .order('modified_date', { ascending: false });
 
         if (error) throw error;
@@ -376,6 +397,106 @@ router.get("/files/dates-metadata", async (req, res) => {
     } catch (error) {
         console.error('Error fetching file metadata:', error);
         res.status(500).json({ error: "Error fetching file metadata" });
+    }
+});
+
+// Share file with neurosurgeon
+router.post("/files/share-with-neurosurgeon", async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: "No authentication token provided" });
+    }
+
+    const { fileId, email, designationData, localizationData } = req.body;
+    if (!fileId || !email) {
+        return res.status(400).json({ error: "File ID and email are required" });
+    }
+
+    try {
+        // Get the current user's session
+        const { data: session } = await supabase
+            .from('sessions')
+            .select('user_id')
+            .eq('token', token)
+            .single();
+
+        if (!session?.user_id) {
+            return res.status(401).json({ error: "Invalid or expired session" });
+        }
+
+        // Get the target user's ID from their email
+        const { data: targetUser, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (userError || !targetUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Get the original file's data
+        const { data: originalFile, error: fileError } = await supabase
+            .from('files')
+            .select('*')
+            .eq('file_id', fileId)
+            .single();
+
+        if (fileError || !originalFile) {
+            return res.status(404).json({ error: "File not found" });
+        }
+
+        // Create a new file for neurosurgery
+        const { data: newFile, error: insertError } = await supabase
+            .from('files')
+            .insert({
+                filename: 'Neurosurgery',
+                owner_user_id: targetUser.id,
+                patient_id: originalFile.patient_id,
+                creation_date: new Date().toISOString(),
+                modified_date: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (insertError) throw insertError;
+
+        // Create file assignment for the new file
+        const { error: assignmentError } = await supabase
+            .from('file_assignments')
+            .insert({
+                file_id: newFile.file_id,
+                user_id: targetUser.id,
+                patient_id: originalFile.patient_id,
+                role: 'owner',
+                has_seen: false,
+                is_completed: false,
+                completed_at: null
+            });
+
+        if (assignmentError) throw assignmentError;
+
+        // Create the designation record for the neurosurgery file
+        if (designationData && localizationData) {
+            const { error: designationError } = await supabase
+                .from('designation')
+                .insert({
+                    file_id: newFile.file_id,
+                    designation_data: designationData,
+                    localization_data: localizationData
+                });
+
+            if (designationError) throw designationError;
+        }
+
+        res.json({ 
+            success: true, 
+            message: "File shared successfully",
+            newFileId: newFile.file_id
+        });
+    } catch (error) {
+        console.error('Error sharing file:', error);
+        res.status(500).json({ error: "Error sharing file" });
     }
 });
 
