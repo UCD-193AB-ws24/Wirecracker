@@ -177,7 +177,6 @@ const EditElectrodeModal = ({
         formData.set("description", descriptionInput);
         formData.set('contacts', sliderValue);
         formData.append('electrodeType', selectedElectrodeType);
-        
         if (isEditMode && setElectrodes) {
             // If editing, we need to handle the case where the label might have changed
             const oldLabel = initialData.label;
@@ -330,6 +329,7 @@ const EditElectrodeModal = ({
                                     </div>
                                     <input
                                         type="number"
+                                        id='contact-number'
                                         value={sliderValue}
                                         onChange={handleInputChange}
                                         className="w-20 p-2 border border-gray-300 rounded-md"
