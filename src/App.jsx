@@ -916,20 +916,41 @@ const HomePage = () => {
         }
         else if (type === 'resection') {
             console.log('Opening saved resection file:', fileData);
-            
+
+            // Ensure data is always an array of electrodes
+            let electrodes = fileData.data;
+            if (typeof electrodes === 'string') {
+                electrodes = parseCSVFile(electrodes, false).data;
+            } else if (electrodes && !Array.isArray(electrodes) && electrodes.electrodes) {
+                electrodes = electrodes.electrodes;
+            }
+
+            // Ensure each contact has a unique id
+            if (Array.isArray(electrodes)) {
+                electrodes = electrodes.map(electrode => ({
+                    ...electrode,
+                    contacts: Array.isArray(electrode.contacts)
+                        ? electrode.contacts.map((contact, idx) => ({
+                            ...contact,
+                            id: contact.id || `${electrode.label}${(contact.index || idx + 1)}`
+                        }))
+                        : []
+                }));
+            }
+
             const newTab = {
                 id: Date.now().toString(),
                 title: fileData.name,
                 content: 'resection',
-                data: fileData.data,
+                data: electrodes,
                 state: {
-                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
+                    fileId: parseInt(fileData.fileId),
                     patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
-                    electrodes: fileData.data,
-                    localizationData: fileData.originalData  // This should include the electrode type
+                    electrodes: electrodes,
+                    localizationData: fileData.originalData
                 }
             };
 
