@@ -101,6 +101,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
 
             // Transform the data for display
             const transformedResults = transformSearchResults(data);
+            console.log(transformedResults)
             setSearchResult(transformedResults);
         } catch (err) {
             setError(err.message);
@@ -178,6 +179,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 id: item.cort_gm[relatedGM].gm.id,
                                 type: ItemTypes.GM,
                                 name: item.cort_gm[relatedGM].gm.name,
+                                reference: item.cort_gm[relatedGM].reference,
                             });
                         }
                         break;
@@ -187,6 +189,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 id: item.cort_gm[relatedCort].cort.id,
                                 type: ItemTypes.CORT,
                                 name: item.cort_gm[relatedCort].cort.name,
+                                reference: item.cort_gm[relatedCort].reference,
                             });
                         }
                         for (let relatedFunc in item.gm_function) {
@@ -195,6 +198,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 type: ItemTypes.FUNCTION,
                                 name: item.gm_function[relatedFunc].function
                                     .name,
+                                reference: item.gm_function[relatedFunc].reference,
                             });
                         }
                         break;
@@ -204,6 +208,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 id: item.gm_function[relatedGM].gm.id,
                                 type: ItemTypes.GM,
                                 name: item.gm_function[relatedGM].gm.name,
+                                reference: item.gm_function[relatedGM].reference,
                             });
                         }
                         for (let relatedTest in item.function_test) {
@@ -211,6 +216,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 id: item.function_test[relatedTest].test.id,
                                 type: ItemTypes.TEST,
                                 name: item.function_test[relatedTest].test.name,
+                                reference: item.function_test[relatedTest].reference,
                             });
                         }
                         break;
@@ -221,6 +227,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 type: ItemTypes.FUNCTION,
                                 name: item.function_test[relatedFunc].function
                                     .name,
+                                reference: item.function_test[relatedFunc].reference,
                             });
                         }
                         break;
@@ -686,8 +693,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                     <th className="px-4 py-2 text-left font-medium text-gray-700">
                                         Details
                                     </th>
-                                    <th className="px-4 py-2 text-left font-medium text-gray-700">
-                                        Related Result
+                                    <th className="px-4 py-2 text-left font-medium text-gray-700 w-1/2">
+                                        Related Results
                                     </th>
                                 </tr>
                             </thead>
@@ -700,7 +707,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                         <td className="px-4 py-2 capitalize">
                                             {item.type}
                                         </td>
-                                        <td className="px-4 py-2 font-medium">
+                                        <td className="px-4 py-2 font-medium capitalize">
                                             {item.name}
                                         </td>
                                         <td className="px-4 py-2">
@@ -773,10 +780,33 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                                                 key={i}
                                                                 className="text-xs bg-gray-100 rounded px-2 py-1"
                                                             >
-                                                                <span className="font-medium capitalize">
-                                                                    {rel.type}:
-                                                                </span>{" "}
-                                                                {rel.name}
+
+                                                                {rel.reference ? (
+                                                                    <details className="flex cursor-pointer">
+                                                                        <summary>
+                                                                            <span className="font-medium capitalize">
+                                                                                {rel.type}:
+                                                                            </span>{" "}
+                                                                            <span className="capitalize">
+                                                                                {rel.name}
+                                                                            </span>
+                                                                        </summary>
+                                                                        <p className="pl-5">
+                                                                            {`${rel.reference.authors}. (${rel.reference.publication_date}). ${rel.reference.title}. `}
+                                                                            <i>{`${rel.reference.publisher}.`}</i>
+                                                                            {` doi:${rel.reference.isbn_issn_doi}`}
+                                                                        </p>
+                                                                    </details>
+                                                                ) : (
+                                                                    <div>
+                                                                        <span className="font-medium capitalize">
+                                                                            {rel.type}:
+                                                                        </span>{" "}
+                                                                        <span className="capitalize">
+                                                                            {rel.name}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         ),
                                                     )}
