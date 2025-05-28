@@ -698,4 +698,140 @@ router.post('/files/share-with-neuropsychologist', async (req, res) => {
     }
 });
 
+// Route to get all patients (with all their files) shared with the current user where has_seen is false
+router.get('/shared-files', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: 'No authentication token provided' });
+    }
+    try {
+        // Get current user's ID
+        const { data: session } = await supabase
+            .from('sessions')
+            .select('user_id')
+            .eq('token', token)
+            .single();
+        if (!session?.user_id) {
+            return res.status(401).json({ error: 'Invalid or expired session' });
+        }
+        // Get all file assignments for this user where has_seen is false
+        const { data: assignments, error: assignmentError } = await supabase
+            .from('file_assignments')
+            .select('patient_id')
+            .eq('user_id', session.user_id)
+            .eq('has_seen', false)
+            .not('patient_id', 'is', null);
+        if (assignmentError) throw assignmentError;
+        if (!assignments || assignments.length === 0) {
+            return res.json({ patients: [] });
+        }
+        // Get unique patient_ids
+        const patientIds = [...new Set(assignments.map(a => a.patient_id))];
+        if (patientIds.length === 0) {
+            return res.json({ patients: [] });
+        }
+        // Get all files for these patients
+        const { data: files, error } = await supabase
+            .from('files')
+            .select(`
+                patient_id,
+                file_id,
+                filename,
+                creation_date,
+                modified_date,
+                owner_user_id
+            `)
+            .in('patient_id', patientIds)
+            .order('modified_date', { ascending: false });
+        if (error) throw error;
+        // Group files by patient and determine file types (same as /patients/recent)
+        const patients = files.reduce((acc, curr) => {
+            if (!acc[curr.patient_id]) {
+                acc[curr.patient_id] = {
+                    patient_id: curr.patient_id,
+                    latest_file: curr,
+                    has_localization: false,
+                    has_resection: false,
+                    has_designation: false,
+                    has_test_selection: false,
+                    localization_file_id: null,
+                    resection_file_id: null,
+                    designation_file_id: null,
+                    test_selection_file_id: null,
+                    localization_creation_date: null,
+                    stimulation_types: {
+                        mapping: null,
+                        recreation: null,
+                        ccep: null
+                    }
+                };
+            }
+            // Check file type based on filename
+            const filename = curr.filename.toLowerCase();
+            if (filename.includes('anatomy')) {
+                acc[curr.patient_id].has_localization = true;
+                acc[curr.patient_id].localization_file_id = curr.file_id;
+                acc[curr.patient_id].localization_creation_date = curr.creation_date;
+            } else if (filename.includes('epilepsy')) {
+                acc[curr.patient_id].has_designation = true;
+                acc[curr.patient_id].designation_file_id = curr.file_id;
+            } else if (filename.includes('neurosurgery')) {
+                acc[curr.patient_id].has_resection = true;
+                acc[curr.patient_id].resection_file_id = curr.file_id;
+            } else if (filename.includes('functional mapping')) {
+                acc[curr.patient_id].stimulation_types.mapping = curr.file_id;
+            } else if (filename.includes('seizure recreation')) {
+                acc[curr.patient_id].stimulation_types.recreation = curr.file_id;
+            } else if (filename.includes('cceps')) {
+                acc[curr.patient_id].stimulation_types.ccep = curr.file_id;
+            } else if (filename.includes('neuropsychology')) {
+                acc[curr.patient_id].has_test_selection = true;
+                acc[curr.patient_id].test_selection_file_id = curr.file_id;
+            }
+            return acc;
+        }, {});
+        // Convert to array and sort by most recent
+        const allPatients = Object.values(patients)
+            .sort((a, b) => new Date(b.latest_file.modified_date) - new Date(a.latest_file.modified_date));
+        res.json({ patients: allPatients });
+    } catch (error) {
+        console.error('Error fetching shared patients:', error);
+        res.status(500).json({ error: 'Error fetching shared patients' });
+    }
+});
+
+// Route to mark a file as seen for the current user
+router.post('/mark-file-seen/:fileId', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: 'No authentication token provided' });
+    }
+    const { fileId } = req.params;
+    if (!fileId) {
+        return res.status(400).json({ error: 'File ID is required' });
+    }
+    try {
+        // Get current user's ID
+        const { data: session } = await supabase
+            .from('sessions')
+            .select('user_id')
+            .eq('token', token)
+            .single();
+        if (!session?.user_id) {
+            return res.status(401).json({ error: 'Invalid or expired session' });
+        }
+        // Update file_assignments to set has_seen = true
+        const { error: updateError } = await supabase
+            .from('file_assignments')
+            .update({ has_seen: true })
+            .eq('user_id', session.user_id)
+            .eq('file_id', fileId);
+        if (updateError) throw updateError;
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error marking file as seen:', error);
+        res.status(500).json({ error: 'Error marking file as seen' });
+    }
+});
+
 export default router;

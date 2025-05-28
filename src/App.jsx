@@ -937,7 +937,7 @@ const HomePage = () => {
                         : []
                 }));
             }
-
+            
             const newTab = {
                 id: Date.now().toString(),
                 title: fileData.name,
@@ -1516,7 +1516,7 @@ const Activity = () => {
                 My Files
             </h2>
             <div className="mx-2">
-                <ToReview />
+                <NewSharedFile />
                 <Approved />
             </div>
         </div>
@@ -2183,8 +2183,48 @@ const SignInButtons = () => {
     );
 };
 
-const ToReview = () => {
-    const [isReviewOpen, setIsReviewOpen] = useState(false);
+const NewSharedFile = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [sharedPatients, setSharedPatients] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedPatient, setSelectedPatient] = useState(null);
+    const { showError } = useError();
+    const { showWarning } = useWarning();
+
+    useEffect(() => {
+        const fetchSharedPatients = async () => {
+            setLoading(true);
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                const response = await fetch(`${backendURL}/api/shared-files`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) throw new Error('Failed to fetch shared files');
+                const data = await response.json();
+                setSharedPatients(data.patients || []);
+            } catch (error) {
+                setSharedPatients([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSharedPatients();
+        window.addEventListener('refreshSharedFiles', fetchSharedPatients);
+        return () => window.removeEventListener('refreshSharedFiles', fetchSharedPatients);
+    }, []);
+
+    // Use the same format as RecentFiles
+    const formatPatientDisplay = (patient) => {
+        const shortPatientId = patient.patient_id.substring(0, 3).toUpperCase();
+        const creationDate = patient.has_localization && patient.localization_creation_date
+            ? new Date(patient.localization_creation_date).toLocaleDateString('en-US', {
+                month: '2-digit', day: '2-digit', year: '2-digit'
+            }) : 'No files';
+        return `Patient ${shortPatientId}-${creationDate}`;
+    };
 
     return (
         <div
@@ -2192,22 +2232,47 @@ const ToReview = () => {
                        md:text-lg
                        lg:text-xl
                        xl:text-2xl"
-            onClick={() => setIsReviewOpen(!isReviewOpen)}
+            onClick={() => setIsOpen(!isOpen)}
         >
-            {isReviewOpen ? (
+            {isOpen ? (
                 <>
                     <div className="before:content-['▾']"></div>
                     <div className="mb-2 lg:mb-4 xl:mb-5 whitespace-nowrap">
-                        <div>To Review</div>
+                        <div>New Shared File</div>
+                        {loading ? <div className="text-xs text-gray-500">Loading...</div> : (
+                            <div className="bg-gray-100 rounded p-2 mt-2">
+                                {sharedPatients.length === 0 ? (
+                                    <div className="text-gray-500">No new shared files</div>
+                                ) : (
+                                    sharedPatients.map(patient => (
+                                        <div
+                                            key={patient.patient_id}
+                                            className="hover:bg-sky-50 hover:text-sky-600 rounded cursor-pointer py-1 pr-1 transition-colors duration-150 flex justify-between items-center"
+                                            onClick={e => { e.stopPropagation(); setSelectedPatient(patient); }}
+                                        >
+                                            <div className="text-xs patient-id px-1 lg:text-sm lg:px-2" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
+                                                {formatPatientDisplay(patient)}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
                     </div>
+                    {selectedPatient && (
+                        <PatientDetails
+                            patient={selectedPatient}
+                            onClose={() => setSelectedPatient(null)}
+                            openSavedFile={window.openSavedFile || (() => {})}
+                        />
+                    )}
                 </>
             ) : (
                 <>
                     <div className="before:content-['▸']"></div>
-                    <div>To Review</div>
+                    <div>New Shared File</div>
                 </>
             )}
-            
         </div>
     );
 };
