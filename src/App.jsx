@@ -1317,7 +1317,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                        md:w-40 md:text-sm
                                        lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                        xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
-                        options="Open-Local Open-Database"
+                        options="From-Zip-File From-Database"
                         optionClassName="block w-34 py-1 text-xs text-gray-700 hover:bg-gray-100
                                          md:w-40
                                          lg:w-48 lg:py-2 lg:text-sm
@@ -1328,10 +1328,10 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                        xl:w-64"
                         onOptionClick={(option) => {
                             switch(option) {
-                                case "Open-Local":
+                                case "From-Zip-File":
                                     document.getElementById('fileInput').click();
                                     break;
-                                case "Open-Database":
+                                case "From-Database":
                                     loadPatients(1);
                                     setShowDatabaseModal(true);
                                     break;
