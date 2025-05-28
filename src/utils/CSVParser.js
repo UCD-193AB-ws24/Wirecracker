@@ -368,11 +368,22 @@ function parseTests(csvData) {
  * 
  * @param {string} identifier - The identifier for the first line.
  * @param {Object} data - The data to be saved.
+ * @param {string} patientId - The patient ID for the first line.
+ * @param {string} createdDate - The created date for the first line.
+ * @param {string} modifiedDate - The modified date for the first line.
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {Object|void} The parsed data if download is false, otherwise void.
  */
-export function saveCSVFile(identifier, data, download = true) {
+export function saveCSVFile(identifier, data, patientId = '', createdDate = null, modifiedDate = null, download = true) {
+    const currentDate = new Date().toISOString();
+    const finalPatientId = patientId || data.patientId || '';
+    const finalCreatedDate = createdDate || currentDate;
+    const finalModifiedDate = modifiedDate || currentDate;
+
     let csvContent = `${identifier}\n${IDENTIFIER_LINE_2}\n`;
+    csvContent += `PatientID:${finalPatientId}\n`;
+    csvContent += `CreatedDate:${finalCreatedDate}\n`;
+    csvContent += `ModifiedDate:${finalModifiedDate}\n`;
     let returnData = [];
     
     if (identifier === Identifiers.LOCALIZATION) {
@@ -432,11 +443,22 @@ export function saveCSVFile(identifier, data, download = true) {
  * 
  * @param {Object[]} designationData - The data to be saved.
  * @param {Object[]} localizationData - The localization data to be used.
+ * @param {string} patientId - The patient ID for the first line.
+ * @param {string} createdDate - The created date for the first line.
+ * @param {string} modifiedDate - The modified date for the first line.
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {string} The CSV content.
  */
-export function saveDesignationCSVFile(designationData, localizationData, download = true) {
+export function saveDesignationCSVFile(designationData, localizationData, patientId = '', createdDate = null, modifiedDate = null, download = true) {
+    const currentDate = new Date().toISOString();
+    const finalPatientId = patientId || localizationData.patientId || '';
+    const finalCreatedDate = createdDate || currentDate;
+    const finalModifiedDate = modifiedDate || currentDate;
+
     let csvContent = `${Identifiers.DESIGNATION}\n${IDENTIFIER_LINE_2}\n`;
+    csvContent += `PatientID:${finalPatientId}\n`;
+    csvContent += `CreatedDate:${finalCreatedDate}\n`;
+    csvContent += `ModifiedDate:${finalModifiedDate}\n`;
     const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Type"];
     csvContent += headers.join(",") + "\n";
 
@@ -497,11 +519,20 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
  * Saves a CSV file from data and downloads it or returns the data.
  *
  * @param {Object[]} stimulationData - The data to be saved.
+ * @param {string} planOrder - The plan order for the stimulation.
  * @param {string} type - The type of stimulation.
+ * @param {string} patientId - The patient ID for the first line.
+ * @param {string} createdDate - The created date for the first line.
+ * @param {string} modifiedDate - The modified date for the first line.
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {string} The CSV content.
  */
-export function saveStimulationCSVFile(stimulationData, planOrder, type = 'mapping', download = true) {
+export function saveStimulationCSVFile(stimulationData, planOrder, type = 'mapping', patientId = '', createdDate = null, modifiedDate = null, download = true) {
+    const currentDate = new Date().toISOString();
+    const finalPatientId = patientId || stimulationData.patientId || '';
+    const finalCreatedDate = createdDate || currentDate;
+    const finalModifiedDate = modifiedDate || currentDate;
+
     let csvContent = '';
     switch(type) {
         case 'mapping':
@@ -517,6 +548,9 @@ export function saveStimulationCSVFile(stimulationData, planOrder, type = 'mappi
             throw new Error('Invalid stimulation type');
     }
     
+    csvContent += `PatientID:${finalPatientId}\n`;
+    csvContent += `CreatedDate:${finalCreatedDate}\n`;
+    csvContent += `ModifiedDate:${finalModifiedDate}\n`;
     const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning", "Frequency", "Duration", "Current", "PlanOrder", "Type"];
     csvContent += headers.join(",") + "\n";
 
@@ -569,11 +603,22 @@ export function saveStimulationCSVFile(stimulationData, planOrder, type = 'mappi
  *
  * @param {Object[]} testData - The test data to be saved.
  * @param {Object[]} contacts - Contacts associated with tests.
+ * @param {string} patientId - The patient ID for the first line.
+ * @param {string} createdDate - The created date for the first line.
+ * @param {string} modifiedDate - The modified date for the first line.
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {string} The CSV content.
  */
-export function saveTestCSVFile(testData, contacts, download = true) {
+export function saveTestCSVFile(testData, contacts, patientId = '', createdDate = null, modifiedDate = null, download = true) {
+    const currentDate = new Date().toISOString();
+    const finalPatientId = patientId || '';
+    const finalCreatedDate = createdDate || currentDate;
+    const finalModifiedDate = modifiedDate || currentDate;
+
     let csvContent = `${Identifiers.TEST_PLANNING}\n${IDENTIFIER_LINE_2}\n`;
+    csvContent += `PatientID:${finalPatientId}\n`;
+    csvContent += `CreatedDate:${finalCreatedDate}\n`;
+    csvContent += `ModifiedDate:${finalModifiedDate}\n`;
     const headers = [
             "Label",
             "ContactNumber",
@@ -586,15 +631,16 @@ export function saveTestCSVFile(testData, contacts, download = true) {
             "Frequency",
             "Duration",
             "Current",
-            "TestID" // Added TestID for associating tests
+            "TestID"
         ];
 
-        // Create CSV rows
-        const rows = contacts.flatMap(contact => {
+    // Create CSV rows
+    const rows = contacts.map(electrode => {
+        return electrode.contacts.map(contact => {
             const contactTests = testData[contact.id] || [];
             if (contactTests.length === 0) {
-                return [[
-                    contact.electrodeLabel, // Label
+                return [
+                    electrode.label, // Label
                     contact.index, // ContactNumber
                     contact.__electrodeDescription__, // ElectrodeDescription
                     contact.__contactDescription__, // ContactDescription
@@ -605,30 +651,35 @@ export function saveTestCSVFile(testData, contacts, download = true) {
                     contact.frequency, // Frequency
                     contact.duration, // Duration
                     contact.current, // Current
-                    "", // No test
-                ]];
+                    "No test", // No test
+                ].join(",");
             }
-            return contactTests.map(test => [
-                contact.electrodeLabel, // Label
-                contact.index, // ContactNumber
-                contact.__electrodeDescription__, // ElectrodeDescription
-                contact.__contactDescription__, // ContactDescription
-                contact.associatedLocation, // AssociatedLocation
-                contact.mark, // Mark
-                contact.surgeonMark, // SurgeonMark
-                contact.pair, // Pair
-                contact.frequency, // Frequency
-                contact.duration, // Duration
-                contact.current, // Current
-                test.id, // TestID
-            ]);
-        });
+            return contactTests.map(test => {
+                return [
+                    electrode.label, // Label
+                    contact.index, // ContactNumber
+                    contact.__electrodeDescription__, // ElectrodeDescription
+                    contact.__contactDescription__, // ContactDescription
+                    contact.associatedLocation, // AssociatedLocation
+                    contact.mark, // Mark
+                    contact.surgeonMark, // SurgeonMark
+                    contact.pair, // Pair
+                    contact.frequency, // Frequency
+                    contact.duration, // Duration
+                    contact.current, // Current
+                    test.id, // TestID
+                ].join(",");
+            });
+        }).join("\n");
+    });
 
-        // Combine headers and rows into CSV format
-        csvContent += [
-            headers.join(','), // Header row
-            ...rows.map(row => row.join(',')) // Data rows
-        ].join('\n');
+    console.log(rows);
+
+    // Combine headers and rows into CSV format
+    csvContent += [
+        headers.join(','), // Header row
+        ...rows // Data rows
+    ].join('\n');
 
     if (download) {
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

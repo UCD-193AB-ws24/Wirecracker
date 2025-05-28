@@ -202,7 +202,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
             // Then export to CSV as before
             if (localizationData) {
                 // If we have localization data, use it to create a CSV with the same format
-                saveDesignationCSVFile(electrodes, localizationData, false);
+                saveDesignationCSVFile(electrodes, localizationData, state.patientId, state.creationDate, state.modifiedDate, false);
             } else {
                 // Fall back to the simple logging if no localization data
                 for (let electrode of electrodes) {
@@ -292,7 +292,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
             // Then export to CSV as before
             if (localizationData) {
                 // If we have localization data, use it to create a CSV with the same format
-                saveDesignationCSVFile(electrodes, localizationData, true);
+                saveDesignationCSVFile(electrodes, localizationData, state.patientId, state.creationDate, state.modifiedDate, true);
             } else {
                 // Fall back to the simple logging if no localization data
                 for (let electrode of electrodes) {
