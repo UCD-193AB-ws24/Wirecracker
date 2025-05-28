@@ -1035,7 +1035,7 @@ const HomePage = () => {
                         {token ? (
                             <>
                                 <div className="lg:basis-6 lg:flex-auto mt-15 flex flex-col">
-                                    <Activity />
+                                    <Activity openSavedFile={openSavedFile} />
                                     <RecentFiles
                                         onOpenFile={openSavedFile}
                                         className="mt-2 lg:mt-5"
@@ -1506,7 +1506,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
     );
 };
 
-const Activity = () => {
+const Activity = ({ openSavedFile }) => {
     return (
         <div className="lg:mt-20 xl:mt-25">
             <h2 className="text-xl font-bold my-1 whitespace-nowrap
@@ -1516,7 +1516,7 @@ const Activity = () => {
                 My Files
             </h2>
             <div className="mx-2">
-                <NewSharedFile />
+                <NewSharedFile openSavedFile={openSavedFile} />
                 <Approved />
             </div>
         </div>
@@ -2183,11 +2183,12 @@ const SignInButtons = () => {
     );
 };
 
-const NewSharedFile = () => {
+const NewSharedFile = ({ openSavedFile }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [sharedPatients, setSharedPatients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const [showLegend, setShowLegend] = useState(false);
     const { showError } = useError();
     const { showWarning } = useWarning();
 
@@ -2196,36 +2197,45 @@ const NewSharedFile = () => {
             setLoading(true);
             try {
                 const token = localStorage.getItem('token');
-                if (!token) return;
+                if (!token) {
+                    setSharedPatients([]);
+                    return;
+                }
+
                 const response = await fetch(`${backendURL}/api/shared-files`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                if (!response.ok) throw new Error('Failed to fetch shared files');
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch shared files');
+                }
+
                 const data = await response.json();
                 setSharedPatients(data.patients || []);
             } catch (error) {
+                if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                    showWarning("No internet connection. Failed to load shared files");
+                } else {
+                    console.error('Error fetching shared patients:', error);
+                    showError('Failed to load shared files');
+                }
                 setSharedPatients([]);
             } finally {
                 setLoading(false);
             }
         };
+        
         fetchSharedPatients();
         window.addEventListener('refreshSharedFiles', fetchSharedPatients);
         return () => window.removeEventListener('refreshSharedFiles', fetchSharedPatients);
-    }, []);
+    }, [showError]);
 
-    // Use the same format as RecentFiles
-    const formatPatientDisplay = (patient) => {
-        const shortPatientId = patient.patient_id.substring(0, 3).toUpperCase();
-        const creationDate = patient.has_localization && patient.localization_creation_date
-            ? new Date(patient.localization_creation_date).toLocaleDateString('en-US', {
-                month: '2-digit', day: '2-digit', year: '2-digit'
-            }) : 'No files';
-        return `Patient ${shortPatientId}-${creationDate}`;
+    const handlePatientClick = (patient) => {
+        setSelectedPatient(patient);
     };
-
+    
     return (
         <div
             className="text-violet-800 text-base font-semibold flex gap-x-2 cursor-pointer
@@ -2238,9 +2248,21 @@ const NewSharedFile = () => {
                 <>
                     <div className="before:content-['▾']"></div>
                     <div className="mb-2 lg:mb-4 xl:mb-5 whitespace-nowrap">
-                        <div>New Shared File</div>
+                        <div className="flex items-center justify-between">
+                            <div>New Shared File</div>
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); setShowLegend(true); }}
+                                className="text-gray-500 text-base
+                                           transition-colors duration-200 cursor-pointer hover:text-gray-700
+                                           lg:text-lg
+                                           xl:text-xl"
+                                title="Show Legend"
+                            >
+                                ?
+                            </button>
+                        </div>
                         {loading ? <div className="text-xs text-gray-500">Loading...</div> : (
-                            <div className="bg-gray-100 rounded p-2 mt-2">
+                            <div className="bg-gray-200 rounded-xl p-2 mt-2">
                                 {sharedPatients.length === 0 ? (
                                     <div className="text-gray-500">No new shared files</div>
                                 ) : (
@@ -2248,10 +2270,30 @@ const NewSharedFile = () => {
                                         <div
                                             key={patient.patient_id}
                                             className="hover:bg-sky-50 hover:text-sky-600 rounded cursor-pointer py-1 pr-1 transition-colors duration-150 flex justify-between items-center"
-                                            onClick={e => { e.stopPropagation(); setSelectedPatient(patient); }}
+                                            onClick={(e) => { e.stopPropagation(); handlePatientClick(patient); }}
                                         >
-                                            <div className="text-xs patient-id px-1 lg:text-sm lg:px-2" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
+                                            <div className="text-xs truncate max-w-30 patient-id px-1
+                                                            md:max-w-42
+                                                            lg:max-w-50 lg:text-sm lg:px-2
+                                                            xl:max-w-64">
                                                 {formatPatientDisplay(patient)}
+                                            </div>
+                                            <div className="text-xs text-gray-500 ml-2 whitespace-nowrap">
+                                                {patient.has_localization && (
+                                                    <span className="mr-2 cursor-help" title="Anatomy File">📍</span>
+                                                )}
+                                                {patient.has_designation && (
+                                                    <span className="mr-2 cursor-help" title="Epilepsy File">📝</span>
+                                                )}
+                                                {patient.has_resection && (
+                                                    <span className="mr-2 cursor-help" title="Neurosurgery File">🔪</span>
+                                                )}
+                                                {(patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep) && (
+                                                    <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
+                                                )}
+                                                {patient.has_test_selection && (
+                                                    <span className="cursor-help" title="Neuropsychology File">🧪</span>
+                                                )}
                                             </div>
                                         </div>
                                     ))
@@ -2263,9 +2305,10 @@ const NewSharedFile = () => {
                         <PatientDetails
                             patient={selectedPatient}
                             onClose={() => setSelectedPatient(null)}
-                            openSavedFile={window.openSavedFile || (() => {})}
+                            openSavedFile={openSavedFile}
                         />
                     )}
+                    <Legend isOpen={showLegend} onClose={() => setShowLegend(false)} />
                 </>
             ) : (
                 <>
