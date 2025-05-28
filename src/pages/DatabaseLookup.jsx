@@ -3,7 +3,38 @@ import * as d3 from "d3";
 
 const backendURL = __APP_CONFIG__.backendURL;
 
+/**
+ * @module DatabaseLookup
+ */
+
+/**
+ * A React component for searching and visualizing database entries.
+ * This page cannot be opened as a tab (Handler does not exist in App.jsx)
+ *
+ * @component
+ * @param {Object} [initialData={}] - Initial data to populate the search state.
+ * @param {string} [initialData.query=""] - Initial search query.
+ * @param {Object} [initialData.parameters] - Initial search parameters.
+ * @param {Function} [onStateChange] - Callback function invoked when component state changes.
+ * @param {Object} [savedState={}] - Saved state to restore component state.
+ * @param {string} [savedState.query] - Saved search query.
+ * @param {Object} [savedState.parameters] - Saved search parameters.
+ * @param {Array} [savedState.results=[]] - Saved search results.
+ * @param {boolean} [savedState.filter=false] - Saved filter visibility state.
+ * @param {boolean} [savedState.graphView=false] - Saved graph view toggle state.
+ * @returns {JSX.Element} The database lookup interface with search, filtering, and visualization capabilities.
+ */
 const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
+
+    /**
+     * Enum for different types of database items.
+     * @enum {string}
+     * @readonly
+     * @property {string} CORT - Cortical/Subcortical items.
+     * @property {string} GM - Gray Matter items.
+     * @property {string} FUNCTION - Function items.
+     * @property {string} TEST - Test items.
+     */
     const ItemTypes = Object.freeze({
         CORT: "Cortical/Subcortical",
         GM: "Gray Matter",
@@ -11,9 +42,12 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         TEST: "Test",
     });
 
+    // Search string
     const [query, setQuery] = useState(
         savedState.query || initialData.query || "",
     );
+
+    // Filtering
     const [parameters, setParameters] = useState(
         savedState.parameters ||
             initialData.parameters || {
@@ -21,12 +55,19 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 lobe: [],
             },
     );
+
+    // Search result
     const [searchResult, setSearchResult] = useState(savedState.results || []);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    // Auto-populate suggestion thing
     const [suggestions, setSuggestions] = useState([]);
     const [activeSuggestions, setActiveSuggestions] = useState(false);
+
+    // Filter option for lobe
     const [lobeOptions, setLobeOptions] = useState([]);
+
     const [showFilters, setShowFilters] = useState(savedState.filter || false);
     const debounceTimer = useRef(null);
 
@@ -48,6 +89,9 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         ])
         .range(["#4e79a7", "#f28e2b", "#e15759", "#76b7b2"]);
 
+    /**
+     * Fetch every options for lobe from backend
+     */
     useEffect(() => {
         // Fetch lobe options from backend
         const fetchLobeOptions = async () => {
@@ -76,6 +120,11 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     }, [parameters, searchResult, showFilters, query, graphView]);
 
+    /**
+     * Call backend with given parameters to search.
+     * Search result will be transformed and put into searchResult variable
+     * @async
+     */
     const performSearch = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -109,11 +158,19 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     }, [query, parameters]);
 
+    /**
+     * Call search when user press enter
+     */
     const handleSearch = (e) => {
         e.preventDefault();
         performSearch();
     };
 
+    /**
+     * Call backend with given search string to get relevant items as suggestion
+     * Backend and database takes care of ordering
+     * @async
+     */
     const fetchSuggestions = async (input) => {
         if (!input) return;
         try {
@@ -130,6 +187,16 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     };
 
+    /**
+     * Transforms raw results into a structured format for display.
+     *
+     * @param {Object} data - The raw search results from the backend.
+     * @param {Array} [data.cort] - Cortical/Subcortical items.
+     * @param {Array} [data.gm] - Gray Matter items.
+     * @param {Array} [data.functions] - Function items.
+     * @param {Array} [data.tests] - Test items.
+     * @returns {Array} Transformed results with relevance scoring and relationships.
+     */
     const transformSearchResults = (data) => {
         const results = [];
         const searchString = query.toLowerCase();
@@ -168,16 +235,18 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
             const relevanceLevel =
                 relevance !== null ? relevance : getRelevanceLevel(item, type);
 
+            // Take care of related items
             if (existsIndex === -1) {
                 let relatedItems = [];
                 switch (type) {
                     case ItemTypes.CORT:
-                        item.name = `${item.hemisphere === 'l' ? 'Left' : 'Right'} ${item.name}`
+                        item.name = `${item.hemisphere === "l" ? "Left" : "Right"} ${item.name}`;
                         for (let relatedGM in item.cort_gm) {
                             relatedItems.push({
                                 id: item.cort_gm[relatedGM].gm.id,
                                 type: ItemTypes.GM,
                                 name: item.cort_gm[relatedGM].gm.name,
+                                reference: item.cort_gm[relatedGM].reference,
                             });
                         }
                         break;
@@ -187,6 +256,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 id: item.cort_gm[relatedCort].cort.id,
                                 type: ItemTypes.CORT,
                                 name: item.cort_gm[relatedCort].cort.name,
+                                reference: item.cort_gm[relatedCort].reference,
                             });
                         }
                         for (let relatedFunc in item.gm_function) {
@@ -195,6 +265,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 type: ItemTypes.FUNCTION,
                                 name: item.gm_function[relatedFunc].function
                                     .name,
+                                reference:
+                                    item.gm_function[relatedFunc].reference,
                             });
                         }
                         break;
@@ -204,6 +276,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 id: item.gm_function[relatedGM].gm.id,
                                 type: ItemTypes.GM,
                                 name: item.gm_function[relatedGM].gm.name,
+                                reference:
+                                    item.gm_function[relatedGM].reference,
                             });
                         }
                         for (let relatedTest in item.function_test) {
@@ -211,6 +285,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 id: item.function_test[relatedTest].test.id,
                                 type: ItemTypes.TEST,
                                 name: item.function_test[relatedTest].test.name,
+                                reference:
+                                    item.function_test[relatedTest].reference,
                             });
                         }
                         break;
@@ -221,6 +297,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                 type: ItemTypes.FUNCTION,
                                 name: item.function_test[relatedFunc].function
                                     .name,
+                                reference:
+                                    item.function_test[relatedFunc].reference,
                             });
                         }
                         break;
@@ -244,7 +322,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         const getItemDetails = (item, type) => {
             switch (type) {
                 case ItemTypes.CORT:
-                    const side = item.hemisphere === 'l' ? 'left' : 'right';
+                    const side = item.hemisphere === "l" ? "left" : "right";
                     return {
                         hemisphere: side,
                         lobe: item.lobe,
@@ -293,6 +371,9 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         return results;
     };
 
+    /**
+     * Clear out all parameters
+     */
     const handleReset = () => {
         setQuery("");
         setParameters({ hemisphere: [], lobe: [] });
@@ -301,6 +382,9 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         setError(null);
     };
 
+    /**
+     * Search again when hemisphere filter changes
+     */
     const handleHemisphereChange = (side) => {
         setParameters((prev) => {
             const newHemisphere = prev.hemisphere.includes(side)
@@ -320,6 +404,9 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         });
     };
 
+    /**
+     * Search again when lobe filter changes
+     */
     const handleLobeChange = (lobe) => {
         setParameters((prev) => {
             const newLobe = prev.lobe.includes(lobe)
@@ -340,7 +427,10 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
     };
 
     useEffect(() => {
-        if ((searchResult.length > 0 || query) && Object.keys(parameters).length > 0) {
+        if (
+            (searchResult.length > 0 || query) &&
+            Object.keys(parameters).length > 0
+        ) {
             if (searchResult.length > 0 || query) {
                 clearTimeout(debounceTimer.current);
                 debounceTimer.current = setTimeout(() => {
@@ -384,6 +474,11 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     }, [searchResult, graphView, graphDimensions]);
 
+    /**
+     * Renders a graph visualization of search results using D3.js.
+     *
+     * @returns {Function} A cleanup function to remove the graph when unmounting.
+     */
     const renderGraph = () => {
         // Helper function to wrap long labels
         function wrap(text, width) {
@@ -641,6 +736,9 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         };
     };
 
+    /**
+     * @returns {JSX.Element} Table / Graph for the search result
+     */
     const renderResultsTable = () => {
         if (searchResult.length === 0) {
             return (
@@ -686,8 +784,8 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                     <th className="px-4 py-2 text-left font-medium text-gray-700">
                                         Details
                                     </th>
-                                    <th className="px-4 py-2 text-left font-medium text-gray-700">
-                                        Related Result
+                                    <th className="px-4 py-2 text-left font-medium text-gray-700 w-1/2">
+                                        Related Results
                                     </th>
                                 </tr>
                             </thead>
@@ -700,7 +798,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                         <td className="px-4 py-2 capitalize">
                                             {item.type}
                                         </td>
-                                        <td className="px-4 py-2 font-medium">
+                                        <td className="px-4 py-2 font-medium capitalize">
                                             {item.name}
                                         </td>
                                         <td className="px-4 py-2">
@@ -773,10 +871,42 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                                                 key={i}
                                                                 className="text-xs bg-gray-100 rounded px-2 py-1"
                                                             >
-                                                                <span className="font-medium capitalize">
-                                                                    {rel.type}:
-                                                                </span>{" "}
-                                                                {rel.name}
+                                                                {rel.reference ? (
+                                                                    <details className="flex cursor-pointer">
+                                                                        <summary>
+                                                                            <span className="font-medium capitalize">
+                                                                                {
+                                                                                    rel.type
+                                                                                }
+                                                                                :
+                                                                            </span>{" "}
+                                                                            <span className="capitalize">
+                                                                                {
+                                                                                    rel.name
+                                                                                }
+                                                                            </span>
+                                                                        </summary>
+                                                                        <p className="pl-5">
+                                                                            {`${rel.reference.authors}. (${rel.reference.publication_date}). ${rel.reference.title}. `}
+                                                                            <i>{`${rel.reference.publisher}.`}</i>
+                                                                            {` doi:${rel.reference.isbn_issn_doi}`}
+                                                                        </p>
+                                                                    </details>
+                                                                ) : (
+                                                                    <div>
+                                                                        <span className="font-medium capitalize">
+                                                                            {
+                                                                                rel.type
+                                                                            }
+                                                                            :
+                                                                        </span>{" "}
+                                                                        <span className="capitalize">
+                                                                            {
+                                                                                rel.name
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         ),
                                                     )}

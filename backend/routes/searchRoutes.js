@@ -27,12 +27,15 @@ router.post("/search", async (req, res) => {
           gm(
             *,
             cort_gm(
-              cort(*)
+              cort(*),
+              reference(*)
             ),
             gm_function(
-              function(*)
+              function(*),
+              reference(*)
             )
-          )
+          ),
+          reference(*)
         )
       `);
 
@@ -72,10 +75,12 @@ router.post("/search", async (req, res) => {
           .select(`
             *,
             cort_gm(
-              cort(*)
+              cort(*),
+              reference(*)
             ),
             gm_function(
-              function(*)
+              function(*),
+              reference(*)
             )
           `)
           .or(`name.ilike.%${query}%,acronym.ilike.%${query}%`),
@@ -85,10 +90,12 @@ router.post("/search", async (req, res) => {
           .select(`
             *,
             gm_function(
-              gm(*)
+              gm(*),
+              reference(*)
             ),
             function_test(
-              test(*)
+              test(*),
+              reference(*)
             )
           `)
           .or(`name.ilike.%${query}%,description.ilike.%${query}%`),
@@ -98,7 +105,8 @@ router.post("/search", async (req, res) => {
           .select(`
             *,
             function_test(
-              function(*)
+              function(*),
+              reference(*)
             )
           `)
           .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
@@ -153,10 +161,12 @@ router.post("/search", async (req, res) => {
             .select(`
               *,
               function_test(
-                test(*)
+                test(*),
+                reference(*)
               ),
               gm_function(
-                function(*)
+                function(*),
+                reference(*)
               )
             `)
             .in('id', funcIdsToFetch);
@@ -183,10 +193,12 @@ router.post("/search", async (req, res) => {
             .select(`
               *,
               cort_gm(
-                cort(*)
+                cort(*),
+                reference(*)
               ),
               gm_function(
-                function(*)
+                function(*),
+                reference(*)
               )
             `)
             .in('id', gmIdsToFetch);
@@ -217,12 +229,15 @@ router.post("/search", async (req, res) => {
           function(
             *,
             gm_function(
-              gm(*)
+              gm(*),
+              reference(*)
             ),
             function_test(
-              test(*)
+              test(*),
+              reference(*)
             )
-          )
+          ),
+          reference(*)
         `)
         .in('gm_id', allGmIds) : { data: null, error: null },
 
@@ -233,9 +248,11 @@ router.post("/search", async (req, res) => {
           cort(
             *,
             cort_gm(
-              gm(*)
+              gm(*),
+              reference(*)
             )
-          )
+          ),
+          reference(*)
         `)
         .in('gm_id', allGmIds) : { data: null, error: null },
     ]);
@@ -272,7 +289,8 @@ router.post("/search", async (req, res) => {
             function_test(
               function(*)
             )
-          )
+          ),
+          reference(*)
         `)
         .in('function_id', allFunctionIds) : { data: null, error: null },
     ])
