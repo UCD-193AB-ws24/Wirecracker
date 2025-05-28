@@ -141,7 +141,12 @@ describe('DesignationPage', () => {
       modifiedDate: '2024-01-01'
     };
 
-    const addStimulationTabEvent = new CustomEvent('addStimulationTab');
+    const addStimulationTabEvent = new CustomEvent('addStimulationTab', {
+      detail: {
+        patientId: mockState.patientId,
+        fileId: mockState.fileId
+      }
+    });
     window.dispatchEvent = vi.fn();
 
     render(
@@ -157,7 +162,7 @@ describe('DesignationPage', () => {
       fireEvent.click(stimulationButton);
     });
 
-    expect(window.dispatchEvent).toHaveBeenCalled();
+    expect(window.dispatchEvent).toHaveBeenCalledWith(addStimulationTabEvent);
   });
 
   it('handles opening test selection page', async () => {
@@ -168,7 +173,12 @@ describe('DesignationPage', () => {
       modifiedDate: '2024-01-01'
     };
 
-    const addFunctionalTestTabEvent = new CustomEvent('addFunctionalTestTab');
+    const addFunctionalTestTabEvent = new CustomEvent('addFunctionalTestTab', {
+      detail: {
+        patientId: mockState.patientId,
+        fileId: mockState.fileId
+      }
+    });
     window.dispatchEvent = vi.fn();
 
     render(
@@ -184,7 +194,7 @@ describe('DesignationPage', () => {
       fireEvent.click(testSelectionButton);
     });
 
-    expect(window.dispatchEvent).toHaveBeenCalled();
+    expect(window.dispatchEvent).toHaveBeenCalledWith(addFunctionalTestTabEvent);
   });
 
   it('handles keyboard filtering', async () => {
