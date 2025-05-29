@@ -1,10 +1,14 @@
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
 
 dotenv.config();
 
 // Supabase Client Initialization
 export const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+// Initialize Resend client
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Table names constant
 export const TABLE_NAMES = [
@@ -27,6 +31,7 @@ export const TABLE_NAMES = [
 /**
  * Handles file record management in the database.
  * Creates a new file record if it doesn't exist, or updates an existing one.
+ * Also creates file assignments for new files.
  * @param {string} fileId - The unique identifier for the file
  * @param {string} fileName - The name of the file
  * @param {string} creationDate - The creation date of the file
@@ -84,6 +89,21 @@ export async function handleFileRecord(fileId, fileName, creationDate, modifiedD
       });
 
     if (fileError) throw fileError;
+
+    // Create file assignments for the new file
+    const { error: assignmentError } = await supabase
+      .from('file_assignments')
+      .insert({
+        file_id: fileId,
+        user_id: session.user_id,
+        patient_id: patientId,
+        role: 'owner',
+        has_seen: true,
+        is_completed: false,
+        completed_at: null
+      });
+
+    if (assignmentError) throw assignmentError;
   }
 }
 
@@ -507,4 +527,44 @@ export async function saveLocalizationToDatabase(data, fileId) {
    
    throw error; // Re-throw to propagate to the API endpoint handler
  }
+}
+
+/**
+ * Sends an email notification when a file is shared.
+ * @param {string} recipientEmail - The email address of the recipient
+ * @param {string} senderName - The name of the user sharing the file
+ * @param {string} fileType - The type of file being shared
+ * @param {string} patientId - The ID of the patient
+ * @param {string} creationDate - The creation date of the file
+ * @returns {Promise<Object>} - The response from the email service
+ */
+export async function sendShareNotification(recipientEmail, senderName, fileType, patientId, creationDate) {
+    try {
+        const shortPatientId = patientId.substring(0, 3).toUpperCase();
+        const formattedDate = new Date(creationDate).toLocaleDateString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+            year: '2-digit'
+        });
+
+        const { data, error } = await resend.emails.send({
+            from: 'Wirecracker <send@wirecracker.com>',
+            to: recipientEmail,
+            subject: `Wirecracker: ${fileType} shared with you`,
+            html: `
+                <p>${senderName} has shared a ${fileType} with you for patient ${shortPatientId}-${formattedDate}.</p>
+                <p>Please log into <a href="https://wirecracker.com">wirecracker.com</a> to review the files.</p>
+            `
+        });
+
+        if (error) {
+            console.error('Error sending email:', error);
+            throw error;
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Failed to send share notification email:', error);
+        throw error;
+    }
 }
