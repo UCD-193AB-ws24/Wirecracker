@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { supabase, handleFileRecord } from './utils.js';
+import { supabase, handleFileRecord, sendShareNotification } from './utils.js';
 
 const router = express.Router();
 router.use(cors());
@@ -424,6 +424,17 @@ router.post("/files/share-with-neurosurgeon", async (req, res) => {
             return res.status(401).json({ error: "Invalid or expired session" });
         }
 
+        // Get the current user's name
+        const { data: currentUser, error: currentUserError } = await supabase
+            .from('users')
+            .select('name')
+            .eq('id', session.user_id)
+            .single();
+
+        if (currentUserError || !currentUser) {
+            return res.status(401).json({ error: "Could not find current user" });
+        }
+
         // Get the target user's ID from their email
         const { data: targetUser, error: userError } = await supabase
             .from('users')
@@ -489,6 +500,20 @@ router.post("/files/share-with-neurosurgeon", async (req, res) => {
             if (designationError) throw designationError;
         }
 
+        // Send email notification
+        try {
+            await sendShareNotification(
+                email,
+                currentUser.name,
+                'Neurosurgery',
+                originalFile.patient_id,
+                originalFile.creation_date
+            );
+        } catch (emailError) {
+            console.error('Failed to send email notification:', emailError);
+            // Continue with the response even if email fails
+        }
+
         res.json({ 
             success: true, 
             message: "File shared successfully",
@@ -522,6 +547,17 @@ router.post("/files/share-with-epileptologist", async (req, res) => {
 
         if (!session?.user_id) {
             return res.status(401).json({ error: "Invalid or expired session" });
+        }
+
+        // Get the current user's name
+        const { data: currentUser, error: currentUserError } = await supabase
+            .from('users')
+            .select('name')
+            .eq('id', session.user_id)
+            .single();
+
+        if (currentUserError || !currentUser) {
+            return res.status(401).json({ error: "Could not find current user" });
         }
 
         // Get the target user's ID from their email
@@ -589,6 +625,20 @@ router.post("/files/share-with-epileptologist", async (req, res) => {
             if (designationError) throw designationError;
         }
 
+        // Send email notification
+        try {
+            await sendShareNotification(
+                email,
+                currentUser.name,
+                'Epilepsy',
+                originalFile.patient_id,
+                originalFile.creation_date
+            );
+        } catch (emailError) {
+            console.error('Failed to send email notification:', emailError);
+            // Continue with the response even if email fails
+        }
+
         res.json({ 
             success: true, 
             message: "File shared successfully",
@@ -622,6 +672,17 @@ router.post('/files/share-with-neuropsychologist', async (req, res) => {
             .single();
         if (!session?.user_id) {
             return res.status(401).json({ error: 'Invalid session' });
+        }
+
+        // Get the current user's name
+        const { data: currentUser, error: currentUserError } = await supabase
+            .from('users')
+            .select('name')
+            .eq('id', session.user_id)
+            .single();
+
+        if (currentUserError || !currentUser) {
+            return res.status(401).json({ error: "Could not find current user" });
         }
 
         // Get target user's ID
@@ -685,6 +746,20 @@ router.post('/files/share-with-neuropsychologist', async (req, res) => {
                 });
 
             if (testSelectionError) throw testSelectionError;
+        }
+
+        // Send email notification
+        try {
+            await sendShareNotification(
+                email,
+                currentUser.name,
+                'Neuropsychology',
+                originalFile.patient_id,
+                originalFile.creation_date
+            );
+        } catch (emailError) {
+            console.error('Failed to send email notification:', emailError);
+            // Continue with the response even if email fails
         }
 
         res.json({ 
