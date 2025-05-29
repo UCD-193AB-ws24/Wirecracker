@@ -4,6 +4,7 @@ import Designation from "./DesignationPage";
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
 import { useError } from '../../context/ErrorContext';
 import { useWarning } from '../../context/WarningContext.jsx';
+import HelpButton from "../../utils/HelpButton.jsx";
 
 const backendURL = __APP_CONFIG__.backendURL;
 
@@ -343,19 +344,17 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
             </div>
 
             {/* Floating Help Button and Guide at the Bottom Left */}
-            <div className="fixed bottom-2 left-2 z-50
-                            lg:bottom-6 lg:left-6">
-                {showLegend ? (
-                    <Legend layout={activeTab} setShowLegend={setShowLegend} />
-                ) : (
-                    <button
-                        className="size-8 border border-sky-800 bg-sky-600 text-white text-sm text-center font-bold rounded-full transition-colors duration-200 cursor-pointer hover:bg-sky-800
-                                   lg:size-11 lg:text-base"
-                        onClick={() => setShowLegend(true)}>
-                        ?
-                    </button>
-                )}
-            </div>
+            {activeTab === "designation" ? (
+                <HelpButton
+                    title="Epileptic Network Labeling Page Help"
+                    instructions="Click on a contact to label and change its color."
+                />
+            ) : (
+                <HelpButton
+                    title="Resection Page Help"
+                    instructions="(Optional) Upload brain scan and contact coordinates. Click contact in brain scan or list to mark for surgery."
+                />
+            )}
 
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1

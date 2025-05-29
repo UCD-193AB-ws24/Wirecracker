@@ -8,6 +8,7 @@ import EditElectrodeModal from '../components/localization/EditElectrodeModal';
 import Electrodes from '../components/localization/Electrodes';
 import { useError } from '../context/ErrorContext';
 import { useWarning } from '../context/WarningContext.jsx';
+import HelpButton from '../utils/HelpButton.jsx';
 
 const backendURL = __APP_CONFIG__.backendURL;
 
@@ -888,6 +889,10 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 }}
             />
 
+            <HelpButton
+                title="Anatomy Page Help"
+                instructions="Add an electrode with the + button at the bottom left. Find more information about an electrode by clicking on it. Input each electrode contact's location by clicking on the contact."
+            />
             <div className="fixed bottom-2 right-2 z-50 flex gap-1
                             lg:bottom-6 lg:right-6 lg:gap-2">
                 <button
