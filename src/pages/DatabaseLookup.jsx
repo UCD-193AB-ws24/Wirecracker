@@ -198,7 +198,7 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
      * @returns {Array} Transformed results with relevance scoring and relationships.
      */
     const transformSearchResults = (data) => {
-        const results = [];
+        let results = [];
         const searchString = query.toLowerCase();
 
         // Helper function to check if text contains the search string
@@ -242,12 +242,16 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     case ItemTypes.CORT:
                         item.name = `${item.hemisphere === "l" ? "Left" : "Right"} ${item.name}`;
                         for (let relatedGM in item.cort_gm) {
-                            relatedItems.push({
-                                id: item.cort_gm[relatedGM].gm.id,
-                                type: ItemTypes.GM,
-                                name: item.cort_gm[relatedGM].gm.name,
-                                reference: item.cort_gm[relatedGM].reference,
-                            });
+
+                            // Add GM as related only if they are not duplicate
+                            if (!item.cort_gm[relatedGM].gm.duplicate) {
+                                relatedItems.push({
+                                    id: item.cort_gm[relatedGM].gm.id,
+                                    type: ItemTypes.GM,
+                                    name: item.cort_gm[relatedGM].gm.name,
+                                    reference: item.cort_gm[relatedGM].reference,
+                                });
+                            }
                         }
                         break;
                     case ItemTypes.GM:
@@ -272,13 +276,18 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         break;
                     case ItemTypes.FUNCTION:
                         for (let relatedGM in item.gm_function) {
-                            relatedItems.push({
-                                id: item.gm_function[relatedGM].gm.id,
-                                type: ItemTypes.GM,
-                                name: item.gm_function[relatedGM].gm.name,
-                                reference:
-                                    item.gm_function[relatedGM].reference,
-                            });
+
+                            // Add GM as related only if they are not duplicate
+                            if (!item.gm_function[relatedGM].gm.duplicate) {
+                                relatedItems.push({
+                                    id: item.gm_function[relatedGM].gm.id,
+                                    type: ItemTypes.GM,
+                                    name: item.gm_function[relatedGM].gm.name,
+                                    reference:
+                                        item.gm_function[relatedGM].reference,
+                                });
+
+                            }
                         }
                         for (let relatedTest in item.function_test) {
                             relatedItems.push({
@@ -305,12 +314,13 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 }
 
                 results.push({
-                    type,
+                    type: type,
                     id: item.id,
                     name: item.name,
                     details: getItemDetails(item, type),
                     related: relatedItems,
                     relevance: relevanceLevel,
+                    duplicate: item.duplicate === true,
                 });
             } else if (relevanceLevel < results[existsIndex].relevance) {
                 // Update with better relevance if found
@@ -345,6 +355,19 @@ const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
         data.gm?.forEach((gm) => addItem(gm, ItemTypes.GM));
         data.functions?.forEach((func) => addItem(func, ItemTypes.FUNCTION));
         data.tests?.forEach((test) => addItem(test, ItemTypes.TEST));
+
+        // resolve duplicates in gm
+        results.forEach((entry) => {
+            if (entry.duplicate) {
+                entry.related.forEach((relative) => {
+                    let original = results.find(r => (r.id === relative.id) && (r.type === relative.type));
+                    if (original) {
+                        original.related = original.related.concat(entry.related.filter(r => (r.id !== relative.id) && (r.type !== relative.type)))
+                    }
+                })
+            }
+        })
+        results = results.filter(r => r.duplicate !== true)
 
         // find direct relationships (level 3)
         const directlyRelated = new Set();
