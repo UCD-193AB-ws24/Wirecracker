@@ -54,6 +54,17 @@ router.post('/save-designation', async (req, res) => {
       });
     }
 
+    // Handle file record first
+    try {
+      await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
+    } catch (error) {
+      console.error('Error saving file metadata:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: `Failed to save file metadata: ${error.message}`
+      });
+    }
+
     if (existingFile && existingFile.file_id) {
       // Get the existing designation data
       const { data: existingDesignation, error: designationError } = await supabase
@@ -78,17 +89,6 @@ router.post('/save-designation', async (req, res) => {
 
         // Only update if there are changes
         if (isDesignationDifferent || isLocalizationDifferent) {
-          // Handle file record update with new modified date
-          try {
-            await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
-          } catch (error) {
-            console.error('Error saving file metadata:', error);
-            return res.status(500).json({ 
-              success: false, 
-              error: `Failed to save file metadata: ${error.message}`
-            });
-          }
-
           // Update the designation record
           const { error: updateError } = await supabase
             .from('designation')
@@ -122,19 +122,8 @@ router.post('/save-designation', async (req, res) => {
           });
         }
       } else {
-        // Insert new designation record
-        console.log('Creating new designation record...');
-        // Handle file record for new designation
-        try {
-          await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
-        } catch (error) {
-          console.error('Error saving file metadata:', error);
-          return res.status(500).json({ 
-            success: false, 
-            error: `Failed to save file metadata: ${error.message}`
-          });
-        }
-
+        // Insert new designation record for existing file
+        console.log('Creating new designation record for existing file...');
         const { error: insertError } = await supabase
           .from('designation')
           .insert({
@@ -150,7 +139,7 @@ router.post('/save-designation', async (req, res) => {
             error: `Failed to save designation: ${insertError.message}`
           });
         }
-        console.log('Successfully created new designation');
+        console.log('Successfully created new designation for existing file');
         res.status(200).json({ 
           success: true,
           message: 'Designation data saved successfully',
@@ -159,19 +148,8 @@ router.post('/save-designation', async (req, res) => {
         });
       }
     } else {
-      // Insert new designation record
-      console.log('Creating new designation record...');
-      // Handle file record for new designation
-      try {
-        await handleFileRecord(fileId, fileName, creationDate, modifiedDate, req.headers.authorization, patientId);
-      } catch (error) {
-        console.error('Error saving file metadata:', error);
-        return res.status(500).json({ 
-          success: false, 
-          error: `Failed to save file metadata: ${error.message}`
-        });
-      }
-
+      // Insert new designation record for new file
+      console.log('Creating new designation record for new file...');
       const { error: insertError } = await supabase
         .from('designation')
         .insert({
@@ -187,7 +165,7 @@ router.post('/save-designation', async (req, res) => {
           error: `Failed to save designation: ${insertError.message}`
         });
       }
-      console.log('Successfully created new designation');
+      console.log('Successfully created new designation for new file');
       res.status(200).json({ 
         success: true,
         message: 'Designation data saved successfully',

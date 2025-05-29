@@ -27,6 +27,7 @@ export const TABLE_NAMES = [
 /**
  * Handles file record management in the database.
  * Creates a new file record if it doesn't exist, or updates an existing one.
+ * Also creates file assignments for new files.
  * @param {string} fileId - The unique identifier for the file
  * @param {string} fileName - The name of the file
  * @param {string} creationDate - The creation date of the file
@@ -84,6 +85,21 @@ export async function handleFileRecord(fileId, fileName, creationDate, modifiedD
       });
 
     if (fileError) throw fileError;
+
+    // Create file assignments for the new file
+    const { error: assignmentError } = await supabase
+      .from('file_assignments')
+      .insert({
+        file_id: fileId,
+        user_id: session.user_id,
+        patient_id: patientId,
+        role: 'owner',
+        has_seen: true,
+        is_completed: false,
+        completed_at: null
+      });
+
+    if (assignmentError) throw assignmentError;
   }
 }
 
