@@ -609,7 +609,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 const event = new CustomEvent('addResectionTab', {
                     detail: { 
                         originalData: originalDataCopy,
-                        data: resectionResult.exists ? resectionResult.data.resection_data : saveCSVFile(Identifiers.LOCALIZATION, electrodes, patientId, creationDate, modifiedDate, false, fileId),
+                        data: resectionResult.exists ? resectionResult.data.designation_data : saveCSVFile(Identifiers.LOCALIZATION, electrodes, patientId, creationDate, modifiedDate, false, fileId),
                         localizationData: localizationDataCopy,
                         patientId: patientId,
                         fileId: resectionResult.exists ? resectionResult.fileId : null
