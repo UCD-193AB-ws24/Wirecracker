@@ -1,7 +1,0 @@
-### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR TEST PLANNING ###
-### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###
-Label,ContactNumber,ElectrodeDescription,ContactDescription,AssociatedLocation,Mark,SurgeonMark,Pair,Frequency,Duration,Current,TestID
-TB,1,Medial Inferior Temporal Cortex,Medial Inferior Temporal Cortex,Medial Inferior Temporal Cortex,1,false,2,125.225,5,5.5,
-OR',4,Ventral Orbito Frontal Cortex,Ventral Orbito Frontal Cortex,Ventral Orbito Frontal Cortex,0,false,3,105.225,3,2.445,
-OR',14,Ventral Orbito Frontal Cortex,WM,WM,2,false,13,108.8,25,4,309
-OT',16,Lateral Visual Cortex,WM,WM,2,true,15,105.225,3,2.445,309

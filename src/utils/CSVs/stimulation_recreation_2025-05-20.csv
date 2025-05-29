@@ -1,7 +1,0 @@
-### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR SEIZURE RECREATION PLANNING ###
-### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###
-Label,ContactNumber,ElectrodeDescription,ContactDescription,AssociatedLocation,Mark,SurgeonMark,Pair,IsPlanning,Frequency,Duration,Current,PlanOrder,Type
-n,1,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,1,true,2,true,104.225,3,2.445,0,recreation
-n,2,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,1,true,1,false,105.225,4,2.445,-1,recreation
-n,3,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,1,true,2,true,105.225,2,2.445,1,recreation
-n,4,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus,Right Superior Frontal Sulcus/WM,1,true,3,false,105.225,3,2.445,-1,recreation
