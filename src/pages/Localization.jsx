@@ -395,7 +395,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             console.log('Backend save response:', result);
 
             // Save to CSV if requested
-            saveCSVFile(Identifiers.LOCALIZATION, electrodes, savedState.patientId, creationDate, modifiedDate, download);
+            saveCSVFile(Identifiers.LOCALIZATION, electrodes, savedState.patientId, creationDate, modifiedDate, download, fileId);
             
             // Update tab with latest data
             onStateChange({
@@ -423,7 +423,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 } else {
                     showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
                 }
-                saveCSVFile(Identifiers.LOCALIZATION, electrodes, savedState.patientId, creationDate, modifiedDate, download);
+                saveCSVFile(Identifiers.LOCALIZATION, electrodes, savedState.patientId, creationDate, modifiedDate, download, fileId);
             } else {
                 console.error('Error saving localization:', error);
                 showError(`Failed to save localization. ${error.message}`);
@@ -567,7 +567,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     const event = new CustomEvent('addResectionTab', {
                         detail: { 
                             originalData: originalDataCopy,
-                            data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, patientId, creationDate, modifiedDate, false),
+                            data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, patientId, creationDate, modifiedDate, false, fileId),
                             localizationData: localizationDataCopy,
                             patientId: patientId,
                             fileId: existingTab.state.fileId
@@ -609,7 +609,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 const event = new CustomEvent('addResectionTab', {
                     detail: { 
                         originalData: originalDataCopy,
-                        data: resectionResult.exists ? resectionResult.data.resection_data : saveCSVFile(Identifiers.LOCALIZATION, electrodes, patientId, creationDate, modifiedDate, false),
+                        data: resectionResult.exists ? resectionResult.data.resection_data : saveCSVFile(Identifiers.LOCALIZATION, electrodes, patientId, creationDate, modifiedDate, false, fileId),
                         localizationData: localizationDataCopy,
                         patientId: patientId,
                         fileId: resectionResult.exists ? resectionResult.fileId : null
@@ -658,7 +658,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     const event = new CustomEvent('addResectionTab', {
                         detail: {
                             originalData: originalDataCopy,
-                            data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, savedState.patientId, creationDate, modifiedDate, false),
+                            data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, savedState.patientId, creationDate, modifiedDate, false, fileId),
                             localizationData: localizationDataCopy,
                             patientId: savedState.patientId,
                             fileId: existingTab?.state?.fileId || null

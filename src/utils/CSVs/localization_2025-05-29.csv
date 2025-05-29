@@ -1,0 +1,11 @@
+### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR LOCALIZATION ###
+### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###
+PatientID:4560502c-1148-4b4c-b418-df05cbe309b8
+CreatedDate:2025-05-22T23:02:34.345
+ModifiedDate:2025-05-22T23:03:19.145
+FileID:954954344
+Label,ContactNumber,ElectrodeDescription,ContactDescription,AssociatedLocation,Mark,SurgeonMark,Type
+A',1,Left Amygdala,Left Amygdala,GM,0,0,DIXI
+A',2,Left Amygdala,Left Amygdala,GM,0,0,DIXI
+A',3,Left Amygdala,Left Amygdala,WM,0,0,DIXI
+A',4,Left Amygdala,Left Amygdala,WM,0,0,DIXI

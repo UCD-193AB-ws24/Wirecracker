@@ -644,7 +644,7 @@ const HomePage = () => {
                 patientId = data ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'csv-localization':
-                title = 'CSV Anatomy';
+                title = 'Anatomy';
                 patientId = data.patientId ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'designation':
@@ -836,22 +836,22 @@ const HomePage = () => {
         setError("");
 
         try {
-            const { identifier, data } = await parseCSVFile(file, false, (msg) => setError(msg));
+            const { identifier, data, metadata } = await parseCSVFile(file, false, (msg) => setError(msg));
             // TODO: add resection option
             if (identifier === Identifiers.LOCALIZATION) {
-                addTab('csv-localization', { name: file.name, data });
+                openSavedFile('localization', { name: 'Anatomy', data: {data: data}, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
+            } else if (identifier === Identifiers.RESECTION) {
+                openSavedFile('resection', { name: 'Neurosurgery', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             } else if (identifier === Identifiers.DESIGNATION) {
-                addTab('csv-designation', { name: file.name, data });
-            } else if (identifier === Identifiers.STIMULATION) {
-                addTab('csv-stimulation', { name: file.name, data });
-            }else if (identifier === Identifiers.STIMULATION_FUNCTION) {
-                addTab('functional-mapping', { name: file.name, data });
+                openSavedFile('designation', { name: 'Epilepsy', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
+            } else if (identifier === Identifiers.STIMULATION_FUNCTION) {
+                openSavedFile('functional-mapping', { name: 'Functional Mapping', data: data.data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }else if (identifier === Identifiers.STIMULATION_RECREATION) {
-                addTab('seizure-recreation', { name: file.name, data });
+                openSavedFile('seizure-recreation', { name: 'Seizure Recreation', data: data.data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }else if (identifier === Identifiers.STIMULATION_CCEP) {
-                addTab('cceps', { name: file.name, data });
+                openSavedFile('cceps', { name: 'CCEPs', data: data.data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }else if (identifier === Identifiers.TEST_PLANNING) {
-                addTab('csv-functional-test', { name: file.name, data });
+                openSavedFile('functional-test', { name: 'Neuropsychology', data: data.data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }
         } catch (err) {
             setError(err.message);

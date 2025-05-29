@@ -16,6 +16,7 @@ export const Identifiers = Object.freeze({
     STIMULATION_FUNCTION:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR FUNCTIONAL MAPPING PLANNING ###",
     STIMULATION_RECREATION:   "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR SEIZURE RECREATION PLANNING ###",
     STIMULATION_CCEP:         "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR CCEPS PLANNING ###",
+    RESECTION:               "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR RESECTION ###",
 });
 
 /**
@@ -49,7 +50,8 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
                     lines[0].trim() !== Identifiers.STIMULATION &&
                     lines[0].trim() !== Identifiers.STIMULATION_FUNCTION &&
                     lines[0].trim() !== Identifiers.STIMULATION_RECREATION &&
-                    lines[0].trim() !== Identifiers.STIMULATION_CCEP
+                    lines[0].trim() !== Identifiers.STIMULATION_CCEP &&
+                    lines[0].trim() !== Identifiers.RESECTION
                 ) || lines[1].trim() !== IDENTIFIER_LINE_2 )) {
                 const errorMsg = "Invalid file. The first line must be the correct identifier.";
                 if (showError) showError(errorMsg);
@@ -59,20 +61,39 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
 
             let identifier;
             let csvWithoutIdentifier;
+            let metadata = {
+                patientId: '',
+                creationDate: null,
+                modifiedDate: null,
+                fileId: null
+            };
+
             if (!coordinates) { 
                 identifier = lines[0].trim();
-                // Parse CSV content excluding the identifier line
-                csvWithoutIdentifier = lines.slice(2).join("\n");
+                // Extract metadata from the CSV header
+                for (let i = 2; i < 6; i++) {
+                    if (lines[i].startsWith('PatientID:')) {
+                        metadata.patientId = lines[i].split('PatientID:')[1].trim();
+                    } else if (lines[i].startsWith('CreatedDate:')) {
+                        metadata.creationDate = lines[i].split('CreatedDate:')[1].trim();
+                    } else if (lines[i].startsWith('ModifiedDate:')) {
+                        metadata.modifiedDate = lines[i].split('ModifiedDate:')[1].trim();
+                    } else if (lines[i].startsWith('FileID:')) {
+                        metadata.fileId = lines[i].split('FileID:')[1].trim();
+                    }
+                }
+                // Parse CSV content excluding the identifier and metadata lines
+                csvWithoutIdentifier = lines.slice(6).join("\n");
             } else {
                 identifier = "coordinates";
                 csvWithoutIdentifier = lines.join("\n");
             }
 
             if (identifier === Identifiers.LOCALIZATION) {
-                resolve({ identifier, data: parseLocalization(csvWithoutIdentifier) });
+                resolve({ identifier, data: parseLocalization(csvWithoutIdentifier), metadata });
                 return;
             }
-            else if (identifier === Identifiers.DESIGNATION) {
+            else if (identifier === Identifiers.DESIGNATION || identifier === Identifiers.RESECTION) {
                 // First parse as localization to get the original structure
                 const localizationData = parseLocalization(csvWithoutIdentifier);
                 // Then parse as designation for the current state
@@ -82,18 +103,18 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
                     data: {
                         originalData: localizationData,
                         data: designationData
-                    }
+                    },
+                    metadata
                 });
                 return;
             }
             else if (identifier === Identifiers.STIMULATION || identifier === Identifiers.STIMULATION_FUNCTION || identifier === Identifiers.STIMULATION_RECREATION || identifier === Identifiers.STIMULATION_CCEP) {
-                // const designationData = parseDesignation(csvWithoutIdentifier);
                 const stimulationData = parseStimulation(csvWithoutIdentifier);
-                resolve({identifier, data: stimulationData});
+                resolve({identifier, data: stimulationData, metadata});
                 return;
             }
             else if (identifier === Identifiers.TEST_PLANNING) {
-                resolve({ identifier, data: parseTests(csvWithoutIdentifier) });
+                resolve({ identifier, data: parseTests(csvWithoutIdentifier), metadata });
                 return;
             }
 
@@ -103,7 +124,7 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
                 skipEmptyLines: true,
                 dynamicTyping: true, // Ensures correct data types for numbers
                 complete: function (results) {
-                    resolve({ identifier, data: results.data });
+                    resolve({ identifier, data: results.data, metadata });
                 },
                 error: function (err) {
                     if (showError) showError("Parsing error: " + err.message);
@@ -374,16 +395,18 @@ function parseTests(csvData) {
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {Object|void} The parsed data if download is false, otherwise void.
  */
-export function saveCSVFile(identifier, data, patientId = '', createdDate = null, modifiedDate = null, download = true) {
+export function saveCSVFile(identifier, data, patientId = '', createdDate = null, modifiedDate = null, download = true, fileId = null) {
     const currentDate = new Date().toISOString();
     const finalPatientId = patientId || data.patientId || '';
     const finalCreatedDate = createdDate || currentDate;
     const finalModifiedDate = modifiedDate || currentDate;
+    const finalFileId = fileId || data.fileId || '';
 
     let csvContent = `${identifier}\n${IDENTIFIER_LINE_2}\n`;
     csvContent += `PatientID:${finalPatientId}\n`;
     csvContent += `CreatedDate:${finalCreatedDate}\n`;
     csvContent += `ModifiedDate:${finalModifiedDate}\n`;
+    csvContent += `FileID:${finalFileId}\n`;
     let returnData = [];
     
     if (identifier === Identifiers.LOCALIZATION) {
@@ -447,18 +470,21 @@ export function saveCSVFile(identifier, data, patientId = '', createdDate = null
  * @param {string} createdDate - The created date for the first line.
  * @param {string} modifiedDate - The modified date for the first line.
  * @param {boolean} download - Whether to download the file or return the data.
+ * @param {string} type - The type of designation data.
  * @returns {string} The CSV content.
  */
-export function saveDesignationCSVFile(designationData, localizationData, patientId = '', createdDate = null, modifiedDate = null, download = true) {
+export function saveDesignationCSVFile(designationData, localizationData, patientId = '', createdDate = null, modifiedDate = null, download = true, type = 'designation', fileId = null) {
     const currentDate = new Date().toISOString();
     const finalPatientId = patientId || localizationData.patientId || '';
     const finalCreatedDate = createdDate || currentDate;
     const finalModifiedDate = modifiedDate || currentDate;
+    const finalFileId = fileId || designationData.fileId || '';
 
-    let csvContent = `${Identifiers.DESIGNATION}\n${IDENTIFIER_LINE_2}\n`;
+    let csvContent = `${type === 'resection' ? Identifiers.RESECTION : Identifiers.DESIGNATION}\n${IDENTIFIER_LINE_2}\n`;
     csvContent += `PatientID:${finalPatientId}\n`;
     csvContent += `CreatedDate:${finalCreatedDate}\n`;
     csvContent += `ModifiedDate:${finalModifiedDate}\n`;
+    csvContent += `FileID:${finalFileId}\n`;
     const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Type"];
     csvContent += headers.join(",") + "\n";
 
@@ -506,7 +532,7 @@ export function saveDesignationCSVFile(designationData, localizationData, patien
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "designation_" + new Date().toISOString().split('T')[0] + ".csv";
+        link.download = `${type}_${new Date().toISOString().split('T')[0]}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -527,11 +553,12 @@ export function saveDesignationCSVFile(designationData, localizationData, patien
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {string} The CSV content.
  */
-export function saveStimulationCSVFile(stimulationData, planOrder, type = 'mapping', patientId = '', createdDate = null, modifiedDate = null, download = true) {
+export function saveStimulationCSVFile(stimulationData, planOrder, type = 'mapping', patientId = '', createdDate = null, modifiedDate = null, download = true, fileId = null) {
     const currentDate = new Date().toISOString();
     const finalPatientId = patientId || stimulationData.patientId || '';
     const finalCreatedDate = createdDate || currentDate;
     const finalModifiedDate = modifiedDate || currentDate;
+    const finalFileId = fileId || stimulationData.fileId || '';
 
     let csvContent = '';
     switch(type) {
@@ -551,6 +578,7 @@ export function saveStimulationCSVFile(stimulationData, planOrder, type = 'mappi
     csvContent += `PatientID:${finalPatientId}\n`;
     csvContent += `CreatedDate:${finalCreatedDate}\n`;
     csvContent += `ModifiedDate:${finalModifiedDate}\n`;
+    csvContent += `FileID:${finalFileId}\n`;
     const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning", "Frequency", "Duration", "Current", "PlanOrder", "Type"];
     csvContent += headers.join(",") + "\n";
 
@@ -609,16 +637,18 @@ export function saveStimulationCSVFile(stimulationData, planOrder, type = 'mappi
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {string} The CSV content.
  */
-export function saveTestCSVFile(testData, contacts, patientId = '', createdDate = null, modifiedDate = null, download = true) {
+export function saveTestCSVFile(testData, contacts, patientId = '', createdDate = null, modifiedDate = null, download = true, fileId = null) {
     const currentDate = new Date().toISOString();
     const finalPatientId = patientId || '';
     const finalCreatedDate = createdDate || currentDate;
     const finalModifiedDate = modifiedDate || currentDate;
+    const finalFileId = fileId || testData.fileId || '';
 
     let csvContent = `${Identifiers.TEST_PLANNING}\n${IDENTIFIER_LINE_2}\n`;
     csvContent += `PatientID:${finalPatientId}\n`;
     csvContent += `CreatedDate:${finalCreatedDate}\n`;
     csvContent += `ModifiedDate:${finalModifiedDate}\n`;
+    csvContent += `FileID:${finalFileId}\n`;
     const headers = [
             "Label",
             "ContactNumber",
@@ -631,7 +661,8 @@ export function saveTestCSVFile(testData, contacts, patientId = '', createdDate 
             "Frequency",
             "Duration",
             "Current",
-            "TestID"
+            "TestID",
+            "TestName"
         ];
 
     // Create CSV rows
@@ -652,6 +683,7 @@ export function saveTestCSVFile(testData, contacts, patientId = '', createdDate 
                     contact.duration, // Duration
                     contact.current, // Current
                     "No test", // No test
+                    "No test name" // No test name
                 ].join(",");
             }
             return contactTests.map(test => {
@@ -668,6 +700,7 @@ export function saveTestCSVFile(testData, contacts, patientId = '', createdDate 
                     contact.duration, // Duration
                     contact.current, // Current
                     test.id, // TestID
+                    test.name || "" // TestName
                 ].join(",");
             });
         }).join("\n");

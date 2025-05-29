@@ -575,7 +575,7 @@ const exportState = async (state, electrodes, type, download = true) => {
         throw error;
     } finally {
         if (download) {
-            saveStimulationCSVFile(electrodes, planOrder, type, state.patientId, state.creationDate, state.modifiedDate, download);
+            saveStimulationCSVFile(electrodes, planOrder, type, state.patientId, state.creationDate, state.modifiedDate, download, state.fileId);
         }
     }
 };

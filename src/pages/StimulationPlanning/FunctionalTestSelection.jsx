@@ -310,7 +310,7 @@ const FunctionalTestSelection = ({
         } finally {
             // Then export to CSV if download is true
             if (download) {
-                saveTestCSVFile(tests, contacts, state.patientId, state.creationDate, state.modifiedDate, download);
+                saveTestCSVFile(tests, contacts, state.patientId, state.creationDate, state.modifiedDate, download, state.fileId);
             }
         }
     };
