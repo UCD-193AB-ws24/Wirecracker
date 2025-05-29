@@ -1640,6 +1640,50 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                 return;
             }
 
+            // If this is a shared file, mark it as seen
+            try {
+                console.log('Attempting to mark files as seen for patient:', patient.patient_id);
+                // Mark each file as seen
+                const fileIds = [];
+                if (patient.localization_file_id) fileIds.push(patient.localization_file_id);
+                if (patient.designation_file_id) fileIds.push(patient.designation_file_id);
+                if (patient.resection_file_id) fileIds.push(patient.resection_file_id);
+                if (patient.test_selection_file_id) fileIds.push(patient.test_selection_file_id);
+                if (patient.stimulation_types.mapping) fileIds.push(patient.stimulation_types.mapping);
+                if (patient.stimulation_types.recreation) fileIds.push(patient.stimulation_types.recreation);
+                if (patient.stimulation_types.ccep) fileIds.push(patient.stimulation_types.ccep);
+
+                console.log('Files to mark as seen:', fileIds);
+
+                // Mark each file as seen
+                await Promise.all(fileIds.map(async (fileId) => {
+                    console.log('Marking file as seen:', fileId);
+                    const markSeenResponse = await fetch(`${backendURL}/api/mark-file-seen/${fileId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!markSeenResponse.ok) {
+                        const errorText = await markSeenResponse.text();
+                        console.error('Failed to mark file as seen:', fileId, 'Response:', errorText);
+                        throw new Error(`Failed to mark file as seen: ${errorText}`);
+                    }
+
+                    const responseData = await markSeenResponse.json();
+                    console.log('Successfully marked file as seen:', fileId, 'Response:', responseData);
+                }));
+
+                console.log('All files marked as seen successfully');
+                // Dispatch event to refresh shared files list
+                window.dispatchEvent(new CustomEvent('refreshSharedFiles'));
+            } catch (error) {
+                console.error('Error marking files as seen:', error);
+                // Continue with opening the file even if marking as seen fails
+            }
+
             // If no existing tab found, proceed with loading all files for this patient
             const availableFiles = await Promise.all(
                 buttons
