@@ -247,6 +247,7 @@ function parseDesignation(csvData) {
 function parseStimulation(csvData) {
     const parsedData = {};
     const rows = Papa.parse(csvData, { header: true, skipEmptyLines: true }).data;
+    const planOrder = [];
 
     // First pass: Group by electrode label and collect contacts
     rows.forEach(row => {
@@ -262,6 +263,7 @@ function parseStimulation(csvData) {
         const frequency = parseFloat(row.Frequency) || 105; // TODO : ask what default value should be
         const duration = parseFloat(row.Duration) || 3.0;
         const current = parseFloat(row.Current) || 2.445;
+        const order = parseInt(row.PlanOrder) || -1;
 
         // Process associated location based on GM presence
         if (associatedLocation === 'GM') {
@@ -285,20 +287,18 @@ function parseStimulation(csvData) {
             ...(new contact(associatedLocation, mark, surgeonMark)),
             __electrodeDescription__: electrodeDescription,
             __contactDescription__: contactDescription,
+            id: label + contactNumber,
             index: contactNumber,
             pair: pair,
             isPlanning: isPlanning,
             duration: duration,
             frequency: frequency,
             current: current,
+            order: order
         };
 
-        if (isPlanning) {
-            contactObj.order = parseInt(row.PlanOrder);
-            if (contactObj.order < 0) {
-                if (showError) showError("error found on csv. Contact(s) will be missing from planning pane.");
-                contactObj.isPlanning = false;
-            }
+        if (isPlanning && order >= 0) {
+            planOrder[order] = contactObj.id;
         }
 
         // Add to contacts array at the correct index (contactNumber - 1)
@@ -310,10 +310,13 @@ function parseStimulation(csvData) {
     });
 
     // Convert to array format matching demo data
-    return Object.values(parsedData).map(electrode => ({
-        label: electrode.label,
-        contacts: electrode.contacts.filter(contact => contact !== null) // Remove any null entries
-    }));
+    return {
+        data: Object.values(parsedData).map(electrode => ({
+            label: electrode.label,
+            contacts: electrode.contacts.filter(contact => contact !== null) // Remove any null entries
+        })),
+        planOrder: planOrder.filter(Boolean) // Remove any null/undefined entries
+    };
 }
 
 /**
@@ -323,9 +326,10 @@ function parseStimulation(csvData) {
  * @returns {Object} A data structure with the format [{ label: 'A'', contacts: [contact, contact, ...] }, ... ]
  */
 function parseTests(csvData) {
-    const contacts = [];
+    const parsedData = {};
     const tests = {};
     const rows = Papa.parse(csvData, { header: true, skipEmptyLines: true }).data;
+    let hasAnyTests = false;
 
     // First pass: Group by electrode label and collect contacts
     rows.forEach(row => {
@@ -337,10 +341,10 @@ function parseTests(csvData) {
         const surgeonMark = row.SurgeonMark.trim() === "true"; // Convert to boolean
         const pair = parseInt(row.Pair);
         const electrodeDescription = row.ElectrodeDescription.trim();
-        const frequency = parseFloat(row.Frequency) || 105; // TODO : ask what default value should be
+        const frequency = parseFloat(row.Frequency) || 105;
         const duration = parseFloat(row.Duration) || 3.0;
         const current = parseFloat(row.Current) || 2.445;
-        const testID = row.TestID.trim();
+        const testID = row.TestID.trim() || "No test";
 
         // Process associated location based on GM presence
         if (associatedLocation === 'GM') {
@@ -351,7 +355,13 @@ function parseTests(csvData) {
             const [desc1, desc2] = contactDescription.split('+');
             associatedLocation = `${desc1}/${desc2}`;
         }
-        // For other cases (like WM), keep the original associatedLocation
+
+        if (!parsedData[label]) {
+            parsedData[label] = {
+                label: label,
+                contacts: []
+            };
+        }
 
         const contactObj = {
             ...(new contact(associatedLocation, mark, surgeonMark)),
@@ -366,13 +376,16 @@ function parseTests(csvData) {
             current: current,
         };
 
-        // Add contact if it doesn't already exist
-        if (!contacts.some(c => c.id === contactObj.id)) {
-            contacts.push(contactObj);
+        // Add to contacts array at the correct index (contactNumber - 1)
+        // Ensure the array is large enough
+        while (parsedData[label].contacts.length < contactNumber) {
+            parsedData[label].contacts.push(null);
         }
+        parsedData[label].contacts[contactNumber - 1] = contactObj;
 
         // Add test ID to the contact's test list
-        if (testID !== "") {
+        if (testID !== "No test") {
+            hasAnyTests = true;
             if (!tests[contactObj.id]) {
                 tests[contactObj.id] = [];
             }
@@ -381,7 +394,13 @@ function parseTests(csvData) {
     });
 
     // Convert to array format matching demo data
-    return {contacts: contacts, tests: tests};
+    return {
+        contacts: Object.values(parsedData).map(electrode => ({
+            label: electrode.label,
+            contacts: electrode.contacts.filter(contact => contact !== null) // Remove any null entries
+        })),
+        tests: hasAnyTests ? tests : {}
+    };
 }
 
 /**
@@ -705,8 +724,6 @@ export function saveTestCSVFile(testData, contacts, patientId = '', createdDate 
             });
         }).join("\n");
     });
-
-    console.log(rows);
 
     // Combine headers and rows into CSV format
     csvContent += [

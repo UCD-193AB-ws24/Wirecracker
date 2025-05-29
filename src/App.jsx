@@ -1328,7 +1328,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                        xl:w-64"
                         onOptionClick={(option) => {
                             switch(option) {
-                                case "From-Zip-File":
+                                case "From-CSV-File":
                                     document.getElementById('fileInput').click();
                                     break;
                                 case "From-Database":

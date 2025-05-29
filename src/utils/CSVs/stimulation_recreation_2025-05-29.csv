@@ -1,0 +1,11 @@
+### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR SEIZURE RECREATION PLANNING ###
+### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###
+PatientID:4560502c-1148-4b4c-b418-df05cbe309b8
+CreatedDate:2025-05-22T23:04:30.125
+ModifiedDate:2025-05-23T08:28:03.166
+FileID:955070124
+Label,ContactNumber,ElectrodeDescription,ContactDescription,AssociatedLocation,Mark,SurgeonMark,Pair,IsPlanning,Frequency,Duration,Current,PlanOrder,Type
+A',1,Left Amygdala,Left Amygdala,Left Amygdala,1,true,2,true,105.225,3,2.445,0,recreation
+A',2,Left Amygdala,Left Amygdala,Left Amygdala,1,true,1,true,105.225,3,2.445,2,recreation
+A',3,Left Amygdala,Left Amygdala,WM,0,true,2,true,105.225,3,2.445,1,recreation
+A',4,Left Amygdala,Left Amygdala,WM,0,true,3,false,105.225,3,2.445,-1,recreation

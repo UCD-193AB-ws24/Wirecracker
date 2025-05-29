@@ -1,0 +1,11 @@
+### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR CCEPS PLANNING ###
+### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###
+PatientID:4560502c-1148-4b4c-b418-df05cbe309b8
+CreatedDate:2025-05-22T23:04:35.7
+ModifiedDate:2025-05-22T23:05:14.81
+FileID:955075700
+Label,ContactNumber,ElectrodeDescription,ContactDescription,AssociatedLocation,Mark,SurgeonMark,Pair,IsPlanning,Frequency,Duration,Current,PlanOrder,Type
+A',1,Left Amygdala,Left Amygdala,Left Amygdala,1,true,2,false,105.225,3,2.445,-1,ccep
+A',2,Left Amygdala,Left Amygdala,Left Amygdala,1,true,1,false,105.225,3,2.445,-1,ccep
+A',3,Left Amygdala,Left Amygdala,WM,2,true,2,true,105.225,3,2.445,0,ccep
+A',4,Left Amygdala,Left Amygdala,WM,2,true,3,false,105.225,3,2.445,-1,ccep

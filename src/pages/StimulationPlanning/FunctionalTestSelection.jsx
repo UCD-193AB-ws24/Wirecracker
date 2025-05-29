@@ -44,7 +44,6 @@ const FunctionalTestSelection = ({
                 // Only keep pairs where at least one contact is GM or GM/GM
                 const location1 = pair[0].associatedLocation.toLowerCase();
                 const location2 = pair[1].associatedLocation.toLowerCase();
-                console.log(location1, location2);
                 return (location1 !== 'wm' || location2 !== 'wm') && (location1 !== 'oob' || location2 !== 'oob');
             })
             .sort((a, b) => a[0].order - b[0].order);
