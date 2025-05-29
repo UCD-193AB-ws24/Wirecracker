@@ -40,6 +40,13 @@ const FunctionalTestSelection = ({
             })
             .flat()
             .filter(Boolean)
+            .filter(pair => {
+                // Only keep pairs where at least one contact is GM or GM/GM
+                const location1 = pair[0].associatedLocation.toLowerCase();
+                const location2 = pair[1].associatedLocation.toLowerCase();
+                console.log(location1, location2);
+                return (location1 !== 'wm' || location2 !== 'wm') && (location1 !== 'oob' || location2 !== 'oob');
+            })
             .sort((a, b) => a[0].order - b[0].order);
         }
         return [];
@@ -357,6 +364,21 @@ const FunctionalTestSelection = ({
         }
     };
 
+    function getMarkColor(contact) {
+        switch (contact.mark) {
+            case 0:
+                return "bg-white";
+            case 1:
+                return "bg-rose-300";
+            case 2:
+                return "bg-amber-300";
+            case 3:
+                return "bg-stone-300";
+            default:
+                return "bg-white";
+        }
+    }
+
     return (
         <div className="p-12 bg-gray-50 min-h-auto">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">
@@ -376,12 +398,14 @@ const FunctionalTestSelection = ({
                 {contactPairs.map((contactPair) => (
                     <div
                         key={contactPair[0].id}
-                        className="border p-4 mb-4 rounded-lg shadow-sm bg-gray-100"
+                        className={`p-4 mb-4 rounded-lg shadow-sm ${getMarkColor(contactPair[0])} ${contactPair[0].surgeonMark || contactPair[1].surgeonMark ? 'border-2 border-stone-500' : 'border border-gray-300'}`}
                     >
                         <div className="flex justify-between items-center">
-                            <span className="font-semibold text-lg">
-                                {contactPair[0].id}-{contactPair[1].id}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold text-lg">
+                                    {contactPair[0].id}-{contactPair[1].id}
+                                </span>
+                            </div>
                             <span className="text-gray-600 text-sm">
                                 {contactPair[0].associatedLocation} - {contactPair[1].associatedLocation}
                             </span>
