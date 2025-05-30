@@ -21,7 +21,7 @@ router.get('/usage-docs/:docPath', async (req, res) => {
 
         // Check if file exists
         if (!fs.existsSync(filePath)) {
-            return res.status(404).send(`*404* Documentation Not Found\n\nThe requested document could not be loaded.`);
+            return res.status(404).send(`*404* Documentation Not Found\n\nThe requested document could not be loaded.\n\n${process.cwd()}/${filePath} does not exist`);
         }
 
         // Read and send the markdown file
