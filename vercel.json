@@ -9,11 +9,12 @@
       }
     },
     {
+      "src": "docs/**",
+      "use": "@vercel/static"
+    },
+    {
       "src": "./package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "includeFiles": ["docs/**"]
-      }
+      "use": "@vercel/static-build"
     }
   ],
   "routes": [
@@ -28,6 +29,10 @@
     {
       "src": "/api/[^.]+",
       "dest": "/backend/server.js"
+    },
+    {
+      "src": "/docs/(.*)",
+      "dest": "/docs/$1"
     },
     {
       "src": "/[^.]+",
