@@ -1582,20 +1582,20 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             icon: '📍'
         },
         {
-            name: 'Neurosurgery',
-            type: 'resection',
-            exists: patient.has_resection,
-            fileId: patient.resection_file_id,
-            message: 'No neurosurgery file created yet',
-            icon: '🔪'
-        },
-        {
             name: 'Epilepsy',
             type: 'designation',
             exists: patient.has_designation,
             fileId: patient.designation_file_id,
             message: 'No epilepsy file created yet',
             icon: '📝'
+        },
+        {
+            name: 'Neurosurgery',
+            type: 'resection',
+            exists: patient.has_resection,
+            fileId: patient.resection_file_id,
+            message: 'No neurosurgery file created yet',
+            icon: '🔪'
         },
         {
             name: 'Stimulation',
