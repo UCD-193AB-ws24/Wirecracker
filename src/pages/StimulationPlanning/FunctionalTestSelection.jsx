@@ -3,6 +3,7 @@ import { saveTestCSVFile } from "../../utils/CSVParser";
 import { useError } from '../../context/ErrorContext';
 import { useWarning } from "../../context/WarningContext";
 import mapConsecutive from "../../utils/MapConsecutive";
+import HelpButton from "../../utils/HelpButton";
 
 const backendURL = __APP_CONFIG__.backendURL;
 
@@ -594,6 +595,10 @@ const FunctionalTestSelection = ({
                     </div>
                 </div>
             )}
+            <HelpButton
+                title="Functional Test Assignment Page Help"
+                instructions="Auto-assign best tests for all contact pair or select specific tests."
+            />
             <div className="fixed bottom-6 right-6 z-50 flex gap-2">
                 <div className="relative">
                     <button

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
 import { useError } from '../../context/ErrorContext';
+import { useWarning } from '../../context/WarningContext';
 
 const backendURL = __APP_CONFIG__.backendURL;
 
@@ -23,8 +24,12 @@ const backendURL = __APP_CONFIG__.backendURL;
 const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     // Function to show error at the top of the screen
     const { showError } = useError();
+    const { showWarning } = useWarning();
     const [state, setState] = useState(savedState);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [shareEmail, setShareEmail] = useState('');
+    const [isSharing, setIsSharing] = useState(false);
 
     /**
      * Store original localization for saving / exporting later
@@ -475,6 +480,125 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     };
 
+    const handleShareWithNeuropsychologist = async () => {
+        if (!shareEmail) {
+            showError('Please enter an email address');
+            return;
+        }
+
+        setIsSharing(true);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            console.log('Starting share process...');
+            console.log('Current state:', {
+                fileId: state.fileId,
+                patientId: state.patientId,
+                electrodes
+            });
+
+            // First save the epilepsy file
+            console.log('Saving epilepsy file...');
+            await handleSave();
+            console.log('Epilepsy file saved successfully');
+
+            // Now share the file
+            console.log('Sharing file with neuropsychologist...');
+            console.log('Request URL:', `${backendURL}/api/files/share-with-neuropsychologist`);
+            console.log('Request headers:', {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            });
+            console.log('Request body:', {
+                fileId: state.fileId,
+                email: shareEmail,
+                testSelectionData: {
+                    tests: electrodes,
+                    contacts: Object.keys(electrodes).reduce((acc, electrodeLabel) => {
+                        const electrode = electrodes[electrodeLabel];
+                        Object.entries(electrode).forEach(([key, value]) => {
+                            if (!isNaN(parseInt(key))) {
+                                acc.push({
+                                    contactNumber: parseInt(key),
+                                    electrodeLabel: electrodeLabel,
+                                    contactDescription: value.contactDescription || electrode.description,
+                                    associatedLocation: value.associatedLocation || 'WM'
+                                });
+                            }
+                        });
+                        return acc;
+                    }, [])
+                }
+            });
+
+            const response = await fetch(`${backendURL}/api/files/share-with-neuropsychologist`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    fileId: state.fileId,
+                    email: shareEmail,
+                    testSelectionData: {
+                        tests: electrodes,
+                        contacts: Object.keys(electrodes).reduce((acc, electrodeLabel) => {
+                            const electrode = electrodes[electrodeLabel];
+                            Object.entries(electrode).forEach(([key, value]) => {
+                                if (!isNaN(parseInt(key))) {
+                                    acc.push({
+                                        contactNumber: parseInt(key),
+                                        electrodeLabel: electrodeLabel,
+                                        contactDescription: value.contactDescription || electrode.description,
+                                        associatedLocation: value.associatedLocation || 'WM'
+                                    });
+                                }
+                            });
+                            return acc;
+                        }, [])
+                    }
+                })
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+            
+            // Log the raw response text first
+            const responseText = await response.text();
+            console.log('Raw response:', responseText);
+
+            // Try to parse as JSON if possible
+            let result;
+            try {
+                result = JSON.parse(responseText);
+                console.log('Parsed response:', result);
+            } catch (parseError) {
+                console.error('Failed to parse response as JSON:', parseError);
+                throw new Error(`Invalid response format: ${responseText.substring(0, 100)}...`);
+            }
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to share file');
+            }
+
+            if (result.success) {
+                showWarning('File shared successfully with neuropsychologist');
+                setShowShareModal(false);
+                setShareEmail('');
+            } else {
+                throw new Error(result.error || 'Failed to share file');
+            }
+        } catch (error) {
+            console.error('Error sharing file:', error);
+            showError(error.message || 'Failed to share file with neuropsychologist');
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
     return (
         <div className="flex-1 p-4 bg-gray-100 h-full lg:p-8">
             <div className="mb-3 lg:mb-6">
@@ -512,43 +636,85 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1
                             lg:bottom-6 lg:right-6 lg:flex-row lg:gap-2">
-                <div className="flex flex-row gap-1
-                                lg:gap-2">
-                    <div className="relative">
-                        <button
-                            className="grow py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-700 border border-sky-700 shadow-lg
-                                    lg:py-2 lg:px-4 lg:text-base"
-                            onClick={handleSave}
-                        >
-                            Save
-                        </button>
-                        {showSaveSuccess && (
-                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap z-50">
-                                Save successful!
-                            </div>
-                        )}
-                    </div>
+                <div className="flex flex-col gap-1 lg:flex-row lg:gap-2">
                     <button
                         className="grow py-1 px-2 bg-green-500 text-white font-semibold rounded border border-green-600 hover:bg-green-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
                                     lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleExport}
+                        onClick={handleSave}
                     >
-                        Export
+                        Save
                     </button>
-                    <button
-                        className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
-                                    lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleOpenStimulation}>
-                        Open in Stimulation Page
-                    </button>
-                    <button
-                        className="py-1 px-2 bg-indigo-500 border border-indigo-600 text-white font-semibold rounded hover:bg-indigo-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
-                                    lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleOpenTestSelection}>
-                        Open in Neuropsychology
-                    </button>
+                    {showSaveSuccess && (
+                        <div className="text-green-600 text-sm">
+                            Save successful!
+                        </div>
+                    )}
                 </div>
+                <button
+                    className="grow py-1 px-2 bg-green-500 text-white font-semibold rounded border border-green-600 hover:bg-green-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                lg:py-2 lg:px-4 lg:text-base"
+                    onClick={handleExport}
+                >
+                    Export
+                </button>
+                <button
+                    className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                lg:py-2 lg:px-4 lg:text-base"
+                    onClick={handleOpenStimulation}>
+                    Open in Stimulation Page
+                </button>
+                <button
+                    className="py-1 px-2 bg-indigo-500 border border-indigo-600 text-white font-semibold rounded hover:bg-indigo-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                lg:py-2 lg:px-4 lg:text-base"
+                    onClick={handleOpenTestSelection}>
+                    Open in Neuropsychology
+                </button>
+                <button
+                    className="py-1 px-2 bg-blue-500 border border-blue-600 text-white font-semibold rounded hover:bg-blue-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                lg:py-2 lg:px-4 lg:text-base"
+                    onClick={() => setShowShareModal(true)}>
+                    Share with Neuropsychologist
+                </button>
             </div>
+
+            {showShareModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+                        <h2 className="text-xl font-bold mb-4">Share with Neuropsychologist</h2>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Neuropsychologist's Email
+                            </label>
+                            <input
+                                type="email"
+                                value={shareEmail}
+                                onChange={(e) => setShareEmail(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-md"
+                                placeholder="Enter email address"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => {
+                                    setShowShareModal(false);
+                                    setShareEmail('');
+                                }}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                disabled={isSharing}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleShareWithNeuropsychologist}
+                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                disabled={isSharing}
+                            >
+                                {isSharing ? 'Sharing...' : 'Share'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

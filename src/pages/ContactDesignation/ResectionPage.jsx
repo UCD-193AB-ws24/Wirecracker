@@ -3,6 +3,7 @@ import load_untouch_nii from '../../utils/Nifti_viewer/load_untouch_nifti.js'
 import nifti_anatomical_conversion from '../../utils/Nifti_viewer/nifti_anatomical_conversion.js'
 import { parseCSVFile } from '../../utils/CSVParser';
 import { useError } from '../../context/ErrorContext';
+import { useWarning } from '../../context/WarningContext';
 import { niftiStorage } from '../../utils/IndexedDBStorage';
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
 
@@ -25,6 +26,9 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
      * Store if NIFTI image is loaded or not
      */
     const [imageLoaded, setImageLoaded] = useState(savedState.isLoaded || false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [shareEmail, setShareEmail] = useState('');
+    const [isSharing, setIsSharing] = useState(false);
 
     useEffect(() => {
         onStateChange({
@@ -33,8 +37,8 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
         });
     }, [imageLoaded]);
 
-
     const { showError } = useError();
+    const { showWarning } = useWarning();
     const [state, setState] = useState(savedState);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
@@ -423,6 +427,71 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }
     };
 
+    const handleShareWithEpileptologist = async () => {
+        if (!shareEmail) {
+            showError('Please enter an email address');
+            return;
+        }
+
+        setIsSharing(true);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            console.log('Starting share process...');
+            console.log('Current state:', {
+                fileId: state.fileId,
+                patientId: state.patientId,
+                electrodes
+            });
+
+            // First save the neurosurgery file
+            console.log('Saving neurosurgery file...');
+            await handleSave();
+            console.log('Neurosurgery file saved successfully');
+
+            // Now share the file
+            console.log('Sharing file with epileptologist...');
+            const response = await fetch(`${backendURL}/api/files/share-with-epileptologist`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    fileId: state.fileId,
+                    email: shareEmail,
+                    designationData: electrodes,
+                    localizationData: localizationData
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('Failed to share file:', error);
+                throw new Error(error.error || 'Failed to share file');
+            }
+
+            const result = await response.json();
+            console.log('File shared successfully:', result);
+            showWarning('File shared successfully with epileptologist');
+            setShowShareModal(false);
+            setShareEmail('');
+        } catch (error) {
+            console.error('Error sharing file:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                cause: error.cause
+            });
+            showError(error.message);
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
     return (
         <div className="flex-1 min-h-full bg-gray-100">
             {/* Show image if it is loaded. Otherwise show tile that is similar to one in designation page */}
@@ -490,8 +559,53 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                         onClick={handleOpenDesignation}>
                         Open in Epilepsy Page
                     </button>
+                    <button
+                        className="py-1 px-2 bg-blue-500 border border-blue-600 text-white font-semibold rounded hover:bg-blue-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                        onClick={() => setShowShareModal(true)}>
+                        Share with Epileptologist
+                    </button>
                 </div>
             </div>
+
+            {showShareModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+                        <h2 className="text-xl font-bold mb-4">Share with Epileptologist</h2>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Epileptologist's Email
+                            </label>
+                            <input
+                                type="email"
+                                value={shareEmail}
+                                onChange={(e) => setShareEmail(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-md"
+                                placeholder="Enter email address"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => {
+                                    setShowShareModal(false);
+                                    setShareEmail('');
+                                }}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                disabled={isSharing}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleShareWithEpileptologist}
+                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                disabled={isSharing}
+                            >
+                                {isSharing ? 'Sharing...' : 'Share'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

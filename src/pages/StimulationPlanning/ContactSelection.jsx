@@ -8,6 +8,7 @@ import { saveStimulationCSVFile } from "../../utils/CSVParser";
 import mapConsecutive from "../../utils/MapConsecutive";
 import { useError } from '../../context/ErrorContext';
 import { useWarning } from '../../context/WarningContext';
+import HelpButton from "../../utils/HelpButton";
 
 const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, switchContent, type = 'mapping' }) => {
     const { showError } = useError();
@@ -133,6 +134,10 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
 
                 <PlanningPane state={state} electrodes={electrodes} contactPairs={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} setElectrodes={setElectrodes} onStateChange={setState} savedState={state} type={type} />
             </div>
+            <HelpButton
+                title="Contact Stimulation Page Help"
+                instructions="Click on or drag contact pairs in and out of the planning panel on the right. Select the length of time and power of the stimulation test."
+            />
             <Container className="">
                 <Button
                     tooltip="Toggle unmarked contacts"

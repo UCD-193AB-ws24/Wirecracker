@@ -8,6 +8,7 @@ import EditElectrodeModal from '../components/localization/EditElectrodeModal';
 import Electrodes from '../components/localization/Electrodes';
 import { useError } from '../context/ErrorContext';
 import { useWarning } from '../context/WarningContext.jsx';
+import HelpButton from '../utils/HelpButton.jsx';
 
 const backendURL = __APP_CONFIG__.backendURL;
 
@@ -25,6 +26,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
     const [hasChanges, setHasChanges] = useState(false);
     const [showElectrodeModal, setShowElectrodeModal] = useState(false);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [shareEmail, setShareEmail] = useState('');
+    const [isSharing, setIsSharing] = useState(false);
 
     useEffect(() => {
         if (initialData.data && !savedState.electrodes) {
@@ -776,6 +780,71 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         }
     };
 
+    const handleShareWithNeurosurgeon = async () => {
+        if (!shareEmail) {
+            showError('Please enter an email address');
+            return;
+        }
+
+        setIsSharing(true);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            console.log('Starting share process...');
+            console.log('Current state:', {
+                fileId,
+                patientId: savedState.patientId,
+                electrodes
+            });
+
+            // First save the anatomy file
+            console.log('Saving anatomy file...');
+            await handleSaveLocalization(false);
+            console.log('Anatomy file saved successfully');
+
+            // Now share the file
+            console.log('Sharing file with neurosurgeon...');
+            const response = await fetch(`${backendURL}/api/files/share-with-neurosurgeon`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    fileId: fileId,
+                    email: shareEmail,
+                    designationData: saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
+                    localizationData: electrodes
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('Failed to share file:', error);
+                throw new Error(error.error || 'Failed to share file');
+            }
+
+            const result = await response.json();
+            console.log('File shared successfully:', result);
+            showWarning('File shared successfully with neurosurgeon');
+            setShowShareModal(false);
+            setShareEmail('');
+        } catch (error) {
+            console.error('Error sharing file:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                cause: error.cause
+            });
+            showError(error.message);
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
     // Add an effect to update expandedElectrode when initialExpandedElectrode changes
     useEffect(() => {
         if (initialExpandedElectrode) {
@@ -888,8 +957,21 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 }}
             />
 
+            <HelpButton
+                title="Anatomy Page Help"
+                instructions="Add an electrode with the + button at the bottom left. Find more information about an electrode by clicking on it. Input each electrode contact's location by clicking on the contact."
+            />
             <div className="fixed bottom-2 right-2 z-50 flex gap-1
                             lg:bottom-6 lg:right-6 lg:gap-2">
+                <button
+                    className="py-1 px-2 bg-green-500 text-white font-semibold rounded-md shadow-lg
+                               transition-colors duration-200 cursor-pointer hover:bg-green-600
+                               lg:py-2 lg:px-4"
+                    onClick={() => setShowShareModal(true)}
+                >
+                    Share with Neurosurgeon
+                </button>
+
                 <button
                     className="py-1 px-2 bg-green-500 text-white font-semibold rounded-md shadow-lg
                                transition-colors duration-200 cursor-pointer hover:bg-green-600
@@ -947,6 +1029,46 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                                            lg:px-6 lg:py-2"
                             >
                                 {hasChanges ? 'Submit' : 'Approve'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Share Modal */}
+            {showShareModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+                        <h2 className="text-xl font-bold mb-4">Share with Neurosurgeon</h2>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Neurosurgeon's Email
+                            </label>
+                            <input
+                                type="email"
+                                value={shareEmail}
+                                onChange={(e) => setShareEmail(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-md"
+                                placeholder="Enter email address"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => {
+                                    setShowShareModal(false);
+                                    setShareEmail('');
+                                }}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                disabled={isSharing}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleShareWithNeurosurgeon}
+                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                disabled={isSharing}
+                            >
+                                {isSharing ? 'Sharing...' : 'Share'}
                             </button>
                         </div>
                     </div>
