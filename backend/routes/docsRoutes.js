@@ -21,7 +21,7 @@ router.get('/usage-docs/:docPath', async (req, res) => {
 
         // Check if file exists
         if (!fs.existsSync(filePath)) {
-            return res.status(404).send(`*404* Documentation Not Found\n\nThe requested document could not be loaded.\n\n${process.cwd()}/${filePath} does not exist. Items in cwd is ${JSON.stringify(fs.readdirSync(process.cwd()))}`);
+            return res.status(404).send(`*404* Documentation Not Found\n\nThe requested document could not be loaded.\n\n${process.cwd()}/${filePath} does not exist.\n\nItems in cwd is ${JSON.stringify(fs.readdirSync(process.cwd()))}\n\nItems in cwd/../ is ${JSON.stringify(fs.readdirSync(path.join(process.cwd(), '..')))}\n\nItems in cwd/../../ is ${JSON.stringify(fs.readdirSync(path.join(process.cwd(), '..', '..')))}\n\nItems in cwd/backend is ${JSON.stringify(fs.readdirSync(path.join(process.cwd(), 'backend')))}`);
         }
 
         // Read and send the markdown file
