@@ -15,7 +15,7 @@ router.get('/usage-docs/:docPath', async (req, res) => {
         const safePath = docPath.replace(/\.\.\//g, '').replace(/\//g, '');
 
         // Path to markdown files directory
-        const projectRoot = path.join('.', '..', '..');
+        const projectRoot = path.join('.', '..');
         const docsDir = path.join(projectRoot, 'docs');
         let filePath = path.join(docsDir, `${safePath}.md`);
 
