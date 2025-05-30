@@ -69,18 +69,6 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         setState(newState);
     }, [electrodes, localizationData]);
 
-    // Update electrodes if there are any update from resection tab stored in the channel
-    useEffect(() => {
-        const channel = JSON.parse(localStorage.getItem("Designation_Resection_Sync_Channel"));
-        if (channel[state.patientId]) {
-            setElectrodes(channel[state.patientId]);
-            handleSave();
-        }
-
-        delete channel[state.patientId];
-        localStorage.setItem("Designation_Resection_Sync_Channel", JSON.stringify(channel));
-    }, []);
-
     /**
      * Handles contact click event
      * @param {string} contactId - ID of the clicked contact
@@ -98,13 +86,6 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }));
 
         setElectrodes(updatedElectrode);
-
-        // Set the updated electrode in designated "channel" in localstorage
-        const prevChannel = JSON.parse(localStorage.getItem("Designation_Resection_Sync_Channel"));
-        localStorage.setItem("Designation_Resection_Sync_Channel", JSON.stringify({
-            ...prevChannel,
-            [state.patientId]: updatedElectrode
-        }))
     };
 
     // Handle filtering whenever filter character changes
