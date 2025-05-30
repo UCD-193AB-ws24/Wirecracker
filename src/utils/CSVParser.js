@@ -217,6 +217,7 @@ function parseDesignation(csvData) {
         
         const contactObj = {
             ...(new contact(associatedLocation, mark, surgeonMark)),
+            id: `${label}${contactNumber}`,
             index: contactNumber,
             __electrodeDescription__: electrodeDescription,
             __contactDescription__: contactDescription,
