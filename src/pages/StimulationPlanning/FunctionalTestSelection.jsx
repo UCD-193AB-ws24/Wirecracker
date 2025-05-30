@@ -35,18 +35,12 @@ const FunctionalTestSelection = ({
             return contactsData.map(electrode => {
                 // Create pairs of consecutive contacts where at least one has a surgeon mark
                 return mapConsecutive(electrode.contacts, 2, contacts => {
-                    // Return the pair if either contact has a surgeon mark
-                    return (contacts[0].surgeonMark && contacts[1].surgeonMark) ? contacts : null;
+                    // Return the pair if both contacts are planning (the pair is planning)
+                    return (contacts[0].isPlanning && contacts[1].isPlanning) ? contacts : null;
                 });
             })
             .flat()
             .filter(Boolean)
-            .filter(pair => {
-                // Only keep pairs where at least one contact is GM or GM/GM
-                const location1 = pair[0].associatedLocation.toLowerCase();
-                const location2 = pair[1].associatedLocation.toLowerCase();
-                return (location1 !== 'wm' || location2 !== 'wm') && (location1 !== 'oob' || location2 !== 'oob');
-            })
             .sort((a, b) => a[0].order - b[0].order);
         }
         return [];
