@@ -197,22 +197,13 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                 </button>
                 <div className="relative">
                     <button
-                        className={`h-10 w-68 border border-sky-700 text-white font-semibold rounded transition-colors duration-200
+                        className="h-10 w-68 border border-sky-700 text-white font-semibold rounded transition-colors duration-200
                                    md:h-11 md:w-80 md:text-lg
                                    lg:h-13 lg:w-96 lg:text-xl
-                                   xl:h-16 xl:w-128 xl:text-2xl
-                                   ${initialData.state?.fromDesignation 
-                                       ? 'bg-gray-400 cursor-not-allowed' 
-                                       : 'bg-sky-600 hover:bg-sky-700 cursor-pointer'}`}
-                        onClick={() => initialData.state?.fromTestSelection && handlePlanTypeSelect('mapping')}
-                        disabled={initialData.state?.fromDesignation}>
+                                   xl:h-16 xl:w-128 xl:text-2xl"
+                        onClick={() => handlePlanTypeSelect('mapping')}>
                         Functional Mapping
                     </button>
-                    {initialData.state?.fromDesignation && (
-                        <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded text-sm whitespace-nowrap">
-                            Functional Mapping can only be opened from Neuropsychology page
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
