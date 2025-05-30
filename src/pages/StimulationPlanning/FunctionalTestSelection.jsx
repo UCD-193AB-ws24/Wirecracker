@@ -355,6 +355,11 @@ const FunctionalTestSelection = ({
                                 {contactPair[0].associatedLocation} - {contactPair[1].associatedLocation}
                             </span>
                         </div>
+                        <div className="text-gray-500 text-sm">
+                            Duration: {contactPair[0].duration} sec | Frequency:{" "}
+                            {contactPair[0].frequency} Hz | Current: {contactPair[0].current}{" "}
+                            mA
+                        </div>
 
                         {/* Display added tests */}
                         <div className="mt-2">
