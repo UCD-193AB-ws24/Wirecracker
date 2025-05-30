@@ -1824,7 +1824,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             for (const file of flattenedFiles) {
                 console.log('Opening file:', file);
                 await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay between each file
-                openSavedFile(file.type, file, false);
+                openSavedFile(file.type, file);
             }
 
             // After opening all files, switch to the appropriate tab
