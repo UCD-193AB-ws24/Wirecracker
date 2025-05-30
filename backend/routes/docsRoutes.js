@@ -15,13 +15,18 @@ router.get('/usage-docs/:docPath', async (req, res) => {
         const safePath = docPath.replace(/\.\.\//g, '').replace(/\//g, '');
 
         // Path to markdown files directory
-        const projectRoot = path.join('.', '..');
+        let projectRoot;
+        if (process.env.NODE_ENV === 'development') {
+            projectRoot = path.join(process.cwd(), '..');
+        } else {
+            projectRoot = process.cwd();
+        }
         const docsDir = path.join(projectRoot, 'docs');
         let filePath = path.join(docsDir, `${safePath}.md`);
 
         // Check if file exists
         if (!fs.existsSync(filePath)) {
-            return res.status(404).send(`*404* Documentation Not Found\n\nThe requested document could not be loaded.\n\n${process.cwd()}/${filePath} does not exist.\n\nItems in cwd is ${JSON.stringify(fs.readdirSync(process.cwd()))}\n\nItems in cwd/../ is ${JSON.stringify(fs.readdirSync(path.join(process.cwd(), '..')))}\n\nItems in cwd/../../ is ${JSON.stringify(fs.readdirSync(path.join(process.cwd(), '..', '..')))}\n\nItems in cwd/backend is ${JSON.stringify(fs.readdirSync(path.join(process.cwd(), 'backend')))}`);
+            return res.status(404).send(`*404* Documentation Not Found\n\nThe requested document could not be loaded.`);
         }
 
         // Read and send the markdown file
