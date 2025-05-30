@@ -10,7 +10,6 @@
       "use": "@vercel/static-build"
     }
   ],
-  "includeFiles": ["/docs/**"],
   "routes": [
 
     {
