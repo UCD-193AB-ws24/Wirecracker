@@ -816,7 +816,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 body: JSON.stringify({
                     fileId: fileId,
                     email: shareEmail,
-                    designationData: saveCSVFile(Identifiers.LOCALIZATION, electrodes, false),
+                    designationData: saveCSVFile(Identifiers.LOCALIZATION, electrodes, savedState.patientId, creationDate, modifiedDate, false, fileId),
                     localizationData: electrodes
                 })
             });
@@ -959,7 +959,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
             <HelpButton
                 title="Anatomy Page Help"
-                instructions="Add an electrode with the + button at the bottom left. Find more information about an electrode by clicking on it. Input each electrode contact's location by clicking on the contact."
+                instructions="Add an electrode with the + button at the bottom right. Find more information about an electrode by clicking on it. Input each electrode contact's location by clicking on the contact."
             />
             <div className="fixed bottom-2 right-2 z-50 flex gap-1
                             lg:bottom-6 lg:right-6 lg:gap-2">

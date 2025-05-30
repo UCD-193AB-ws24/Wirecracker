@@ -97,7 +97,6 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                     });
 
                     const result = await response.json();
-                    console.log(result);
                     
                     if (result.success && result.exists && result.data.type === type) {
                         const dbModifiedDate = result.data.modified_date;

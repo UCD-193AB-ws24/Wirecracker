@@ -256,7 +256,7 @@ router.get('/by-patient-test/:patientId', async (req, res) => {
     // Get the file ID for this patient's test selection
     const { data: fileData, error: fileError } = await supabase
       .from('files')
-      .select('file_id')
+      .select('file_id, modified_date')
       .eq('patient_id', patientId)
       .ilike('filename', '%neuropsychology%')
       .single();
@@ -302,7 +302,8 @@ router.get('/by-patient-test/:patientId', async (req, res) => {
       success: true,
       exists: true,
       data: testSelectionData,
-      fileId: fileData.file_id
+      fileId: fileData.file_id,
+      modifiedDate: fileData.modified_date
     });
   } catch (error) {
     console.error('Error in get-test-selection-by-patient endpoint:', error);

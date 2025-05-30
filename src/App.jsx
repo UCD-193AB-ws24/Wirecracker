@@ -559,7 +559,11 @@ const HomePage = () => {
     // Add event listener for functional mapping tab creation
     useEffect(() => {
         const handleAddFunctionalTestTab = (event) => {
-            addTab('functional-test', event.detail);
+            if (event.detail.fromTestSelection) {
+                addTab('functional-test', {data: event.detail.data.contacts, tests: event.detail.data.tests, state: event.detail.state});
+            } else {
+                addTab('functional-test', event.detail);
+            }
         };
 
         window.addEventListener('addFunctionalTestTab', handleAddFunctionalTestTab);

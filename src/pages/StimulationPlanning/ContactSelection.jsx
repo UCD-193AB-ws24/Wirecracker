@@ -397,19 +397,20 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
                     const result = await response.json();
                     
                     if (result.success && result.exists) {
-                        const dbModifiedDate = result.data.modified_date;
+                        const dbModifiedDate = result.modifiedDate;
                         const stimulationModifiedDate = state.modifiedDate;
 
                         if (dbModifiedDate > stimulationModifiedDate) {
                             // Create tab from database file
                             const event = new CustomEvent('addFunctionalTestTab', {
                                 detail: {
-                                    data: result.data.test_selection_data,
+                                    fromTestSelection: true,
+                                    data: result.data,
                                     state: {
-                                        ...result.data,
                                         fileName: 'Neuropsychology',
                                         fileId: result.fileId,
-                                        patientId: state.patientId
+                                        patientId: state.patientId,
+                                        modifiedDate: result.modifiedDate
                                     }
                                 }
                             });
