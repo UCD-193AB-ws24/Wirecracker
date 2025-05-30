@@ -602,14 +602,20 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
             {type === 'mapping' && (
                 <div className="flex space-x-2 mb-4">
                     <button
-                        className="flex-1 py-2 px-4 bg-indigo-500 border border-indigo-600 text-white font-semibold rounded hover:bg-indigo-600 transition-colors duration-200 cursor-pointer shadow-lg"
-                        onClick={handleOpenTestSelection}>
-                        Open in Neuropsychology
+                        className={`flex-1 py-2 px-4 bg-blue-500 border border-blue-600 text-white font-semibold rounded transition-colors duration-200 shadow-lg ${
+                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600 cursor-pointer"
+                        }`}
+                        onClick={() => setShowShareModal(true)}
+                        disabled={contactPairs.length === 0}>
+                        Share with Neuropsychologist
                     </button>
                     <button
-                        className="flex-1 py-2 px-4 bg-blue-500 border border-blue-600 text-white font-semibold rounded hover:bg-blue-600 transition-colors duration-200 cursor-pointer shadow-lg"
-                        onClick={() => setShowShareModal(true)}>
-                        Share with Neuropsychologist
+                        className={`flex-1 py-2 px-4 bg-indigo-500 border border-indigo-600 text-white font-semibold rounded transition-colors duration-200 shadow-lg ${
+                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-indigo-600 cursor-pointer"
+                        }`}
+                        onClick={handleOpenTestSelection}
+                        disabled={contactPairs.length === 0}>
+                        Open in Neuropsychology
                     </button>
                 </div>
             )}

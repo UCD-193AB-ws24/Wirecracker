@@ -197,7 +197,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                 </button>
                 <div className="relative">
                     <button
-                        className="h-10 w-68 border border-sky-700 text-white font-semibold rounded transition-colors duration-200
+                        className="h-10 w-68 bg-sky-600 hover:bg-sky-700 border border-sky-700 text-white font-semibold rounded cursor-pointer transition-colors duration-200
                                    md:h-11 md:w-80 md:text-lg
                                    lg:h-13 lg:w-96 lg:text-xl
                                    xl:h-16 xl:w-128 xl:text-2xl"

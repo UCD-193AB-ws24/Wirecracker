@@ -35,8 +35,8 @@ const FunctionalTestSelection = ({
             return contactsData.map(electrode => {
                 // Create pairs of consecutive contacts where at least one has a surgeon mark
                 return mapConsecutive(electrode.contacts, 2, contacts => {
-                    // Return the pair if both contacts are planning (the pair is planning)
-                    return (contacts[0].isPlanning && contacts[1].isPlanning) ? contacts : null;
+                    // Return the pair if first contact is planning
+                    return (contacts[0].isPlanning) ? contacts : null;
                 });
             })
             .flat()

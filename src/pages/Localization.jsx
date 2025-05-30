@@ -505,7 +505,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         return changes;
     };
 
-    const createResectionTab = async () => {
+    const createDesignationTab = async () => {
         if (Object.keys(electrodes).length === 0) return;
 
         try {
@@ -533,15 +533,15 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             // Get current tabs from localStorage
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
             
-            // Find any existing neurosurgery tab for this patient
+            // Find any existing designation tab for this patient
             const existingTab = tabs.find(tab =>
-                tab.content === 'resection' && 
+                (tab.content === 'csv-designation' || tab.content === 'designation') && 
                 tab.state?.patientId === patientId
             );
 
             if (existingTab) {
                 console.log("existing tab");
-                // Compare current electrodes with the neurosurgery tab's original data
+                // Compare current electrodes with the designation tab's original data
                 const hasChanges = JSON.stringify(electrodes) !== JSON.stringify(existingTab.data.originalData);
                 
                 if (hasChanges) {
@@ -568,7 +568,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
                     console.log("file id: ", existingTab.state.fileId);
                     // Create a new tab with updated data
-                    const event = new CustomEvent('addResectionTab', {
+                    const event = new CustomEvent('addDesignationTab', {
                         detail: { 
                             originalData: originalDataCopy,
                             data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, patientId, creationDate, modifiedDate, false, fileId),
@@ -588,35 +588,35 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 }
             } else {
                 // Only make database calls when creating a new tab
-                const resectionResponse = await fetch(`${backendURL}/api/by-patient/${patientId}?type=resection`, {
+                const designationResponse = await fetch(`${backendURL}/api/by-patient/${patientId}?type=designation`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
-                if (!resectionResponse.ok) {
-                    throw new Error('Failed to check for existing neurosurgery');
+                if (!designationResponse.ok) {
+                    throw new Error('Failed to check for existing epilepsy tab');
                 }
 
-                const resectionResult = await resectionResponse.json();
+                const designationResult = await designationResponse.json();
                 
                 // Create deep copies of the data
                 const originalDataCopy = JSON.parse(JSON.stringify(
-                    resectionResult.exists ? resectionResult.data.localization_data : electrodes
+                    designationResult.exists ? designationResult.data.localization_data : electrodes
                 ));
                 const localizationDataCopy = JSON.parse(JSON.stringify({
-                    ...(resectionResult.exists ? resectionResult.data.localization_data : electrodes),
+                    ...(designationResult.exists ? designationResult.data.localization_data : electrodes),
                     patientId: patientId
                 }));
                 
                 // Create a new tab
-                const event = new CustomEvent('addResectionTab', {
+                const event = new CustomEvent('addDesignationTab', {
                     detail: { 
                         originalData: originalDataCopy,
-                        data: resectionResult.exists ? resectionResult.data.designation_data : saveCSVFile(Identifiers.LOCALIZATION, electrodes, patientId, creationDate, modifiedDate, false, fileId),
+                        data: designationResult.exists ? designationResult.data.designation_data : saveCSVFile(Identifiers.LOCALIZATION, electrodes, patientId, creationDate, modifiedDate, false, fileId),
                         localizationData: localizationDataCopy,
                         patientId: patientId,
-                        fileId: resectionResult.exists ? resectionResult.fileId : null
+                        fileId: designationResult.exists ? designationResult.fileId : null
                     }
                 });
                 window.dispatchEvent(event);
@@ -628,21 +628,21 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 // Get the tabs to compare
                 const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
 
-                // Find all existing neurosurgery tab(s) for this patient
+                // Find all existing designation tab(s) for this patient
                 const existingTab = tabs.find(tab =>
-                    tab.content === 'resection' &&
+                    (tab.content === 'csv-designation' || tab.content === 'designation') &&
                     tab.state?.patientId === savedState.patientId
                 );
 
                 // Check if there's any changes'
                 const hasChanges = JSON.stringify(electrodes) !== JSON.stringify(existingTab?.data.originalData);
 
-                // There's change or there were no neurosurgery tab before for this patient'
+                // There's change or there were no designation tab before for this patient'
                 if (!existingTab || hasChanges) {
                     const updatedTabs = tabs.filter(tab => tab.state?.patientId !== savedState.patientId);
                     localStorage.setItem('tabs', JSON.stringify(updatedTabs));
 
-                    // Close out existing neurosurgery tab
+                    // Close out existing designation tab
                     if (existingTab) {
                         const closeEvent = new CustomEvent('closeTab', {
                             detail: { tabId: existingTab.id }
@@ -659,7 +659,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
                     console.log("file id: ", savedState.fileId);
                     // Create a new tab with updated data
-                    const event = new CustomEvent('addResectionTab', {
+                    const event = new CustomEvent('addDesignationTab', {
                         detail: {
                             originalData: originalDataCopy,
                             data: saveCSVFile(Identifiers.LOCALIZATION, electrodes, savedState.patientId, creationDate, modifiedDate, false, fileId),
@@ -672,7 +672,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                 } else {
                     // We saw the content before. Just set the existing tab as active
                     const existingTab = tabs.find(tab =>
-                        tab.content === 'resection' &&
+                        (tab.content === 'csv-designation' || tab.content === 'designation') &&
                         tab.state?.patientId === savedState.patientId &&
                         JSON.stringify(electrodes) === JSON.stringify(tab.data.originalData)
                     );
@@ -682,8 +682,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     window.dispatchEvent(activateEvent);
                 }
             } else {
-                console.error('Error creating neurosurgery tab:', error);
-                showError('Failed to create neurosurgery tab. Please try again.');
+                console.error('Error creating epilepsy tab:', error);
+                showError('Failed to create epilepsy tab. Please try again.');
             }
         }
     };
@@ -780,7 +780,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
         }
     };
 
-    const handleShareWithNeurosurgeon = async () => {
+    const handleShareWithEpileptologist = async () => {
         if (!shareEmail) {
             showError('Please enter an email address');
             return;
@@ -806,8 +806,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             console.log('Anatomy file saved successfully');
 
             // Now share the file
-            console.log('Sharing file with neurosurgeon...');
-            const response = await fetch(`${backendURL}/api/files/share-with-neurosurgeon`, {
+            console.log('Sharing file with epileptologist...');
+            const response = await fetch(`${backendURL}/api/files/share-with-epileptologist`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -829,7 +829,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
 
             const result = await response.json();
             console.log('File shared successfully:', result);
-            showWarning('File shared successfully with neurosurgeon');
+            showWarning('File shared successfully with epileptologist');
             setShowShareModal(false);
             setShareEmail('');
         } catch (error) {
@@ -969,16 +969,16 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                                lg:py-2 lg:px-4"
                     onClick={() => setShowShareModal(true)}
                 >
-                    Share with Neurosurgeon
+                    Share with Epileptologist
                 </button>
 
                 <button
                     className="py-1 px-2 bg-green-500 text-white font-semibold rounded-md shadow-lg
                                transition-colors duration-200 cursor-pointer hover:bg-green-600
                                lg:py-2 lg:px-4"
-                    onClick={createResectionTab}
+                    onClick={createDesignationTab}
                 >
-                    Open in Neurosurgery
+                    Open in Epilepsy Page
                 </button>
 
                 {isSharedFile && (
@@ -1039,10 +1039,10 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             {showShareModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
-                        <h2 className="text-xl font-bold mb-4">Share with Neurosurgeon</h2>
+                        <h2 className="text-xl font-bold mb-4">Share with Epileptologist</h2>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Neurosurgeon's Email
+                                Epileptologist's Email
                             </label>
                             <input
                                 type="email"
@@ -1064,7 +1064,7 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                                 Cancel
                             </button>
                             <button
-                                onClick={handleShareWithNeurosurgeon}
+                                onClick={handleShareWithEpileptologist}
                                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
                                 disabled={isSharing}
                             >
