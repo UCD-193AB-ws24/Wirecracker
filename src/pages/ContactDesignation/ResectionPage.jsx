@@ -298,6 +298,57 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
     };
 
     /**
+     * Handles dispatching event to open stimulation tab
+     * @async
+     */
+    const handleOpenStimulation = async () => {
+        try {
+            let stimulationData = electrodes.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map((contact, index) => {
+                    let pair = index;
+                    if (index == 0) pair = 2;
+                    return {
+                        ...contact,
+                        pair: pair,
+                        isPlanning: false,
+                        duration: 3.0,
+                        frequency: 105.225,
+                        current: 2.445,
+                    }
+                }),
+            }));
+
+            // Create a new tab with the stimulation data
+            const event = new CustomEvent('addStimulationTab', {
+                detail: { 
+                    data: stimulationData,
+                    patientId: state.patientId,
+                    state: {
+                        patientId: state.patientId,
+                        fileId: state.fileId,
+                        fileName: state.fileName,
+                        creationDate: state.creationDate,
+                        modifiedDate: new Date().toISOString(),
+                        designationModifiedDate: state.modifiedDate,
+                        fromDesignation: true
+                    }
+                }
+            });
+            window.dispatchEvent(event);
+
+            await handleSave();
+        } catch (error) {
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+            } else {
+                console.error('Error opening stimulation:', error);
+                showError('Failed to open stimulation. Please try again.');
+            }
+        }
+    };
+
+    /**
      * Handles dispatching event to open resection tab
      * @async
      * @returns {Promise<void>}
@@ -539,6 +590,12 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                                     lg:py-2 lg:px-4 lg:text-base"
                         onClick={handleOpenDesignation}>
                         Open in Epilepsy Page
+                    </button>
+                    <button
+                        className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                    lg:py-2 lg:px-4 lg:text-base"
+                        onClick={handleOpenStimulation}>
+                        Open in Stimulation Page
                     </button>
                     <button
                         className="py-1 px-2 bg-blue-500 border border-blue-600 text-white font-semibold rounded hover:bg-blue-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
