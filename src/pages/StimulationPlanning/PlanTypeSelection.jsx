@@ -88,7 +88,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                         throw new Error('User not authenticated');
                     }
 
-                    const response = await fetch(`${backendURL}/api/by-patient-stimulation/${initialData.state?.patientId}`, {
+                    const response = await fetch(`${backendURL}/api/by-patient-stimulation/${initialData.state?.patientId}?type=${title}`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
@@ -97,6 +97,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                     });
 
                     const result = await response.json();
+                    console.log(result);
                     
                     if (result.success && result.exists && result.data.type === type) {
                         const dbModifiedDate = result.data.modified_date;
@@ -112,9 +113,11 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                             // Create tab from database file
                             const event = new CustomEvent('addStimulationTab', {
                                 detail: {
-                                    data: result.data.stimulation_data,
+                                    data: {
+                                        type: type,
+                                        data: result.data.stimulation_data,
+                                    },
                                     state: {
-                                        ...result.data,
                                         type: type,
                                         fileName: title,
                                         fileId: result.fileId,
@@ -125,11 +128,18 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                             });
                             window.dispatchEvent(event);
 
-                            // Close plan type selection tab
-                            const closeEvent = new CustomEvent('closeTab', {
-                                detail: { tabId: tabs.find(t => t.content === 'plan-type-selection')?.id }
-                            });
-                            window.dispatchEvent(closeEvent);
+                            // Close the plan type selection tab
+                            const existingPTSTab = tabs.find(tab =>
+                                tab.content === 'stimulation' && 
+                                tab.state?.patientId === initialData.state?.patientId
+                            );
+                            if (existingPTSTab) {
+                                // Close the plan type selection tab
+                                const closeEvent = new CustomEvent('closeTab', {
+                                    detail: { tabId: existingPTSTab.id }
+                                });
+                                window.dispatchEvent(closeEvent);
+                            }
                             return;
                         }
                     }
