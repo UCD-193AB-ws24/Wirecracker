@@ -967,7 +967,7 @@ const HomePage = () => {
                 title: fileData.name,
                 content: type,
                 data: {
-                    data: tests, // Pass the array of electrodes
+                    data: contacts, // Pass the array of electrodes
                     tests: tests
                 },
                 state: {

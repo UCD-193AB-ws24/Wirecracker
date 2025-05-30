@@ -345,6 +345,7 @@ function parseTests(csvData) {
         const duration = parseFloat(row.Duration) || 3.0;
         const current = parseFloat(row.Current) || 2.445;
         const testID = row.TestID.trim() || "No test";
+        const isPlanning = row.IsPlanning ? row.IsPlanning.trim() === "true" : true; // Default to true if not specified
 
         // Process associated location based on GM presence
         if (associatedLocation === 'GM') {
@@ -374,6 +375,7 @@ function parseTests(csvData) {
             duration: duration,
             frequency: frequency,
             current: current,
+            isPlanning: isPlanning
         };
 
         // Add to contacts array at the correct index (contactNumber - 1)
@@ -681,7 +683,8 @@ export function saveTestCSVFile(testData, contacts, patientId = '', createdDate 
             "Duration",
             "Current",
             "TestID",
-            "TestName"
+            "TestName",
+            "IsPlanning"
         ];
 
     // Create CSV rows
@@ -702,7 +705,8 @@ export function saveTestCSVFile(testData, contacts, patientId = '', createdDate 
                     contact.duration, // Duration
                     contact.current, // Current
                     "No test", // No test
-                    "No test name" // No test name
+                    "No test name", // No test name
+                    contact.isPlanning // IsPlanning
                 ].join(",");
             }
             return contactTests.map(test => {
@@ -719,7 +723,8 @@ export function saveTestCSVFile(testData, contacts, patientId = '', createdDate 
                     contact.duration, // Duration
                     contact.current, // Current
                     test.id, // TestID
-                    test.name || "" // TestName
+                    test.name || "", // TestName
+                    contact.isPlanning // IsPlanning
                 ].join(",");
             });
         }).join("\n");

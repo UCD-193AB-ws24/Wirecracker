@@ -380,26 +380,26 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     window.dispatchEvent(activateEvent);
                 }
             } else {
-                // If the user never made designation page before with the patient
+                // If the user never made resection page before with the patient
                 const token = localStorage.getItem('token');
                 if (!token) {
                     showError('User not authenticated. Please log in to open epilepsy.');
                     return;
                 }
 
-                const response = await fetch(`${backendURL}/api/by-patient/${state.patientId}`, {
+                const response = await fetch(`${backendURL}/api/by-patient/${state.patientId}?type=resection`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to check for existing designation data');
+                    throw new Error('Failed to check for existing neurosurgery data');
                 }
 
                 const result = await response.json();
 
-                // Create a new tab with the designation data
+                // Create a new tab with the neurosurgery data
                 const event = new CustomEvent('addResectionTab', {
                     detail: {
                         data: result.exists ? {

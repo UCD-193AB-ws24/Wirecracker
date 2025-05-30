@@ -1,0 +1,9 @@
+### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR TEST PLANNING ###
+### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###
+PatientID:978694d8-5445-4b46-89df-8a1615cf5fee
+CreatedDate:2025-05-30T04:52:31.855Z
+ModifiedDate:2025-05-30T04:52:41.855Z
+FileID:580751854
+Label,ContactNumber,ElectrodeDescription,ContactDescription,AssociatedLocation,Mark,SurgeonMark,Pair,Frequency,Duration,Current,TestID,TestName,IsPlanning
+A',1,Left Amygdala,Left Amygdala,Left Amygdala,1,true,2,105.225,3,2.445,No test,No test name,true
+A',2,Left Amygdala,Left Amygdala,Left Amygdala,2,true,1,105.225,3,2.445,No test,No test name,true
