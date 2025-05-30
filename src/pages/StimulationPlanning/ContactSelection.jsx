@@ -485,21 +485,8 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
                 fileId: state.fileId,
                 email: shareEmail,
                 testSelectionData: {
-                    tests: electrodes,
-                    contacts: Object.keys(electrodes).reduce((acc, electrodeLabel) => {
-                        const electrode = electrodes[electrodeLabel];
-                        Object.entries(electrode).forEach(([key, value]) => {
-                            if (!isNaN(parseInt(key))) {
-                                acc.push({
-                                    contactNumber: parseInt(key),
-                                    electrodeLabel: electrodeLabel,
-                                    contactDescription: value.contactDescription || electrode.description,
-                                    associatedLocation: value.associatedLocation || 'WM'
-                                });
-                            }
-                        });
-                        return acc;
-                    }, [])
+                    contacts: electrodes,
+                    tests: {}
                 }
             });
 
@@ -513,21 +500,8 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
                     fileId: state.fileId,
                     email: shareEmail,
                     testSelectionData: {
-                        tests: electrodes,
-                        contacts: Object.keys(electrodes).reduce((acc, electrodeLabel) => {
-                            const electrode = electrodes[electrodeLabel];
-                            Object.entries(electrode).forEach(([key, value]) => {
-                                if (!isNaN(parseInt(key))) {
-                                    acc.push({
-                                        contactNumber: parseInt(key),
-                                        electrodeLabel: electrodeLabel,
-                                        contactDescription: value.contactDescription || electrode.description,
-                                        associatedLocation: value.associatedLocation || 'WM'
-                                    });
-                                }
-                            });
-                            return acc;
-                        }, [])
+                        contacts: electrodes,
+                        tests: {}
                     }
                 })
             });
