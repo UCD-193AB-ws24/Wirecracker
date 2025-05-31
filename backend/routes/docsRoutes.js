@@ -15,7 +15,13 @@ router.get('/usage-docs/:docPath', async (req, res) => {
         const safePath = docPath.replace(/\.\.\//g, '').replace(/\//g, '');
 
         // Path to markdown files directory
-        const projectRoot = path.join('.', '..', '..');
+        // In vercel, contents in process.cwd() are ["backend","config.dev.json","config.prod.json","docs","node_modules"]
+        let projectRoot;
+        if (process.env.NODE_ENV === 'development') {
+            projectRoot = path.join(process.cwd(), '..');
+        } else {
+            projectRoot = process.cwd();
+        }
         const docsDir = path.join(projectRoot, 'docs');
         let filePath = path.join(docsDir, `${safePath}.md`);
 
