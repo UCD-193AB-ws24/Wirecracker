@@ -26,9 +26,6 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
      * Store if NIFTI image is loaded or not
      */
     const [imageLoaded, setImageLoaded] = useState(savedState.isLoaded || false);
-    const [showShareModal, setShowShareModal] = useState(false);
-    const [shareEmail, setShareEmail] = useState('');
-    const [isSharing, setIsSharing] = useState(false);
 
     useEffect(() => {
         onStateChange({
@@ -47,34 +44,21 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
      */
     const [localizationData, setLocalizationData] = useState(() => {
         if (savedState && savedState.localizationData) {
-            return structuredClone(savedState.localizationData);
+            return JSON.parse(JSON.stringify(savedState.localizationData));
         }
-        return initialData?.originalData ? structuredClone(initialData.originalData) : null;
+        return initialData?.data.originalData ? JSON.parse(JSON.stringify(initialData.data.originalData)) : null;
     });
 
     /**
     * Store electrodes data
     */
     const [electrodes, setElectrodes] = useState(() => {
-        // If there are previous state that can be recalled
         if (savedState && savedState.electrodes) {
-            return JSON.parse(JSON.stringify(savedState.electrodes));
+            return savedState.electrodes;
         }
 
-        // New page, made from localization page. Process data here.
-        if (initialData && Object.keys(initialData).length !== 0) {
-            return initialData.data.map(electrode => ({
-                ...electrode,
-                contacts: electrode.contacts.map((contact, index) => ({
-                    ...contact,
-                    id: `${electrode.label}${index + 1}`,
-                    electrodeLabel: electrode.label,
-                    index: index + 1,
-                    mark: contact.mark || 0,
-                    surgeonMark: contact.surgeonMark || false,
-                    focus: false
-                })),
-            }));
+        if (initialData && initialData.data.electrodes) {
+            return initialData.data.electrodes;
         }
     });
 
@@ -91,18 +75,6 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
         };
         setState(newState);
     }, [electrodes, localizationData]);
-
-    // Update electrodes if there are any update from designation tab stored in the channel
-    useEffect(() => {
-        const channel = JSON.parse(localStorage.getItem("Designation_Resection_Sync_Channel") || '{}');
-        if (channel[state.patientId]) {
-            setElectrodes(channel[state.patientId]);
-            handleSave();
-        }
-
-        delete channel[state.patientId];
-        localStorage.setItem("Designation_Resection_Sync_Channel", JSON.stringify(channel));
-    }, []);
 
     /**
      * Handles contact click event
@@ -121,13 +93,6 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }));
 
         setElectrodes(updatedElectrode);
-
-        // Set the updated electrode in designated "channel" in localstorage
-        const prevChannel = JSON.parse(localStorage.getItem("Designation_Resection_Sync_Channel"));
-        localStorage.setItem("Designation_Resection_Sync_Channel", JSON.stringify({
-            ...prevChannel,
-            [state.patientId]: updatedElectrode
-        }))
     };
 
     /**
@@ -206,7 +171,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
             // Then export to CSV as before
             if (localizationData) {
                 // If we have localization data, use it to create a CSV with the same format
-                saveDesignationCSVFile(electrodes, localizationData, false);
+                saveDesignationCSVFile(electrodes, localizationData, state.patientId, state.creationDate, state.modifiedDate, false, 'resection', state.fileId);
             } else {
                 // Fall back to the simple logging if no localization data
                 for (let electrode of electrodes) {
@@ -296,7 +261,7 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
             // Then export to CSV as before
             if (localizationData) {
                 // If we have localization data, use it to create a CSV with the same format
-                saveDesignationCSVFile(electrodes, localizationData, true);
+                saveDesignationCSVFile(electrodes, localizationData, state.patientId, state.creationDate, state.modifiedDate, true, 'resection', state.fileId);
             } else {
                 // Fall back to the simple logging if no localization data
                 for (let electrode of electrodes) {
@@ -317,178 +282,53 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
     };
 
     /**
-     * Handles dispatching event to open resection tab
+     * Handles dispatching event to open stimulation tab
      * @async
-     * @returns {Promise<void>}
      */
-    const handleOpenDesignation = async () => {
+    const handleOpenStimulation = async () => {
         try {
-            await handleSave();
-
-            let designationData = {
-                electrodes,
-                originalData: localizationData
-            };
-
-            // Check for existing designation tabs
-            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const existingTab = tabs.find(tab =>
-                (tab.content === 'csv-designation' || tab.content === 'designation') &&
-                tab.state?.patientId === state.patientId
-            );
-
-            if (existingTab) {
-                // Compare the current designation data with the existing tab's data
-                const currentDesignationData = structuredClone(designationData.electrodes);
-                const existingDesignationData = structuredClone(existingTab.state.electrodes);
-
-                // Remove surgeonmark from consideration
-                currentDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.mark = 0));
-                existingDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.mark = 0));
-
-                const hasDesignationChanged = JSON.stringify(currentDesignationData) !== JSON.stringify(existingDesignationData);
-
-                if (hasDesignationChanged) {
-                    // Close the existing tab
-                    const closeEvent = new CustomEvent('closeTab', {
-                        detail: { tabId: existingTab.id }
-                    });
-                    window.dispatchEvent(closeEvent);
-
-                    // Create a new tab with updated data
-                    const event = new CustomEvent('addDesignationTab', {
-                        detail: {
-                            data: designationData,
-                            patientId: state.patientId,
-                            state: {
-                                patientId: state.patientId,
-                                fileId: existingTab.state?.fileId || null,
-                                fileName: state.fileName,
-                                creationDate: state.creationDate,
-                                modifiedDate: new Date().toISOString()
-                            }
-                        }
-                    });
-                    window.dispatchEvent(event);
-                } else {
-                    // Just set the existing tab as active
-                    const activateEvent = new CustomEvent('setActiveTab', {
-                        detail: { tabId: existingTab.id }
-                    });
-                    window.dispatchEvent(activateEvent);
-                }
-            } else {
-                // If the user never made designation page before with the patient
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    showError('User not authenticated. Please log in to open epilepsy.');
-                    return;
-                }
-
-                const response = await fetch(`${backendURL}/api/by-patient/${state.patientId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+            let stimulationData = electrodes.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map((contact, index) => {
+                    let pair = index;
+                    if (index == 0) pair = 2;
+                    return {
+                        ...contact,
+                        pair: pair,
+                        isPlanning: false,
+                        duration: 3.0,
+                        frequency: 105.225,
+                        current: 2.445,
                     }
-                });
+                }),
+            }));
 
-                if (!response.ok) {
-                    throw new Error('Failed to check for existing designation data');
-                }
-
-                const result = await response.json();
-
-                // Create a new tab with the designation data
-                const event = new CustomEvent('addDesignationTab', {
-                    detail: {
-                        data: result.exists ? {
-                            electrodes: result.data.designation_data,
-                            originalData: result.data.localization_data
-                        } : designationData,
+            // Create a new tab with the stimulation data
+            const event = new CustomEvent('addStimulationTab', {
+                detail: { 
+                    data: stimulationData,
+                    patientId: state.patientId,
+                    state: {
                         patientId: state.patientId,
-                        state: {
-                            patientId: state.patientId,
-                            fileId: result.exists ? result.fileId : null,
-                            fileName: state.fileName,
-                            creationDate: state.creationDate,
-                            modifiedDate: new Date().toISOString()
-                        }
+                        fileId: state.fileId,
+                        fileName: state.fileName,
+                        creationDate: state.creationDate,
+                        modifiedDate: new Date().toISOString(),
+                        designationModifiedDate: state.modifiedDate,
+                        fromDesignation: true
                     }
-                });
-                window.dispatchEvent(event);
-            }
+                }
+            });
+            window.dispatchEvent(event);
+
+            await handleSave();
         } catch (error) {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
-                showWarning("No internet connection. The progress is not saved on the database.");
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
             } else {
-                console.error('Error saving neurosurgery:', error);
-                showError(`Error saving neurosurgery: ${error.message}`);
-                return;
+                console.error('Error opening stimulation:', error);
+                showError('Failed to open stimulation. Please try again.');
             }
-        }
-    };
-
-    const handleShareWithEpileptologist = async () => {
-        if (!shareEmail) {
-            showError('Please enter an email address');
-            return;
-        }
-
-        setIsSharing(true);
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
-            console.log('Starting share process...');
-            console.log('Current state:', {
-                fileId: state.fileId,
-                patientId: state.patientId,
-                electrodes
-            });
-
-            // First save the neurosurgery file
-            console.log('Saving neurosurgery file...');
-            await handleSave();
-            console.log('Neurosurgery file saved successfully');
-
-            // Now share the file
-            console.log('Sharing file with epileptologist...');
-            const response = await fetch(`${backendURL}/api/files/share-with-epileptologist`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    fileId: state.fileId,
-                    email: shareEmail,
-                    designationData: electrodes,
-                    localizationData: localizationData
-                })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                console.error('Failed to share file:', error);
-                throw new Error(error.error || 'Failed to share file');
-            }
-
-            const result = await response.json();
-            console.log('File shared successfully:', result);
-            showWarning('File shared successfully with epileptologist');
-            setShowShareModal(false);
-            setShareEmail('');
-        } catch (error) {
-            console.error('Error sharing file:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                cause: error.cause
-            });
-            showError(error.message);
-        } finally {
-            setIsSharing(false);
         }
     };
 
@@ -556,56 +396,11 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     <button
                         className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
                                     lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleOpenDesignation}>
-                        Open in Epilepsy Page
-                    </button>
-                    <button
-                        className="py-1 px-2 bg-blue-500 border border-blue-600 text-white font-semibold rounded hover:bg-blue-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
-                                    lg:py-2 lg:px-4 lg:text-base"
-                        onClick={() => setShowShareModal(true)}>
-                        Share with Epileptologist
+                        onClick={handleOpenStimulation}>
+                        Open in Stimulation Page
                     </button>
                 </div>
             </div>
-
-            {showShareModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
-                        <h2 className="text-xl font-bold mb-4">Share with Epileptologist</h2>
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Epileptologist's Email
-                            </label>
-                            <input
-                                type="email"
-                                value={shareEmail}
-                                onChange={(e) => setShareEmail(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                                placeholder="Enter email address"
-                            />
-                        </div>
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={() => {
-                                    setShowShareModal(false);
-                                    setShareEmail('');
-                                }}
-                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                                disabled={isSharing}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleShareWithEpileptologist}
-                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                                disabled={isSharing}
-                            >
-                                {isSharing ? 'Sharing...' : 'Share'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

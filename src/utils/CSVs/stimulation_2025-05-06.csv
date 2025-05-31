@@ -1,9 +1,0 @@
-### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR FUNCTIONAL MAPPING PLANNING ###
-### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###
-Label,ContactNumber,ElectrodeDescription,ContactDescription,AssociatedLocation,Mark,SurgeonMark,Pair,IsPlanning,Frequency,Duration,Current,PlanOrder
-of',1,Left Orbitofrontal,Left Orbitofrontal,Left Orbitofrontal,1,false,2,false,105.225,3,2.445,-1
-of',2,Left Orbitofrontal,Left Orbitofrontal,WM,1,false,1,true,105.225,3,2.445,0
-of',3,Left Orbitofrontal,Left Orbitofrontal,,0,false,2,false,105.225,3,2.445,-1
-of',4,Left Orbitofrontal,Left Orbitofrontal,,0,false,3,false,105.225,3,2.445,-1
-of',5,Left Orbitofrontal,Left Orbitofrontal,,0,false,4,false,105.225,3,2.445,-1
-of',6,Left Orbitofrontal,Left Orbitofrontal,OOB,0,false,5,false,105.225,3,2.445,-1

@@ -559,7 +559,11 @@ const HomePage = () => {
     // Add event listener for functional mapping tab creation
     useEffect(() => {
         const handleAddFunctionalTestTab = (event) => {
-            addTab('functional-test', event.detail);
+            if (event.detail.fromTestSelection) {
+                addTab('functional-test', {data: event.detail.data.contacts, tests: event.detail.data.tests, state: event.detail.state});
+            } else {
+                addTab('functional-test', event.detail);
+            }
         };
 
         window.addEventListener('addFunctionalTestTab', handleAddFunctionalTestTab);
@@ -644,7 +648,7 @@ const HomePage = () => {
                 patientId = data ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'csv-localization':
-                title = 'CSV Anatomy';
+                title = 'Anatomy';
                 patientId = data.patientId ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'designation':
@@ -836,22 +840,22 @@ const HomePage = () => {
         setError("");
 
         try {
-            const { identifier, data } = await parseCSVFile(file, false, (msg) => setError(msg));
+            const { identifier, data, metadata } = await parseCSVFile(file, false, (msg) => setError(msg));
             // TODO: add resection option
             if (identifier === Identifiers.LOCALIZATION) {
-                addTab('csv-localization', { name: file.name, data });
+                openSavedFile('localization', { name: 'Anatomy', data: {data: data}, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
+            } else if (identifier === Identifiers.RESECTION) {
+                openSavedFile('resection', { name: 'Neurosurgery', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             } else if (identifier === Identifiers.DESIGNATION) {
-                addTab('csv-designation', { name: file.name, data });
-            } else if (identifier === Identifiers.STIMULATION) {
-                addTab('csv-stimulation', { name: file.name, data });
-            }else if (identifier === Identifiers.STIMULATION_FUNCTION) {
-                addTab('functional-mapping', { name: file.name, data });
+                openSavedFile('designation', { name: 'Epilepsy', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
+            } else if (identifier === Identifiers.STIMULATION_FUNCTION) {
+                openSavedFile('functional-mapping', { name: 'Functional Mapping', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }else if (identifier === Identifiers.STIMULATION_RECREATION) {
-                addTab('seizure-recreation', { name: file.name, data });
+                openSavedFile('seizure-recreation', { name: 'Seizure Recreation', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }else if (identifier === Identifiers.STIMULATION_CCEP) {
-                addTab('cceps', { name: file.name, data });
+                openSavedFile('cceps', { name: 'CCEPs', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }else if (identifier === Identifiers.TEST_PLANNING) {
-                addTab('csv-functional-test', { name: file.name, data });
+                openSavedFile('csv-functional-test', { name: 'Neuropsychology', data: {data : data}, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }
         } catch (err) {
             setError(err.message);
@@ -967,7 +971,7 @@ const HomePage = () => {
                 title: fileData.name,
                 content: type,
                 data: {
-                    data: tests, // Pass the array of electrodes
+                    data: contacts, // Pass the array of electrodes
                     tests: tests
                 },
                 state: {
@@ -1340,7 +1344,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                        md:w-40 md:text-sm
                                        lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                        xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
-                        options="Open-Local Open-Database"
+                        options="From-CSV-File From-Database"
                         optionClassName="block w-34 py-1 text-xs text-gray-700 hover:bg-gray-100
                                          md:w-40
                                          lg:w-48 lg:py-2 lg:text-sm
@@ -1351,10 +1355,10 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                        xl:w-64"
                         onOptionClick={(option) => {
                             switch(option) {
-                                case "Open-Local":
+                                case "From-CSV-File":
                                     document.getElementById('fileInput').click();
                                     break;
-                                case "Open-Database":
+                                case "From-Database":
                                     loadPatients(1);
                                     setShowDatabaseModal(true);
                                     break;
@@ -1582,20 +1586,20 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             icon: '📍'
         },
         {
-            name: 'Neurosurgery',
-            type: 'resection',
-            exists: patient.has_resection,
-            fileId: patient.resection_file_id,
-            message: 'No neurosurgery file created yet',
-            icon: '🔪'
-        },
-        {
             name: 'Epilepsy',
             type: 'designation',
             exists: patient.has_designation,
             fileId: patient.designation_file_id,
             message: 'No epilepsy file created yet',
             icon: '📝'
+        },
+        {
+            name: 'Neurosurgery',
+            type: 'resection',
+            exists: patient.has_resection,
+            fileId: patient.resection_file_id,
+            message: 'No neurosurgery file created yet',
+            icon: '🔪'
         },
         {
             name: 'Stimulation',
@@ -1824,7 +1828,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             for (const file of flattenedFiles) {
                 console.log('Opening file:', file);
                 await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay between each file
-                openSavedFile(file.type, file, false);
+                openSavedFile(file.type, file);
             }
 
             // After opening all files, switch to the appropriate tab

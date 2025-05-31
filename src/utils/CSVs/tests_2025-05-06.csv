@@ -1,4 +1,0 @@
-### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR TEST PLANNING ###
-### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###
-Label,ContactNumber,ElectrodeDescription,ContactDescription,AssociatedLocation,Mark,SurgeonMark,Pair,Frequency,Duration,Current,TestID
-of',2,Left Orbitofrontal,Left Orbitofrontal,WM,0,false,1,105.225,3,2.445,309

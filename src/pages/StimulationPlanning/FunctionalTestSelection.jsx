@@ -35,8 +35,8 @@ const FunctionalTestSelection = ({
             return contactsData.map(electrode => {
                 // Create pairs of consecutive contacts where at least one has a surgeon mark
                 return mapConsecutive(electrode.contacts, 2, contacts => {
-                    // Return the pair if either contact has a surgeon mark
-                    return (contacts[0].surgeonMark && contacts[1].surgeonMark) ? contacts : null;
+                    // Return the pair if first contact is planning
+                    return (contacts[0].isPlanning) ? contacts : null;
                 });
             })
             .flat()
@@ -49,7 +49,7 @@ const FunctionalTestSelection = ({
         if (savedState.tests) return savedState.tests;
         if (initialData.tests) {
             let loadedTests = {};
-            Object.entries(initialData.data.tests).map(([contactID, tests]) => { // for each contact
+            Object.entries(initialData.tests).map(([contactID, tests]) => { // for each contact
                 loadedTests[contactID] = tests.map(test => {
                     if (!(test.name && test.region && test.description && test.population && test.disruptionRate && test.tag)) {
                         return allAvailableTests.find(candidate => candidate.id === test.id);
@@ -304,59 +304,25 @@ const FunctionalTestSelection = ({
         } finally {
             // Then export to CSV if download is true
             if (download) {
-                saveTestCSVFile(tests, contacts, download);
+                saveTestCSVFile(tests, contacts, state.patientId, state.creationDate, state.modifiedDate, download, state.fileId);
             }
         }
     };
 
-    const handleOpenStimulation = async () => {
-        try {
-            // Format the data for stimulation
-            const stimulationContacts = initialData.data?.data || initialData.data;
-            let stimulationData = stimulationContacts.map(electrode => ({
-                ...electrode,
-                contacts: electrode.contacts.map((contact, index) => {
-                    let pair = index;
-                    if (index == 0) pair = 2;
-                    return {
-                        ...contact,
-                        pair: pair,
-                        isPlanning: false,
-                        duration: 3.0,
-                        frequency: 105.225,
-                        current: 2.445,
-                    }
-                }),
-            }));
-
-            // Create a new tab with the stimulation data
-            const event = new CustomEvent('addStimulationTab', {
-                detail: { 
-                    data: stimulationData,
-                    patientId: savedState.patientId,
-                    state: {
-                        patientId: savedState.patientId,
-                        fileId: savedState.fileId,
-                        fileName: savedState.fileName,
-                        creationDate: savedState.creationDate,
-                        modifiedDate: new Date().toISOString(),
-                        testSelectionModifiedDate: savedState.modifiedDate,
-                        fromTestSelection: true
-                    }
-                }
-            });
-            window.dispatchEvent(event);
-
-            await exportTests(tests, initialData.data?.data || initialData.data, false);
-        } catch (error) {
-            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
-                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
-            } else {
-                console.error('Error opening stimulation:', error);
-                showError('Failed to open stimulation. Please try again.');
-            }
+    function getMarkColor(contact) {
+        switch (contact.mark) {
+            case 0:
+                return "bg-white";
+            case 1:
+                return "bg-rose-300";
+            case 2:
+                return "bg-amber-300";
+            case 3:
+                return "bg-stone-300";
+            default:
+                return "bg-white";
         }
-    };
+    }
 
     return (
         <div className="p-12 bg-gray-50 min-h-auto">
@@ -377,15 +343,22 @@ const FunctionalTestSelection = ({
                 {contactPairs.map((contactPair) => (
                     <div
                         key={contactPair[0].id}
-                        className="border p-4 mb-4 rounded-lg shadow-sm bg-gray-100"
+                        className={`p-4 mb-4 rounded-lg shadow-sm ${getMarkColor(contactPair[0])} ${contactPair[0].surgeonMark || contactPair[1].surgeonMark ? 'border-2 border-stone-500' : 'border border-gray-300'}`}
                     >
                         <div className="flex justify-between items-center">
-                            <span className="font-semibold text-lg">
-                                {contactPair[0].id}-{contactPair[1].id}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold text-lg">
+                                    {contactPair[0].id}-{contactPair[1].id}
+                                </span>
+                            </div>
                             <span className="text-gray-600 text-sm">
                                 {contactPair[0].associatedLocation} - {contactPair[1].associatedLocation}
                             </span>
+                        </div>
+                        <div className="text-gray-500 text-sm">
+                            Duration: {contactPair[0].duration} sec | Frequency:{" "}
+                            {contactPair[0].frequency} Hz | Current: {contactPair[0].current}{" "}
+                            mA
                         </div>
 
                         {/* Display added tests */}
@@ -595,12 +568,6 @@ const FunctionalTestSelection = ({
                     onClick={() => exportTests(tests, initialData.data?.data || initialData.data)}
                 >
                     Export
-                </button>
-                <button
-                    className="py-2 px-4 bg-purple-500 text-white font-bold rounded hover:bg-purple-700 border border-purple-700 shadow-lg"
-                    onClick={handleOpenStimulation}
-                >
-                    Open in Stimulation
                 </button>
             </div>
         </div>
