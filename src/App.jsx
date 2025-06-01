@@ -1700,6 +1700,18 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                 onClose();
                 return;
             }
+            else {
+                const existingPatientTab = existingTabs.find(tab => tab.state?.patientId === patient.patient_id);
+                if (existingPatientTab) {
+                    // Close all tabs for this patient
+                    const patientTabIds = existingTabs
+                        .filter(tab => tab.state?.patientId === patient.patient_id)
+                        .map(tab => tab.id);
+                    for (const tabId of patientTabIds) {
+                        window.dispatchEvent(new CustomEvent('closeTab', { detail: { tabId: tabId } }));
+                    }
+                }
+            }
 
             // If this is a shared file, mark it as seen
             try {
