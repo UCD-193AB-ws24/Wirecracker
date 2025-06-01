@@ -842,19 +842,19 @@ const HomePage = () => {
         try {
             const { identifier, data, metadata } = await parseCSVFile(file, false, (msg) => setError(msg));
             // TODO: add resection option
-            if (identifier === Identifiers.LOCALIZATION) {
+            if (identifier.includes(Identifiers.LOCALIZATION)) {
                 openSavedFile('localization', { name: 'Anatomy', data: {data: data}, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            } else if (identifier === Identifiers.RESECTION) {
+            } else if (identifier.includes(Identifiers.RESECTION)) {
                 openSavedFile('resection', { name: 'Neurosurgery', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            } else if (identifier === Identifiers.DESIGNATION) {
+            } else if (identifier.includes(Identifiers.DESIGNATION)) {
                 openSavedFile('designation', { name: 'Epilepsy', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            } else if (identifier === Identifiers.STIMULATION_FUNCTION) {
+            } else if (identifier.includes(Identifiers.STIMULATION_FUNCTION)) {
                 openSavedFile('functional-mapping', { name: 'Functional Mapping', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            }else if (identifier === Identifiers.STIMULATION_RECREATION) {
+            }else if (identifier.includes(Identifiers.STIMULATION_RECREATION)) {
                 openSavedFile('seizure-recreation', { name: 'Seizure Recreation', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            }else if (identifier === Identifiers.STIMULATION_CCEP) {
+            }else if (identifier.includes(Identifiers.STIMULATION_CCEP)) {
                 openSavedFile('cceps', { name: 'CCEPs', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            }else if (identifier === Identifiers.TEST_PLANNING) {
+            }else if (identifier.includes(Identifiers.TEST_PLANNING)) {
                 openSavedFile('csv-functional-test', { name: 'Neuropsychology', data: {data : data}, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }
         } catch (err) {

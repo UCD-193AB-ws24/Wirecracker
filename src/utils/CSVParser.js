@@ -44,15 +44,15 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
 
             if (!coordinates && (lines.length < 2 ||
                 (
-                    lines[0].trim() !== Identifiers.TEST_PLANNING &&
-                    lines[0].trim() !== Identifiers.LOCALIZATION &&
-                    lines[0].trim() !== Identifiers.DESIGNATION &&
-                    lines[0].trim() !== Identifiers.STIMULATION &&
-                    lines[0].trim() !== Identifiers.STIMULATION_FUNCTION &&
-                    lines[0].trim() !== Identifiers.STIMULATION_RECREATION &&
-                    lines[0].trim() !== Identifiers.STIMULATION_CCEP &&
-                    lines[0].trim() !== Identifiers.RESECTION
-                ) || lines[1].trim() !== IDENTIFIER_LINE_2 )) {
+                    !lines[0].trim().includes(Identifiers.TEST_PLANNING) &&
+                    !lines[0].trim().includes(Identifiers.LOCALIZATION) &&
+                    !lines[0].trim().includes(Identifiers.DESIGNATION) &&
+                    !lines[0].trim().includes(Identifiers.STIMULATION) &&
+                    !lines[0].trim().includes(Identifiers.STIMULATION_FUNCTION) &&
+                    !lines[0].trim().includes(Identifiers.STIMULATION_RECREATION) &&
+                    !lines[0].trim().includes(Identifiers.STIMULATION_CCEP) &&
+                    !lines[0].trim().includes(Identifiers.RESECTION)
+                ) || !lines[1].trim().includes(IDENTIFIER_LINE_2) )) {
                 const errorMsg = "Invalid file. The first line must be the correct identifier.";
                 if (showError) showError(errorMsg);
                 reject(new Error(errorMsg));
@@ -89,11 +89,11 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
                 csvWithoutIdentifier = lines.join("\n");
             }
 
-            if (identifier === Identifiers.LOCALIZATION) {
+            if (identifier.includes(Identifiers.LOCALIZATION)) {
                 resolve({ identifier, data: parseLocalization(csvWithoutIdentifier), metadata });
                 return;
             }
-            else if (identifier === Identifiers.DESIGNATION || identifier === Identifiers.RESECTION) {
+            else if (identifier.includes(Identifiers.DESIGNATION) || identifier.includes(Identifiers.RESECTION)) {
                 // First parse as localization to get the original structure
                 const localizationData = parseLocalization(csvWithoutIdentifier);
                 // Then parse as designation for the current state
@@ -108,12 +108,12 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
                 });
                 return;
             }
-            else if (identifier === Identifiers.STIMULATION || identifier === Identifiers.STIMULATION_FUNCTION || identifier === Identifiers.STIMULATION_RECREATION || identifier === Identifiers.STIMULATION_CCEP) {
+            else if (identifier.includes(Identifiers.STIMULATION) || identifier.includes(Identifiers.STIMULATION_FUNCTION) || identifier.includes(Identifiers.STIMULATION_RECREATION) || identifier.includes(Identifiers.STIMULATION_CCEP)) {
                 const stimulationData = parseStimulation(csvWithoutIdentifier);
                 resolve({identifier, data: stimulationData, metadata});
                 return;
             }
-            else if (identifier === Identifiers.TEST_PLANNING) {
+            else if (identifier.includes(Identifiers.TEST_PLANNING)) {
                 resolve({ identifier, data: parseTests(csvWithoutIdentifier), metadata });
                 return;
             }
