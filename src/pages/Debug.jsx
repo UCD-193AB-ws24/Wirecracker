@@ -79,7 +79,7 @@ const Debug = () => {
         }
     };
 
-    const displayData = identifier === Identifiers.LOCALIZATION ? flattenData(csvData) : csvData;
+    const displayData = identifier.includes(Identifiers.LOCALIZATION) ? flattenData(csvData) : csvData;
 
     return (
         <div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
 import { useError } from '../../context/ErrorContext';
+import { useWarning } from '../../context/WarningContext';
 
 const backendURL = __APP_CONFIG__.backendURL;
 
@@ -23,29 +24,46 @@ const backendURL = __APP_CONFIG__.backendURL;
 const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
     // Function to show error at the top of the screen
     const { showError } = useError();
+    const { showWarning } = useWarning();
     const [state, setState] = useState(savedState);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [shareEmail, setShareEmail] = useState('');
+    const [isSharing, setIsSharing] = useState(false);
 
     /**
      * Store original localization for saving / exporting later
      */
     const [localizationData, setLocalizationData] = useState(() => {
         if (savedState && savedState.localizationData) {
-            return JSON.parse(JSON.stringify(savedState.localizationData));
+            return structuredClone(savedState.localizationData);
         }
-        return initialData?.data.originalData ? JSON.parse(JSON.stringify(initialData.data.originalData)) : null;
+        return initialData?.originalData ? structuredClone(initialData.originalData) : null;
     });
 
     /**
     * Store electrodes data
     */
     const [electrodes, setElectrodes] = useState(() => {
+        // If there are previous state that can be recalled
         if (savedState && savedState.electrodes) {
-            return savedState.electrodes;
+            return JSON.parse(JSON.stringify(savedState.electrodes));
         }
 
-        if (initialData && initialData.data.electrodes) {
-            return initialData.data.electrodes;
+        // New page, made from localization page. Process data here.
+        if (initialData && Object.keys(initialData).length !== 0) {
+            return initialData.data.map(electrode => ({
+                ...electrode,
+                contacts: electrode.contacts.map((contact, index) => ({
+                    ...contact,
+                    id: `${electrode.label}${index + 1}`,
+                    electrodeLabel: electrode.label,
+                    index: index + 1,
+                    mark: contact.mark || 0,
+                    surgeonMark: contact.surgeonMark || false,
+                    focus: false
+                })),
+            }));
         }
     });
 
@@ -67,18 +85,6 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         setState(newState);
     }, [electrodes, localizationData]);
 
-    // Update electrodes if there are any update from resection tab stored in the channel
-    useEffect(() => {
-        const channel = JSON.parse(localStorage.getItem("Designation_Resection_Sync_Channel"));
-        if (channel[state.patientId]) {
-            setElectrodes(channel[state.patientId]);
-            handleSave();
-        }
-
-        delete channel[state.patientId];
-        localStorage.setItem("Designation_Resection_Sync_Channel", JSON.stringify(channel));
-    }, []);
-
     /**
      * Handles contact click event
      * @param {string} contactId - ID of the clicked contact
@@ -96,13 +102,6 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
         }));
 
         setElectrodes(updatedElectrode);
-
-        // Set the updated electrode in designated "channel" in localstorage
-        const prevChannel = JSON.parse(localStorage.getItem("Designation_Resection_Sync_Channel"));
-        localStorage.setItem("Designation_Resection_Sync_Channel", JSON.stringify({
-            ...prevChannel,
-            [state.patientId]: updatedElectrode
-        }))
     };
 
     // Handle filtering whenever filter character changes
@@ -211,7 +210,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
             // Then export to CSV as before
             if (localizationData) {
                 // If we have localization data, use it to create a CSV with the same format
-                saveDesignationCSVFile(electrodes, localizationData, state.patientId, state.creationDate, state.modifiedDate, false);
+                saveDesignationCSVFile(electrodes, localizationData, state.patientId, state.creationDate, state.modifiedDate, false, 'designation', state.fileId);
             } else {
                 // Fall back to the simple logging if no localization data
                 for (let electrode of electrodes) {
@@ -300,7 +299,7 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
             // Then export to CSV as before
             if (localizationData) {
                 // If we have localization data, use it to create a CSV with the same format
-                saveDesignationCSVFile(electrodes, localizationData, state.patientId, state.creationDate, state.modifiedDate, true);
+                saveDesignationCSVFile(electrodes, localizationData, state.patientId, state.creationDate, state.modifiedDate, true, 'designation', state.fileId);
             } else {
                 // Fall back to the simple logging if no localization data
                 for (let electrode of electrodes) {
@@ -319,159 +318,179 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
             }
         }
     };
-
     /**
-     * Handles dispatching event to open stimulation tab
+     * Handles dispatching event to open resection tab
      * @async
+     * @returns {Promise<void>}
      */
-    const handleOpenStimulation = async () => {
-        try {
-            let stimulationData = electrodes.map(electrode => ({
-                ...electrode,
-                contacts: electrode.contacts.map((contact, index) => {
-                    let pair = index;
-                    if (index == 0) pair = 2;
-                    return {
-                        ...contact,
-                        pair: pair,
-                        isPlanning: false,
-                        duration: 3.0,
-                        frequency: 105.225,
-                        current: 2.445,
-                    }
-                }),
-            }));
-
-            // Create a new tab with the stimulation data
-            const event = new CustomEvent('addStimulationTab', {
-                detail: { 
-                    data: stimulationData,
-                    patientId: state.patientId,
-                    state: {
-                        patientId: state.patientId,
-                        fileId: state.fileId,
-                        fileName: state.fileName,
-                        creationDate: state.creationDate,
-                        modifiedDate: new Date().toISOString(),
-                        designationModifiedDate: state.modifiedDate,
-                        fromDesignation: true
-                    }
-                }
-            });
-            window.dispatchEvent(event);
-
-            await handleSave();
-        } catch (error) {
-            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
-                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
-            } else {
-                console.error('Error opening stimulation:', error);
-                showError('Failed to open stimulation. Please try again.');
-            }
-        }
-    };
-
-    /**
-     * Handles opening the test selection page
-     * @async
-     */
-    const handleOpenTestSelection = async () => {
+    const handleOpenResection = async () => {
         try {
             await handleSave();
 
-            // First check if any test selection tabs for this patient already exist
+            let designationData = {
+                electrodes,
+                originalData: localizationData
+            };
+
+            // Check for existing designation tabs
             const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
-            const existingTab = tabs.find(tab => 
-                (tab.content === 'functional-test' || tab.content === 'csv-functional-test') && 
+            const existingTab = tabs.find(tab =>
+                (tab.content === 'resection') &&
                 tab.state?.patientId === state.patientId
             );
 
             if (existingTab) {
-                // Compare modified dates
-                const existingModifiedDate = existingTab.state.modifiedDate;
-                const designationModifiedDate = state.modifiedDate;
+                // Compare the current designation data with the existing tab's data
+                const currentDesignationData = structuredClone(designationData.electrodes);
+                const existingDesignationData = structuredClone(existingTab.state.electrodes);
 
-                if (existingModifiedDate > designationModifiedDate) {
-                    // Switch to existing tab as it's newer
-                    const activateEvent = new CustomEvent('setActiveTab', {
-                        detail: { tabId: existingTab.id }
-                    });
-                    window.dispatchEvent(activateEvent);
-                    return;
-                } else {
-                    // Close existing tab as it's older
+                // Remove surgeonmark from consideration
+                currentDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.mark = 0));
+                existingDesignationData.forEach(electrode => electrode.contacts.forEach(contact => contact.mark = 0));
+
+                const hasDesignationChanged = JSON.stringify(currentDesignationData) !== JSON.stringify(existingDesignationData);
+
+                if (hasDesignationChanged) {
+                    // Close the existing tab
                     const closeEvent = new CustomEvent('closeTab', {
                         detail: { tabId: existingTab.id }
                     });
                     window.dispatchEvent(closeEvent);
-                }
-            } else {
-                // Check database for existing file
-                try {
-                    const token = localStorage.getItem('token');
-                    if (!token) {
-                        throw new Error('User not authenticated');
-                    }
 
-                    const response = await fetch(`${backendURL}/api/by-patient-test/${state.patientId}`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': token
+                    // Create a new tab with updated data
+                    const event = new CustomEvent('addResectionTab', {
+                        detail: {
+                            data: designationData,
+                            patientId: state.patientId,
+                            state: {
+                                patientId: state.patientId,
+                                fileId: existingTab.state?.fileId || null,
+                                fileName: state.fileName,
+                                creationDate: state.creationDate,
+                                modifiedDate: new Date().toISOString()
+                            }
                         }
                     });
+                    window.dispatchEvent(event);
+                } else {
+                    // Just set the existing tab as active
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
+                }
+            } else {
+                // If the user never made resection page before with the patient
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showError('User not authenticated. Please log in to open epilepsy.');
+                    return;
+                }
 
-                    const result = await response.json();
-                    
-                    if (result.success && result.exists) {
-                        const dbModifiedDate = result.data.modified_date;
-                        const designationModifiedDate = state.modifiedDate;
+                const response = await fetch(`${backendURL}/api/by-patient/${state.patientId}?type=resection`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
 
-                        if (dbModifiedDate > designationModifiedDate) {
-                            // Create tab from database file
-                            const event = new CustomEvent('addFunctionalTestTab', {
-                                detail: {
-                                    data: result.data.test_selection_data,
-                                    state: {
-                                        ...result.data,
-                                        fileName: 'Neuropsychology',
-                                        fileId: result.fileId,
-                                        patientId: state.patientId
-                                    }
-                                }
-                            });
-                            window.dispatchEvent(event);
-                            return;
+                if (!response.ok) {
+                    throw new Error('Failed to check for existing neurosurgery data');
+                }
+
+                const result = await response.json();
+
+                // Create a new tab with the neurosurgery data
+                const event = new CustomEvent('addResectionTab', {
+                    detail: {
+                        data: result.exists ? {
+                            electrodes: result.data.designation_data,
+                            originalData: result.data.localization_data
+                        } : designationData,
+                        patientId: state.patientId,
+                        state: {
+                            patientId: state.patientId,
+                            fileId: result.exists ? result.fileId : null,
+                            fileName: state.fileName,
+                            creationDate: state.creationDate,
+                            modifiedDate: new Date().toISOString()
                         }
                     }
-                } catch (error) {
-                    console.error('Error checking database for existing file:', error);
-                    // Continue with creating new tab if database check fails
-                }
+                });
+                window.dispatchEvent(event);
             }
-
-            // Create a new tab with the test selection data
-            const event = new CustomEvent('addFunctionalTestTab', {
-                detail: { 
-                    data: electrodes,
-                    state: {
-                        patientId: state.patientId,
-                        fileId: existingTab?.state?.fileId || null,
-                        fileName: 'Neuropsychology',
-                        creationDate: state.creationDate,
-                        modifiedDate: new Date().toISOString()
-                    }
-                }
-            });
-            window.dispatchEvent(event);
-
         } catch (error) {
             if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
-                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+                showWarning("No internet connection. The progress is not saved on the database.");
             } else {
-                console.error('Error opening test selection:', error);
-                showError('Failed to open test selection. Please try again.');
+                console.error('Error saving epilepsy:', error);
+                showError(`Error saving epilepsy: ${error.message}`);
+                return;
             }
+        }
+    };
+
+    const handleShareWithNeurosurgeon = async () => {
+        if (!shareEmail) {
+            showError('Please enter an email address');
+            return;
+        }
+
+        setIsSharing(true);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            console.log('Starting share process...');
+            console.log('Current state:', {
+                fileId: state.fileId,
+                patientId: state.patientId,
+                electrodes
+            });
+
+            // First save the neurosurgery file
+            console.log('Saving epilepsy file...');
+            await handleSave();
+            console.log('Epilepsy file saved successfully');
+
+            // Now share the file
+            console.log('Sharing file with neurosurgeon...');
+            const response = await fetch(`${backendURL}/api/files/share-with-neurosurgeon`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    fileId: state.fileId,
+                    email: shareEmail,
+                    designationData: electrodes,
+                    localizationData: localizationData
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('Failed to share file:', error);
+                throw new Error(error.error || 'Failed to share file');
+            }
+
+            const result = await response.json();
+            console.log('File shared successfully:', result);
+            showWarning('File shared successfully with neurosurgeon');
+            setShowShareModal(false);
+            setShareEmail('');
+        } catch (error) {
+            console.error('Error sharing file:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                cause: error.cause
+            });
+            showError(error.message);
+        } finally {
+            setIsSharing(false);
         }
     };
 
@@ -512,43 +531,79 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1
                             lg:bottom-6 lg:right-6 lg:flex-row lg:gap-2">
-                <div className="flex flex-row gap-1
-                                lg:gap-2">
-                    <div className="relative">
-                        <button
-                            className="grow py-1 px-2 bg-sky-600 text-white text-sm font-semibold rounded transition-colors duration-200 cursor-pointer hover:bg-sky-700 border border-sky-700 shadow-lg
-                                    lg:py-2 lg:px-4 lg:text-base"
-                            onClick={handleSave}
-                        >
-                            Save
-                        </button>
-                        {showSaveSuccess && (
-                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap z-50">
-                                Save successful!
-                            </div>
-                        )}
-                    </div>
+                <div className="flex flex-col gap-1 lg:flex-row lg:gap-2">
                     <button
                         className="grow py-1 px-2 bg-green-500 text-white font-semibold rounded border border-green-600 hover:bg-green-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
                                     lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleExport}
+                        onClick={handleSave}
                     >
-                        Export
+                        Save
                     </button>
-                    <button
+                    {showSaveSuccess && (
+                        <div className="text-green-600 text-sm">
+                            Save successful!
+                        </div>
+                    )}
+                </div>
+                <button
+                    className="grow py-1 px-2 bg-green-500 text-white font-semibold rounded border border-green-600 hover:bg-green-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                lg:py-2 lg:px-4 lg:text-base"
+                    onClick={handleExport}
+                >
+                    Export
+                </button>
+                <button
+                    className="py-1 px-2 bg-blue-500 border border-blue-600 text-white font-semibold rounded hover:bg-blue-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
+                                lg:py-2 lg:px-4 lg:text-base"
+                    onClick={() => setShowShareModal(true)}>
+                    Share with Neurosurgeon
+                </button>
+                <button
                         className="py-1 px-2 bg-purple-500 border border-purple-600 text-white font-semibold rounded hover:bg-purple-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
                                     lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleOpenStimulation}>
-                        Open in Stimulation Page
-                    </button>
-                    <button
-                        className="py-1 px-2 bg-indigo-500 border border-indigo-600 text-white font-semibold rounded hover:bg-indigo-600 transition-colors duration-200 text-sm cursor-pointer shadow-lg
-                                    lg:py-2 lg:px-4 lg:text-base"
-                        onClick={handleOpenTestSelection}>
-                        Open in Neuropsychology
-                    </button>
-                </div>
+                    onClick={handleOpenResection}>
+                    Open in Neurosurgery
+                </button>
             </div>
+
+            {showShareModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+                        <h2 className="text-xl font-bold mb-4">Share with Neurosurgeon</h2>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Neurosurgeon's Email
+                            </label>
+                            <input
+                                type="email"
+                                value={shareEmail}
+                                onChange={(e) => setShareEmail(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-md"
+                                placeholder="Enter email address"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => {
+                                    setShowShareModal(false);
+                                    setShareEmail('');
+                                }}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                disabled={isSharing}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleShareWithNeurosurgeon}
+                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                disabled={isSharing}
+                            >
+                                {isSharing ? 'Sharing...' : 'Share'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

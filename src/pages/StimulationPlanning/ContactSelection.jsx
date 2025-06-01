@@ -8,6 +8,9 @@ import { saveStimulationCSVFile } from "../../utils/CSVParser";
 import mapConsecutive from "../../utils/MapConsecutive";
 import { useError } from '../../context/ErrorContext';
 import { useWarning } from '../../context/WarningContext';
+import HelpButton from "../../utils/HelpButton";
+
+const backendURL = __APP_CONFIG__.backendURL;
 
 const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, switchContent, type = 'mapping' }) => {
     const { showError } = useError();
@@ -133,6 +136,10 @@ const ContactSelection = ({ initialData = {}, onStateChange, savedState = {}, sw
 
                 <PlanningPane state={state} electrodes={electrodes} contactPairs={planningContacts} onDrop={handleDropToPlanning} onDropBack={handleDropBackToList} submitFlag={submitPlanning} setSubmitFlag={setSubmitPlanning} setElectrodes={setElectrodes} onStateChange={setState} savedState={state} type={type} />
             </div>
+            <HelpButton
+                title="Contact Stimulation Page Help"
+                instructions="Click on or drag contact pairs in and out of the planning panel on the right. Select the length of time and power of the stimulation test."
+            />
             <Container className="">
                 <Button
                     tooltip="Toggle unmarked contacts"
@@ -263,6 +270,9 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
     const [hoverIndex, setHoverIndex] = useState(null);
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
     const { showWarning } = useWarning();
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [shareEmail, setShareEmail] = useState('');
+    const [isSharing, setIsSharing] = useState(false);
 
     let index = hoverIndex; // For synchronization between hover and drop
 
@@ -334,42 +344,262 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
         }
     };
 
+    /**
+     * Handles opening the test selection page
+     * @async
+     */
+    const handleOpenTestSelection = async () => {
+        try {
+            await handleSave();
+
+            // First check if any test selection tabs for this patient already exist
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            const existingTab = tabs.find(tab => 
+                (tab.content === 'functional-test' || tab.content === 'csv-functional-test') && 
+                tab.state?.patientId === state.patientId
+            );
+
+            if (existingTab) {
+                // Compare modified dates
+                const existingModifiedDate = existingTab.state.modifiedDate;
+                const stimulationModifiedDate = state.modifiedDate;
+
+                if (existingModifiedDate > stimulationModifiedDate) {
+                    // Switch to existing tab as it's newer
+                    const activateEvent = new CustomEvent('setActiveTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(activateEvent);
+                    return;
+                } else {
+                    // Close existing tab as it's older
+                    const closeEvent = new CustomEvent('closeTab', {
+                        detail: { tabId: existingTab.id }
+                    });
+                    window.dispatchEvent(closeEvent);
+                }
+            } else {
+                // Check database for existing file
+                try {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        throw new Error('User not authenticated');
+                    }
+
+                    const response = await fetch(`${backendURL}/api/by-patient-test/${state.patientId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        }
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success && result.exists) {
+                        const dbModifiedDate = result.modifiedDate;
+                        const stimulationModifiedDate = state.modifiedDate;
+
+                        if (dbModifiedDate > stimulationModifiedDate) {
+                            // Create tab from database file
+                            const event = new CustomEvent('addFunctionalTestTab', {
+                                detail: {
+                                    fromTestSelection: true,
+                                    data: result.data,
+                                    state: {
+                                        fileName: 'Neuropsychology',
+                                        fileId: result.fileId,
+                                        patientId: state.patientId,
+                                        modifiedDate: result.modifiedDate
+                                    }
+                                }
+                            });
+                            window.dispatchEvent(event);
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking database for existing file:', error);
+                    // Continue with creating new tab if database check fails
+                }
+            }
+
+            // Create a new tab with the test selection data
+            const event = new CustomEvent('addFunctionalTestTab', {
+                detail: { 
+                    data: electrodes,
+                    state: {
+                        patientId: state.patientId,
+                        fileId: existingTab?.state?.fileId || null,
+                        fileName: 'Neuropsychology',
+                        creationDate: state.creationDate,
+                        modifiedDate: new Date().toISOString()
+                    }
+                }
+            });
+            window.dispatchEvent(event);
+
+        } catch (error) {
+            if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                showWarning("No internet connection. The progress is not saved on the database. Make sure to download your progress.");
+            } else {
+                console.error('Error opening test selection:', error);
+                showError('Failed to open test selection. Please try again.');
+            }
+        }
+    };
+
+    const handleShareWithNeuropsychologist = async () => {
+        if (!shareEmail) {
+            showError('Please enter an email address');
+            return;
+        }
+
+        setIsSharing(true);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            console.log('Starting share process...');
+            console.log('Current state:', {
+                fileId: state.fileId,
+                patientId: state.patientId,
+                electrodes
+            });
+
+            // First save the epilepsy file
+            console.log('Saving epilepsy file...');
+            await handleSave();
+            console.log('Epilepsy file saved successfully');
+
+            // Now share the file
+            console.log('Sharing file with neuropsychologist...');
+            console.log('Request URL:', `${backendURL}/api/files/share-with-neuropsychologist`);
+            console.log('Request headers:', {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            });
+            console.log('Request body:', {
+                fileId: state.fileId,
+                email: shareEmail,
+                testSelectionData: {
+                    contacts: electrodes,
+                    tests: {}
+                }
+            });
+
+            const response = await fetch(`${backendURL}/api/files/share-with-neuropsychologist`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    fileId: state.fileId,
+                    email: shareEmail,
+                    testSelectionData: {
+                        contacts: electrodes,
+                        tests: {}
+                    }
+                })
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+            
+            // Log the raw response text first
+            const responseText = await response.text();
+            console.log('Raw response:', responseText);
+
+            // Try to parse as JSON if possible
+            let result;
+            try {
+                result = JSON.parse(responseText);
+                console.log('Parsed response:', result);
+            } catch (parseError) {
+                console.error('Failed to parse response as JSON:', parseError);
+                throw new Error(`Invalid response format: ${responseText.substring(0, 100)}...`);
+            }
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to share file');
+            }
+
+            if (result.success) {
+                showWarning('File shared successfully with neuropsychologist');
+                setShowShareModal(false);
+                setShareEmail('');
+            } else {
+                throw new Error(result.error || 'Failed to share file');
+            }
+        } catch (error) {
+            console.error('Error sharing file:', error);
+            showError(error.message || 'Failed to share file with neuropsychologist');
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
     return (
         <div ref={drop} className={`p-4 w-1/4 border-l shadow-lg ${isOver ? "bg-gray-100" : ""}`}>
-            <div className="flex justify-between items-center mb-4">
-                <div>
-                    <h2 className="text-xl font-semibold">Planning</h2>
-                    <p className="text-sm text-gray-600">{getStimulationTypeDisplay()}</p>
-                </div>
-                <div className="flex space-x-2">
-                    <div className="relative">
-                        <button
-                            className={`py-2 px-4 bg-green-500 text-white font-bold rounded ${
-                                contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700 border border-green-700"
-                            }`}
-                            onClick={handleSave}
-                            disabled={contactPairs.length === 0}
-                        >
-                            Save
-                        </button>
-                        {showSaveSuccess && (
-                            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap z-50">
-                                Save successful!
-                            </div>
-                        )}
-                    </div>
-
+            {/* First row of buttons */}
+            <div className="flex space-x-2 mb-4">
+                <div className="relative w-1/2">
                     <button
-                        className={`py-2 px-4 bg-sky-500 text-white font-bold rounded ${
-                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-sky-700 border border-sky-700"
+                        className={`w-full py-2 px-4 bg-green-500 text-white font-bold rounded ${
+                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700 border border-green-700"
                         }`}
-                        onClick={handleExport}
+                        onClick={handleSave}
                         disabled={contactPairs.length === 0}
                     >
-                        Export
+                        Save
+                    </button>
+                    {showSaveSuccess && (
+                        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm whitespace-nowrap z-50">
+                            Save successful!
+                        </div>
+                    )}
+                </div>
+                <button
+                    className={`w-1/2 py-2 px-4 bg-sky-500 text-white font-bold rounded ${
+                        contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-sky-700 border border-sky-700"
+                    }`}
+                    onClick={handleExport}
+                    disabled={contactPairs.length === 0}
+                >
+                    Export
+                </button>
+            </div>
+
+            {/* Second row of buttons - only show for functional mapping */}
+            {type === 'mapping' && (
+                <div className="flex space-x-2 mb-4">
+                    <button
+                        className={`flex-1 py-2 px-4 bg-blue-500 border border-blue-600 text-white font-semibold rounded transition-colors duration-200 shadow-lg ${
+                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600 cursor-pointer"
+                        }`}
+                        onClick={() => setShowShareModal(true)}
+                        disabled={contactPairs.length === 0}>
+                        Share with Neuropsychologist
+                    </button>
+                    <button
+                        className={`flex-1 py-2 px-4 bg-indigo-500 border border-indigo-600 text-white font-semibold rounded transition-colors duration-200 shadow-lg ${
+                            contactPairs.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-indigo-600 cursor-pointer"
+                        }`}
+                        onClick={handleOpenTestSelection}
+                        disabled={contactPairs.length === 0}>
+                        Open in Neuropsychology
                     </button>
                 </div>
+            )}
+
+            <div className="mb-4">
+                <h2 className="text-xl font-semibold mb-2">Planning</h2>
+                <p className="text-sm text-gray-600">{getStimulationTypeDisplay()}</p>
             </div>
+
             {contactPairs.length === 0 ? (
                 <p className="text-lg text-gray-500">Drag contacts here</p>
             ) : (
@@ -386,6 +616,45 @@ const PlanningPane = ({ state, electrodes, contactPairs, onDrop, onDropBack, sub
                         <div className="h-1 bg-blue-500 w-full my-1"></div>
                     )}
                 </ul>
+            )}
+
+            {showShareModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+                        <h2 className="text-xl font-bold mb-4">Share with Neuropsychologist</h2>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Neuropsychologist's Email
+                            </label>
+                            <input
+                                type="email"
+                                value={shareEmail}
+                                onChange={(e) => setShareEmail(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-md"
+                                placeholder="Enter email address"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => {
+                                    setShowShareModal(false);
+                                    setShareEmail('');
+                                }}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                disabled={isSharing}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleShareWithNeuropsychologist}
+                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                disabled={isSharing}
+                            >
+                                {isSharing ? 'Sharing...' : 'Share'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
@@ -575,7 +844,7 @@ const exportState = async (state, electrodes, type, download = true) => {
         throw error;
     } finally {
         if (download) {
-            saveStimulationCSVFile(electrodes, planOrder, type, state.patientId, state.creationDate, state.modifiedDate, download);
+            saveStimulationCSVFile(electrodes, planOrder, type, state.patientId, state.creationDate, state.modifiedDate, download, state.fileId);
         }
     }
 };

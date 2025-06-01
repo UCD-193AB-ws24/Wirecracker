@@ -88,7 +88,7 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                         throw new Error('User not authenticated');
                     }
 
-                    const response = await fetch(`${backendURL}/api/by-patient-stimulation/${initialData.state?.patientId}`, {
+                    const response = await fetch(`${backendURL}/api/by-patient-stimulation/${initialData.state?.patientId}?type=${title}`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
@@ -112,9 +112,11 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                             // Create tab from database file
                             const event = new CustomEvent('addStimulationTab', {
                                 detail: {
-                                    data: result.data.stimulation_data,
+                                    data: {
+                                        type: type,
+                                        data: result.data.stimulation_data,
+                                    },
                                     state: {
-                                        ...result.data,
                                         type: type,
                                         fileName: title,
                                         fileId: result.fileId,
@@ -125,11 +127,18 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                             });
                             window.dispatchEvent(event);
 
-                            // Close plan type selection tab
-                            const closeEvent = new CustomEvent('closeTab', {
-                                detail: { tabId: tabs.find(t => t.content === 'plan-type-selection')?.id }
-                            });
-                            window.dispatchEvent(closeEvent);
+                            // Close the plan type selection tab
+                            const existingPTSTab = tabs.find(tab =>
+                                tab.content === 'stimulation' && 
+                                tab.state?.patientId === initialData.state?.patientId
+                            );
+                            if (existingPTSTab) {
+                                // Close the plan type selection tab
+                                const closeEvent = new CustomEvent('closeTab', {
+                                    detail: { tabId: existingPTSTab.id }
+                                });
+                                window.dispatchEvent(closeEvent);
+                            }
                             return;
                         }
                     }
@@ -197,22 +206,13 @@ const PlanTypePage = ({ initialData = {}, onStateChange, switchContent }) => {
                 </button>
                 <div className="relative">
                     <button
-                        className={`h-10 w-68 border border-sky-700 text-white font-semibold rounded transition-colors duration-200
+                        className="h-10 w-68 bg-sky-600 hover:bg-sky-700 border border-sky-700 text-white font-semibold rounded cursor-pointer transition-colors duration-200
                                    md:h-11 md:w-80 md:text-lg
                                    lg:h-13 lg:w-96 lg:text-xl
-                                   xl:h-16 xl:w-128 xl:text-2xl
-                                   ${initialData.state?.fromDesignation 
-                                       ? 'bg-gray-400 cursor-not-allowed' 
-                                       : 'bg-sky-600 hover:bg-sky-700 cursor-pointer'}`}
-                        onClick={() => initialData.state?.fromTestSelection && handlePlanTypeSelect('mapping')}
-                        disabled={initialData.state?.fromDesignation}>
+                                   xl:h-16 xl:w-128 xl:text-2xl"
+                        onClick={() => handlePlanTypeSelect('mapping')}>
                         Functional Mapping
                     </button>
-                    {initialData.state?.fromDesignation && (
-                        <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded text-sm whitespace-nowrap">
-                            Functional Mapping can only be opened from Neuropsychology page
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

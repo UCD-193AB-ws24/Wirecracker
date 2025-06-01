@@ -3,7 +3,14 @@
   "builds": [
     {
       "src": "backend/server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["docs/**"]
+      }
+    },
+    {
+      "src": "docs/**",
+      "use": "@vercel/static"
     },
     {
       "src": "./package.json",
@@ -11,7 +18,6 @@
     }
   ],
   "routes": [
-
     {
       "src": "/send-verification-email",
       "dest": "/backend/server.js"
@@ -23,6 +29,10 @@
     {
       "src": "/api/[^.]+",
       "dest": "/backend/server.js"
+    },
+    {
+      "src": "/docs/(.*)",
+      "dest": "/docs/$1"
     },
     {
       "src": "/[^.]+",

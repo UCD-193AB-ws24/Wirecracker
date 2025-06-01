@@ -10,28 +10,21 @@ router.use(express.json());
 router.get('/by-patient-stimulation/:patientId', async (req, res) => {
     try {
         const { patientId } = req.params;
+        const { type } = req.query;
         
         if (!patientId) {
             return res.status(400).json({ 
-                success: false, 
+                success: false,
                 error: 'Missing patient ID' 
-            });
-        }
-
-        // Get the token from the authorization header
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) {
-            return res.status(401).json({ 
-                success: false, 
-                error: 'No authorization token provided' 
             });
         }
 
         // First get the file ID for this patient
         const { data: fileData, error: fileError } = await supabase
             .from('files')
-            .select('file_id')
+            .select('file_id, modified_date')
             .eq('patient_id', patientId)
+            .eq('filename', type)
             .order('creation_date', { ascending: false })
             .limit(1);
 
@@ -80,7 +73,8 @@ router.get('/by-patient-stimulation/:patientId', async (req, res) => {
             data: {
                 stimulation_data: stimulationData[0].stimulation_data,
                 plan_order: stimulationData[0].plan_order,
-                type: stimulationData[0].type
+                type: stimulationData[0].type,
+                modified_date: fileData[0].modified_date
             }
         });
     } catch (error) {

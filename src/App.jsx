@@ -559,7 +559,11 @@ const HomePage = () => {
     // Add event listener for functional mapping tab creation
     useEffect(() => {
         const handleAddFunctionalTestTab = (event) => {
-            addTab('functional-test', event.detail);
+            if (event.detail.fromTestSelection) {
+                addTab('functional-test', {data: event.detail.data.contacts, tests: event.detail.data.tests, state: event.detail.state});
+            } else {
+                addTab('functional-test', event.detail);
+            }
         };
 
         window.addEventListener('addFunctionalTestTab', handleAddFunctionalTestTab);
@@ -644,7 +648,7 @@ const HomePage = () => {
                 patientId = data ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'csv-localization':
-                title = 'CSV Anatomy';
+                title = 'Anatomy';
                 patientId = data.patientId ? data.patientId : generatePatientId(); // Generate UUID for patient_id
                 break;
             case 'designation':
@@ -836,22 +840,79 @@ const HomePage = () => {
         setError("");
 
         try {
-            const { identifier, data } = await parseCSVFile(file, false, (msg) => setError(msg));
-            // TODO: add resection option
-            if (identifier === Identifiers.LOCALIZATION) {
-                addTab('csv-localization', { name: file.name, data });
-            } else if (identifier === Identifiers.DESIGNATION) {
-                addTab('csv-designation', { name: file.name, data });
-            } else if (identifier === Identifiers.STIMULATION) {
-                addTab('csv-stimulation', { name: file.name, data });
-            }else if (identifier === Identifiers.STIMULATION_FUNCTION) {
-                addTab('functional-mapping', { name: file.name, data });
-            }else if (identifier === Identifiers.STIMULATION_RECREATION) {
-                addTab('seizure-recreation', { name: file.name, data });
-            }else if (identifier === Identifiers.STIMULATION_CCEP) {
-                addTab('cceps', { name: file.name, data });
-            }else if (identifier === Identifiers.TEST_PLANNING) {
-                addTab('csv-functional-test', { name: file.name, data });
+            const { identifier, data, metadata } = await parseCSVFile(file, false, (msg) => setError(msg));
+            // Check for existing designation tabs
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            if (identifier.includes(Identifiers.LOCALIZATION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'localization' || tab.content === 'csv-localization') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
+                openSavedFile('localization', { name: 'Anatomy', data: {data: data}, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
+            } else if (identifier.includes(Identifiers.RESECTION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'resection' || tab.content === 'csv-resection') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
+                openSavedFile('resection', { name: 'Neurosurgery', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
+            } else if (identifier.includes(Identifiers.DESIGNATION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'designation' || tab.content === 'csv-designation') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
+                openSavedFile('designation', { name: 'Epilepsy', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
+            } else if (identifier.includes(Identifiers.STIMULATION_FUNCTION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'functional-mapping' || tab.content === 'csv-functional-mapping') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
+                openSavedFile('functional-mapping', { name: 'Functional Mapping', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
+            }else if (identifier.includes(Identifiers.STIMULATION_RECREATION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'seizure-recreation' || tab.content === 'csv-seizure-recreation') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
+                openSavedFile('seizure-recreation', { name: 'Seizure Recreation', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
+            }else if (identifier.includes(Identifiers.STIMULATION_CCEP)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'cceps' || tab.content === 'csv-cceps') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
+                openSavedFile('cceps', { name: 'CCEPs', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
+            }else if (identifier.includes(Identifiers.TEST_PLANNING)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'functional-test' || tab.content === 'csv-functional-test') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
+                openSavedFile('csv-functional-test', { name: 'Neuropsychology', data: {data : data}, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }
         } catch (err) {
             setError(err.message);
@@ -916,20 +977,41 @@ const HomePage = () => {
         }
         else if (type === 'resection') {
             console.log('Opening saved resection file:', fileData);
+
+            // Ensure data is always an array of electrodes
+            let electrodes = fileData.data;
+            if (typeof electrodes === 'string') {
+                electrodes = parseCSVFile(electrodes, false).data;
+            } else if (electrodes && !Array.isArray(electrodes) && electrodes.electrodes) {
+                electrodes = electrodes.electrodes;
+            }
+
+            // Ensure each contact has a unique id
+            if (Array.isArray(electrodes)) {
+                electrodes = electrodes.map(electrode => ({
+                    ...electrode,
+                    contacts: Array.isArray(electrode.contacts)
+                        ? electrode.contacts.map((contact, idx) => ({
+                            ...contact,
+                            id: contact.id || `${electrode.label}${(contact.index || idx + 1)}`
+                        }))
+                        : []
+                }));
+            }
             
             const newTab = {
                 id: Date.now().toString(),
                 title: fileData.name,
                 content: 'resection',
-                data: fileData.data,
+                data: electrodes,
                 state: {
-                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
+                    fileId: parseInt(fileData.fileId),
                     patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
-                    electrodes: fileData.data,
-                    localizationData: fileData.originalData  // This should include the electrode type
+                    electrodes: electrodes,
+                    localizationData: fileData.originalData
                 }
             };
 
@@ -939,22 +1021,24 @@ const HomePage = () => {
             setActiveTab(newTab.id);
         }
         else if (type === 'csv-functional-test') {
+            const tests = fileData.data?.tests || fileData.data.data?.tests || [];
+            const contacts = fileData.data?.contacts || fileData.data.data?.contacts || [];
             const newTab = {
                 id: Date.now().toString(),
                 title: fileData.name,
                 content: type,
                 data: {
-                    data: fileData.data.data.contacts,
-                    tests: fileData.data.data.tests
+                    data: contacts, // Pass the array of electrodes
+                    tests: tests
                 },
                 state: {
-                    fileId: parseInt(fileData.fileId),  // Ensure fileId is an integer
+                    fileId: parseInt(fileData.fileId),
                     patientId: fileData.patientId,
                     fileName: fileData.name,
                     creationDate: fileData.creationDate || new Date().toISOString(),
                     modifiedDate: fileData.modifiedDate || new Date().toISOString(),
-                    tests: fileData.data?.data.tests || fileData.data.tests,
-                    contacts: fileData.data?.data.contacts || fileData.data.contacts
+                    tests: tests,
+                    contacts: contacts
                 }
             };
 
@@ -1012,7 +1096,7 @@ const HomePage = () => {
                         {token ? (
                             <>
                                 <div className="lg:basis-6 lg:flex-auto mt-15 flex flex-col">
-                                    <Activity />
+                                    <Activity openSavedFile={openSavedFile} />
                                     <RecentFiles
                                         onOpenFile={openSavedFile}
                                         className="mt-2 lg:mt-5"
@@ -1317,7 +1401,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                        md:w-40 md:text-sm
                                        lg:w-48 lg:mt-4 lg:py-2 lg:text-md
                                        xl:w-64 xl:mt-5 xl:py-3 xl:text-lg"
-                        options="From-Zip-File From-Database"
+                        options="From-CSV-File From-Database"
                         optionClassName="block w-34 py-1 text-xs text-gray-700 hover:bg-gray-100
                                          md:w-40
                                          lg:w-48 lg:py-2 lg:text-sm
@@ -1328,7 +1412,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
                                        xl:w-64"
                         onOptionClick={(option) => {
                             switch(option) {
-                                case "From-Zip-File":
+                                case "From-CSV-File":
                                     document.getElementById('fileInput').click();
                                     break;
                                 case "From-Database":
@@ -1483,7 +1567,7 @@ const Center = ({ token, onNewLocalization, onFileUpload, error, openSavedFile }
     );
 };
 
-const Activity = () => {
+const Activity = ({ openSavedFile }) => {
     return (
         <div className="lg:mt-20 xl:mt-25">
             <h2 className="text-xl font-bold my-1 whitespace-nowrap
@@ -1493,7 +1577,7 @@ const Activity = () => {
                 My Files
             </h2>
             <div className="mx-2">
-                <ToReview />
+                <NewSharedFile openSavedFile={openSavedFile} />
                 <Approved />
             </div>
         </div>
@@ -1559,20 +1643,20 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             icon: '📍'
         },
         {
-            name: 'Neurosurgery',
-            type: 'resection',
-            exists: patient.has_resection,
-            fileId: patient.resection_file_id,
-            message: 'No neurosurgery file created yet',
-            icon: '🔪'
-        },
-        {
             name: 'Epilepsy',
             type: 'designation',
             exists: patient.has_designation,
             fileId: patient.designation_file_id,
             message: 'No epilepsy file created yet',
             icon: '📝'
+        },
+        {
+            name: 'Neurosurgery',
+            type: 'resection',
+            exists: patient.has_resection,
+            fileId: patient.resection_file_id,
+            message: 'No neurosurgery file created yet',
+            icon: '🔪'
         },
         {
             name: 'Stimulation',
@@ -1615,6 +1699,62 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                 window.dispatchEvent(new CustomEvent('setActiveTab', { detail: { tabId: existingTab.id } }));
                 onClose();
                 return;
+            }
+            else {
+                const existingPatientTab = existingTabs.find(tab => tab.state?.patientId === patient.patient_id);
+                if (existingPatientTab) {
+                    // Close all tabs for this patient
+                    const patientTabIds = existingTabs
+                        .filter(tab => tab.state?.patientId === patient.patient_id)
+                        .map(tab => tab.id);
+                    for (const tabId of patientTabIds) {
+                        window.dispatchEvent(new CustomEvent('closeTab', { detail: { tabId: tabId } }));
+                    }
+                }
+            }
+
+            // If this is a shared file, mark it as seen
+            try {
+                console.log('Attempting to mark files as seen for patient:', patient.patient_id);
+                // Mark each file as seen
+                const fileIds = [];
+                if (patient.localization_file_id) fileIds.push(patient.localization_file_id);
+                if (patient.designation_file_id) fileIds.push(patient.designation_file_id);
+                if (patient.resection_file_id) fileIds.push(patient.resection_file_id);
+                if (patient.test_selection_file_id) fileIds.push(patient.test_selection_file_id);
+                if (patient.stimulation_types.mapping) fileIds.push(patient.stimulation_types.mapping);
+                if (patient.stimulation_types.recreation) fileIds.push(patient.stimulation_types.recreation);
+                if (patient.stimulation_types.ccep) fileIds.push(patient.stimulation_types.ccep);
+
+                console.log('Files to mark as seen:', fileIds);
+
+                // Mark each file as seen
+                await Promise.all(fileIds.map(async (fileId) => {
+                    console.log('Marking file as seen:', fileId);
+                    const markSeenResponse = await fetch(`${backendURL}/api/mark-file-seen/${fileId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!markSeenResponse.ok) {
+                        const errorText = await markSeenResponse.text();
+                        console.error('Failed to mark file as seen:', fileId, 'Response:', errorText);
+                        throw new Error(`Failed to mark file as seen: ${errorText}`);
+                    }
+
+                    const responseData = await markSeenResponse.json();
+                    console.log('Successfully marked file as seen:', fileId, 'Response:', responseData);
+                }));
+
+                console.log('All files marked as seen successfully');
+                // Dispatch event to refresh shared files list
+                window.dispatchEvent(new CustomEvent('refreshSharedFiles'));
+            } catch (error) {
+                console.error('Error marking files as seen:', error);
+                // Continue with opening the file even if marking as seen fails
             }
 
             // If no existing tab found, proceed with loading all files for this patient
@@ -1757,7 +1897,7 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
             for (const file of flattenedFiles) {
                 console.log('Opening file:', file);
                 await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay between each file
-                openSavedFile(file.type, file, false);
+                openSavedFile(file.type, file);
             }
 
             // After opening all files, switch to the appropriate tab
@@ -2160,31 +2300,139 @@ const SignInButtons = () => {
     );
 };
 
-const ToReview = () => {
-    const [isReviewOpen, setIsReviewOpen] = useState(false);
+const NewSharedFile = ({ openSavedFile }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [sharedPatients, setSharedPatients] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedPatient, setSelectedPatient] = useState(null);
+    const [showLegend, setShowLegend] = useState(false);
+    const { showError } = useError();
+    const { showWarning } = useWarning();
 
+    useEffect(() => {
+        const fetchSharedPatients = async () => {
+            setLoading(true);
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    setSharedPatients([]);
+                    return;
+                }
+
+                const response = await fetch(`${backendURL}/api/shared-files`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch shared files');
+                }
+
+                const data = await response.json();
+                setSharedPatients(data.patients || []);
+            } catch (error) {
+                if (error.name === "NetworkError" || error.message.toString().includes("NetworkError")) {
+                    showWarning("No internet connection. Failed to load shared files");
+                } else {
+                    console.error('Error fetching shared patients:', error);
+                    showError('Failed to load shared files');
+                }
+                setSharedPatients([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        fetchSharedPatients();
+        window.addEventListener('refreshSharedFiles', fetchSharedPatients);
+        return () => window.removeEventListener('refreshSharedFiles', fetchSharedPatients);
+    }, [showError]);
+
+    const handlePatientClick = (patient) => {
+        setSelectedPatient(patient);
+    };
+    
     return (
         <div
             className="text-violet-800 text-base font-semibold flex gap-x-2 cursor-pointer
                        md:text-lg
                        lg:text-xl
                        xl:text-2xl"
-            onClick={() => setIsReviewOpen(!isReviewOpen)}
+            onClick={() => setIsOpen(!isOpen)}
         >
-            {isReviewOpen ? (
+            {isOpen ? (
                 <>
                     <div className="before:content-['▾']"></div>
                     <div className="mb-2 lg:mb-4 xl:mb-5 whitespace-nowrap">
-                        <div>To Review</div>
+                        <div className="flex items-center justify-between">
+                            <div>New Shared File</div>
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); setShowLegend(true); }}
+                                className="text-gray-500 text-base
+                                           transition-colors duration-200 cursor-pointer hover:text-gray-700
+                                           lg:text-lg
+                                           xl:text-xl"
+                                title="Show Legend"
+                            >
+                                ?
+                            </button>
+                        </div>
+                        {loading ? <div className="text-xs text-gray-500">Loading...</div> : (
+                            <div className="bg-gray-200 rounded-xl p-2 mt-2">
+                                {sharedPatients.length === 0 ? (
+                                    <div className="text-gray-500">No new shared files</div>
+                                ) : (
+                                    sharedPatients.map(patient => (
+                                        <div
+                                            key={patient.patient_id}
+                                            className="hover:bg-sky-50 hover:text-sky-600 rounded cursor-pointer py-1 pr-1 transition-colors duration-150 flex justify-between items-center"
+                                            onClick={(e) => { e.stopPropagation(); handlePatientClick(patient); }}
+                                        >
+                                            <div className="text-xs truncate max-w-30 patient-id px-1
+                                                            md:max-w-42
+                                                            lg:max-w-50 lg:text-sm lg:px-2
+                                                            xl:max-w-64">
+                                                {formatPatientDisplay(patient)}
+                                            </div>
+                                            <div className="text-xs text-gray-500 ml-2 whitespace-nowrap">
+                                                {patient.has_localization && (
+                                                    <span className="mr-2 cursor-help" title="Anatomy File">📍</span>
+                                                )}
+                                                {patient.has_designation && (
+                                                    <span className="mr-2 cursor-help" title="Epilepsy File">📝</span>
+                                                )}
+                                                {patient.has_resection && (
+                                                    <span className="mr-2 cursor-help" title="Neurosurgery File">🔪</span>
+                                                )}
+                                                {(patient.stimulation_types.mapping || patient.stimulation_types.recreation || patient.stimulation_types.ccep) && (
+                                                    <span className="mr-2 cursor-help" title="Stimulation File">⚡</span>
+                                                )}
+                                                {patient.has_test_selection && (
+                                                    <span className="cursor-help" title="Neuropsychology File">🧪</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
                     </div>
+                    {selectedPatient && (
+                        <PatientDetails
+                            patient={selectedPatient}
+                            onClose={() => setSelectedPatient(null)}
+                            openSavedFile={openSavedFile}
+                        />
+                    )}
+                    <Legend isOpen={showLegend} onClose={() => setShowLegend(false)} />
                 </>
             ) : (
                 <>
                     <div className="before:content-['▸']"></div>
-                    <div>To Review</div>
+                    <div>New Shared File</div>
                 </>
             )}
-            
         </div>
     );
 };
