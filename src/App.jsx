@@ -841,20 +841,77 @@ const HomePage = () => {
 
         try {
             const { identifier, data, metadata } = await parseCSVFile(file, false, (msg) => setError(msg));
-            // TODO: add resection option
+            // Check for existing designation tabs
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
             if (identifier.includes(Identifiers.LOCALIZATION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'localization' || tab.content === 'csv-localization') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('localization', { name: 'Anatomy', data: {data: data}, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             } else if (identifier.includes(Identifiers.RESECTION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'resection' || tab.content === 'csv-resection') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('resection', { name: 'Neurosurgery', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             } else if (identifier.includes(Identifiers.DESIGNATION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'designation' || tab.content === 'csv-designation') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('designation', { name: 'Epilepsy', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             } else if (identifier.includes(Identifiers.STIMULATION_FUNCTION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'functional-mapping' || tab.content === 'csv-functional-mapping') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('functional-mapping', { name: 'Functional Mapping', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }else if (identifier.includes(Identifiers.STIMULATION_RECREATION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'seizure-recreation' || tab.content === 'csv-seizure-recreation') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('seizure-recreation', { name: 'Seizure Recreation', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }else if (identifier.includes(Identifiers.STIMULATION_CCEP)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'cceps' || tab.content === 'csv-cceps') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('cceps', { name: 'CCEPs', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }else if (identifier.includes(Identifiers.TEST_PLANNING)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'functional-test' || tab.content === 'csv-functional-test') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('csv-functional-test', { name: 'Neuropsychology', data: {data : data}, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }
         } catch (err) {
