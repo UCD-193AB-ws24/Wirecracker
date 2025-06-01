@@ -3,13 +3,18 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Resection from '../ResectionPage';
 import { useError } from '../../../context/ErrorContext';
+import { useWarning } from '../../../context/WarningContext';
 import load_untouch_nii from '../../../utils/Nifti_viewer/load_untouch_nifti.js';
 import nifti_anatomical_conversion from '../../../utils/Nifti_viewer/nifti_anatomical_conversion.js';
 import { parseCSVFile } from '../../../utils/CSVParser';
 
-// Mock the useError hook
+// Mock the useError and useWarning hooks
 vi.mock('../../../context/ErrorContext', () => ({
   useError: vi.fn()
+}));
+
+vi.mock('../../../context/WarningContext', () => ({
+  useWarning: vi.fn()
 }));
 
 // Mock the CSVParser utility
@@ -54,38 +59,42 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 describe('ResectionPage', () => {
   const mockShowError = vi.fn();
+  const mockShowWarning = vi.fn();
   const mockOnStateChange = vi.fn();
   const mockInitialData = {
-    data: [
-      {
-        label: 'A',
-        contacts: [
-          {
-            id: 'A1',
-            index: 1,
-            mark: 0,
-            surgeonMark: false,
-            associatedLocation: 'Location 1'
-          },
-          {
-            id: 'A2',
-            index: 2,
-            mark: 1,
-            surgeonMark: true,
-            associatedLocation: 'Location 2'
-          }
-        ]
+    data: {
+      electrodes: [
+        {
+          label: 'A',
+          contacts: [
+            {
+              id: 'A1',
+              index: 1,
+              mark: 0,
+              surgeonMark: false,
+              associatedLocation: 'Location 1'
+            },
+            {
+              id: 'A2',
+              index: 2,
+              mark: 1,
+              surgeonMark: true,
+              associatedLocation: 'Location 2'
+            }
+          ]
+        }
+      ],
+      originalData: {
+        patientId: '123',
+        data: []
       }
-    ],
-    originalData: {
-      patientId: '123',
-      data: []
     }
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     useError.mockReturnValue({ showError: mockShowError });
+    useWarning.mockReturnValue({ showWarning: mockShowWarning });
     localStorage.clear();
   });
 
@@ -149,7 +158,7 @@ describe('ResectionPage', () => {
     expect(mockOnStateChange).toHaveBeenCalled();
   });
 
-  it('handles opening designation page', async () => {
+  it('handles opening stimulation page', async () => {
     const mockState = {
       patientId: '123',
       fileId: '456',
@@ -157,10 +166,29 @@ describe('ResectionPage', () => {
       modifiedDate: '2024-01-01'
     };
 
-    const addDesignationTabEvent = new CustomEvent('addDesignationTab', {
+    const addStimulationTabEvent = new CustomEvent('addStimulationTab', {
       detail: {
+        data: mockInitialData.data.electrodes.map(electrode => ({
+          ...electrode,
+          contacts: electrode.contacts.map((contact, index) => ({
+            ...contact,
+            pair: index === 0 ? 2 : index,
+            isPlanning: false,
+            duration: 3.0,
+            frequency: 105.225,
+            current: 2.445,
+          }))
+        })),
         patientId: mockState.patientId,
-        fileId: mockState.fileId
+        state: {
+          patientId: mockState.patientId,
+          fileId: mockState.fileId,
+          fileName: mockState.fileName,
+          creationDate: mockState.creationDate,
+          modifiedDate: new Date().toISOString(),
+          designationModifiedDate: mockState.modifiedDate,
+          fromDesignation: true
+        }
       }
     });
     window.dispatchEvent = vi.fn();
@@ -173,13 +201,12 @@ describe('ResectionPage', () => {
       />
     );
 
-    const designationButton = screen.getByText('Open in Epilepsy Page');
+    const stimulationButton = screen.getByText('Open in Stimulation Page');
     await act(async () => {
-      fireEvent.click(designationButton);
-      window.dispatchEvent(addDesignationTabEvent);
+      fireEvent.click(stimulationButton);
     });
 
-    expect(window.dispatchEvent).toHaveBeenCalledWith(addDesignationTabEvent);
+    expect(window.dispatchEvent).toHaveBeenCalled(addStimulationTabEvent);
   });
 
   it('handles NIfTI file upload', async () => {

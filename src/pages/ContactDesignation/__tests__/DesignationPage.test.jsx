@@ -3,10 +3,15 @@ import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom';
 import Designation from '../DesignationPage';
 import { useError } from '../../../context/ErrorContext';
+import { useWarning } from '../../../context/WarningContext';
 
-// Mock the useError hook
+// Mock the useError and useWarning hooks
 vi.mock('../../../context/ErrorContext', () => ({
   useError: vi.fn()
+}));
+
+vi.mock('../../../context/WarningContext', () => ({
+  useWarning: vi.fn()
 }));
 
 // Mock the CSVParser utility
@@ -14,62 +19,42 @@ vi.mock('../../../utils/CSVParser', () => ({
   saveDesignationCSVFile: vi.fn()
 }));
 
-// Mock localStorage
-const localStorageMock = (() => {
-  let store = {
-    "Designation_Resection_Sync_Channel": JSON.stringify({})
-  };
-  return {
-    getItem: vi.fn(key => store[key]),
-    setItem: vi.fn((key, value) => {
-      store[key] = value;
-    }),
-    clear: () => {
-      store = {
-        "Designation_Resection_Sync_Channel": JSON.stringify({})
-      };
-    }
-  };
-})();
-
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-
 describe('DesignationPage', () => {
   const mockShowError = vi.fn();
+  const mockShowWarning = vi.fn();
   const mockOnStateChange = vi.fn();
   const mockInitialData = {
-    data: {
-      electrodes: [
-        {
-          label: 'A',
-          contacts: [
-            {
-              id: 'A1',
-              index: 1,
-              mark: 0,
-              surgeonMark: false,
-              associatedLocation: 'Location 1'
-            },
-            {
-              id: 'A2',
-              index: 2,
-              mark: 1,
-              surgeonMark: true,
-              associatedLocation: 'Location 2'
-            }
-          ]
-        }
-      ],
-      originalData: {
-        patientId: '123',
-        data: []
+    data: [
+      {
+        label: 'A',
+        contacts: [
+          {
+            id: 'A1',
+            index: 1,
+            mark: 0,
+            surgeonMark: false,
+            associatedLocation: 'Location 1'
+          },
+          {
+            id: 'A2',
+            index: 2,
+            mark: 1,
+            surgeonMark: true,
+            associatedLocation: 'Location 2'
+          }
+        ]
       }
+    ],
+    originalData: {
+      patientId: '123',
+      data: []
     }
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     useError.mockReturnValue({ showError: mockShowError });
+    useWarning.mockReturnValue({ showWarning: mockShowWarning });
     localStorage.clear();
   });
 
@@ -133,7 +118,7 @@ describe('DesignationPage', () => {
     expect(mockOnStateChange).toHaveBeenCalled();
   });
 
-  it('handles opening stimulation page', async () => {
+  it('handles opening resection page', async () => {
     const mockState = {
       patientId: '123',
       fileId: '456',
@@ -141,12 +126,36 @@ describe('DesignationPage', () => {
       modifiedDate: '2024-01-01'
     };
 
-    const addStimulationTabEvent = new CustomEvent('addStimulationTab', {
+    const addResectionTabEvent = new CustomEvent('addResectionTab', {
       detail: {
+        data: {
+          electrodes: mockInitialData.data,
+          originalData: mockInitialData.originalData
+        },
         patientId: mockState.patientId,
-        fileId: mockState.fileId
+        state: {
+          patientId: mockState.patientId,
+          fileId: mockState.fileId,
+          fileName: mockState.fileName,
+          creationDate: mockState.creationDate,
+          modifiedDate: new Date().toISOString()
+        }
       }
     });
+
+    // Mock fetch for checking existing resection data
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ exists: false })
+    });
+
+    // Mock localStorage
+    Storage.prototype.getItem = vi.fn().mockImplementation((key) => {
+      if (key === 'token') return 'mock-token';
+      if (key === 'tabs') return '[]';
+      return null;
+    });
+
     window.dispatchEvent = vi.fn();
 
     render(
@@ -157,29 +166,25 @@ describe('DesignationPage', () => {
       />
     );
 
-    const stimulationButton = screen.getByText('Open in Stimulation Page');
+    const resectionButton = screen.getByText('Open in Neurosurgery');
+    
     await act(async () => {
-      fireEvent.click(stimulationButton);
+      fireEvent.click(resectionButton);
     });
 
-    expect(window.dispatchEvent).toHaveBeenCalledWith(addStimulationTabEvent);
+    // Wait for all promises to resolve
+    await waitFor(() => {
+      expect(window.dispatchEvent).toHaveBeenCalledWith(addResectionTabEvent);
+    });
   });
 
-  it('handles opening test selection page', async () => {
+  it('handles sharing with neurosurgeon', async () => {
     const mockState = {
       patientId: '123',
       fileId: '456',
       creationDate: '2024-01-01',
       modifiedDate: '2024-01-01'
     };
-
-    const addFunctionalTestTabEvent = new CustomEvent('addFunctionalTestTab', {
-      detail: {
-        patientId: mockState.patientId,
-        fileId: mockState.fileId
-      }
-    });
-    window.dispatchEvent = vi.fn();
 
     render(
       <Designation 
@@ -189,12 +194,21 @@ describe('DesignationPage', () => {
       />
     );
 
-    const testSelectionButton = screen.getByText('Open in Neuropsychology');
+    // Open share modal
+    const shareButton = screen.getByText('Share with Neurosurgeon');
+    fireEvent.click(shareButton);
+
+    // Enter email
+    const emailInput = screen.getByPlaceholderText('Enter email address');
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+
+    // Click share
+    const shareSubmitButton = screen.getByText('Share');
     await act(async () => {
-      fireEvent.click(testSelectionButton);
+      fireEvent.click(shareSubmitButton);
     });
 
-    expect(window.dispatchEvent).toHaveBeenCalledWith(addFunctionalTestTabEvent);
+    expect(mockOnStateChange).toHaveBeenCalled();
   });
 
   it('handles keyboard filtering', async () => {
