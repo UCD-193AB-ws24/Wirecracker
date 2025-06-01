@@ -12,7 +12,6 @@ import DatabaseTable from "./pages/DatabaseTable";
 import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
 import { parseCSVFile, Identifiers } from './utils/CSVParser';
 import Localization from './pages/Localization';
-import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
 import Designation from './pages/ContactDesignation/DesignationPage';
 import Resection from './pages/ContactDesignation/ResectionPage';
 import { FcGoogle } from 'react-icons/fc';
