@@ -23,6 +23,12 @@ vi.mock('../../../utils/CSVParser', () => ({
   parseCSVFile: vi.fn()
 }));
 
+// Mock the HelpButton component
+vi.mock("../../utils/HelpButton", () => ({
+    __esModule: true,
+    default: (props) => <div data-testid="help-btn">{props.title}</div>,
+}));
+
 // Mock the Nifti viewer utilities
 vi.mock('../../../utils/Nifti_viewer/load_untouch_nifti.js', () => ({
   default: vi.fn()
@@ -371,5 +377,12 @@ describe('ResectionPage', () => {
     fireEvent.wheel(mainCanvas, { deltaY: 100 });
 
     expect(mockOnStateChange).toHaveBeenCalled();
+  });
+
+  test("HelpButton renders with correct props", async () => {
+    await act(async () => {
+      render(<FunctionalTestSelection initialData={mockInitialData} />);
+    });
+    expect(screen.getByTestId("help-btn").textContent).toContain("Resection Page Help");
   });
 });

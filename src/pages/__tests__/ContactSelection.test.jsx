@@ -40,6 +40,8 @@ vi.mock("../../utils/MapConsecutive", () => ({
         return out;
     },
 }));
+
+// Mock the HelpButton component
 vi.mock("../../utils/HelpButton", () => ({
     __esModule: true,
     default: (props) => <div data-testid="help-btn">{props.title}</div>,
@@ -265,5 +267,12 @@ describe("ContactSelection", () => {
         // Should have bg-rose-300 for mark 1
         const planningContact = screen.getByText(/A2-3/).closest("li");
         expect(planningContact.className).toContain("bg-rose-300");
+    });
+
+    test("HelpButton renders with correct props", async () => {
+        await act(async () => {
+            render(<FunctionalTestSelection initialData={mockInitialData} />);
+        });
+        expect(screen.getByTestId("help-btn").textContent).toContain("Contact Stimulation Page Help");
     });
 });

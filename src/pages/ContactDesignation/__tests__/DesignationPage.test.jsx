@@ -19,6 +19,12 @@ vi.mock('../../../utils/CSVParser', () => ({
   saveDesignationCSVFile: vi.fn()
 }));
 
+// Mock the HelpButton component
+vi.mock("../../utils/HelpButton", () => ({
+    __esModule: true,
+    default: (props) => <div data-testid="help-btn">{props.title}</div>,
+}));
+
 describe('DesignationPage', () => {
   const mockShowError = vi.fn();
   const mockShowWarning = vi.fn();
@@ -281,5 +287,12 @@ describe('DesignationPage', () => {
     );
 
     expect(mockOnStateChange).toHaveBeenCalled();
+  });
+
+  test("HelpButton renders with correct props", async () => {
+    await act(async () => {
+      render(<FunctionalTestSelection initialData={mockInitialData} />);
+    });
+    expect(screen.getByTestId("help-btn").textContent).toContain("Epileptic Network Labeling Page Help");
   });
 });

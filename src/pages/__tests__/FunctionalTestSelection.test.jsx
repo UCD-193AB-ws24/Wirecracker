@@ -40,6 +40,8 @@ vi.mock("../../utils/MapConsecutive", () => ({
         return out;
     },
 }));
+
+// Mock the HelpButton component
 vi.mock("../../utils/HelpButton", () => ({
     __esModule: true,
     default: (props) => <div data-testid="help-btn">{props.title}</div>,

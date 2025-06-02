@@ -30,6 +30,12 @@ vi.mock("../../App", () => ({
   GoogleSignInButton: () => <div>GoogleSignInButton</div>,
 }));
 
+// Mock the HelpButton component
+vi.mock("../../utils/HelpButton", () => ({
+    __esModule: true,
+    default: (props) => <div data-testid="help-btn">{props.title}</div>,
+}));
+
 const mockNavigate = vi.fn();
 const mockOnStateChange = vi.fn();
 const mockOnHighlightChange = vi.fn();
@@ -701,5 +707,12 @@ describe("Localization Component", () => {
     });
 
     expect(mockShowWarning).toHaveBeenCalled();
+  });
+  
+  test("HelpButton renders with correct props", async () => {
+    await act(async () => {
+      render(<FunctionalTestSelection initialData={mockInitialData} />);
+    });
+    expect(screen.getByTestId("help-btn").textContent).toContain("Anatomy Page Help");
   });
 });
