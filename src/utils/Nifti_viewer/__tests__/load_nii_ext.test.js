@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, test, expect } from 'vitest';
 import load_nii_ext from '../load_nii_ext.js';
 
 describe('load_nii_ext', () => {
@@ -34,7 +34,7 @@ describe('load_nii_ext', () => {
     return buffer;
   }
 
-  it('should load extensions from .nii file', () => {
+  test('should load extensions from .nii file', () => {
     const buffer = createNiftiHeaderWithExtension();
     const ext = load_nii_ext('test.nii', buffer);
 
@@ -45,21 +45,21 @@ describe('load_nii_ext', () => {
     expect(ext.section[1].ecode).toBe(2);
   });
 
-  it('should load extensions from .hdr file', () => {
+  test('should load extensions from .hdr file', () => {
     const buffer = createNiftiHeaderWithExtension();
     const ext = load_nii_ext('test.hdr', buffer);
 
     expect(ext.num_ext).toBeGreaterThan(0);
   });
 
-  it('should return empty array when no extensions exist', () => {
+  test('should return empty array when no extensions exist', () => {
     const buffer = createNiftiHeaderWithExtension(true, false);
     const ext = load_nii_ext('test.nii', buffer);
 
     expect(ext).toEqual([]);
   });
 
-  it('should handle big-endian extension data', () => {
+  test('should handle big-endian extension data', () => {
     const buffer = createNiftiHeaderWithExtension(false);
     const ext = load_nii_ext('test.nii', buffer);
 
@@ -67,19 +67,19 @@ describe('load_nii_ext', () => {
     expect(ext.section[0].esize).toBe(32);
   });
 
-  it('should throw error for unsupported extension', () => {
+  test('should throw error for unsupported extension', () => {
     const buffer = createNiftiHeaderWithExtension();
     expect(() => load_nii_ext('test.unsupported', buffer))
       .toThrow('Supported extension type : .nii .hdr .img');
   });
 
-  it('should throw error when no filename is provided', () => {
+  test('should throw error when no filename is provided', () => {
     const buffer = createNiftiHeaderWithExtension();
     expect(() => load_nii_ext('', buffer))
       .toThrow('Usage: ext = load_nii_ext(filename, data)');
   });
 
-  it('should throw error for corrupted file', () => {
+  test('should throw error for corrupted file', () => {
     const buffer = new ArrayBuffer(348);
     const view = new DataView(buffer);
     view.setInt32(0, 100, true); // Invalid header size
@@ -88,7 +88,7 @@ describe('load_nii_ext', () => {
       .toThrow('File test.nii is corrupted.');
   });
 
-  it('should handle extension sections correctly', () => {
+  test('should handle extension sections correctly', () => {
     const buffer = createNiftiHeaderWithExtension();
     const ext = load_nii_ext('test.nii', buffer);
 
@@ -103,7 +103,7 @@ describe('load_nii_ext', () => {
     expect(String.fromCharCode(...ext.section[1].edata)).toContain('DICOM');
   });
 
-  it('should handle files without vox_offset extension space', () => {
+  test('should handle files without vox_offset extension space', () => {
     // Create buffer with extensions but no vox_offset specified
     const buffer = new ArrayBuffer(368);
     const view = new DataView(buffer);
