@@ -1,5 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { supabase, TABLE_NAMES, generateAcronym, insertRegionsAndGetIds, handleFileRecord } from '../../routes/utils.js';
+import { supabase, TABLE_NAMES, generateAcronym, insertRegionsAndGetIds, handleFileRecord, saveLocalizationToDatabase, sendShareNotification } from '../../routes/utils.js';
+import { Resend } from 'resend';
+
+// Mock Resend client
+const mockResend = vi.hoisted(() => ({
+  emails: {
+    send: vi.fn()
+  }
+}));
+
+vi.mock('resend', () => ({
+  Resend: vi.fn().mockImplementation(() => mockResend)
+}));
 
 // Mock Supabase client
 vi.mock('@supabase/supabase-js', () => ({
@@ -10,7 +22,9 @@ vi.mock('@supabase/supabase-js', () => ({
       update: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      single: vi.fn()
     })),
   })),
 }));
@@ -293,6 +307,241 @@ describe('Utils', () => {
         'invalid-token',
         'patient1'
       )).rejects.toThrow('Invalid or expired session');
+    });
+  });
+
+  describe('saveLocalizationToDatabase', () => {
+    beforeEach(() => {
+      // Mock the base Supabase query chain
+      const baseMock = {
+        select: vi.fn().mockReturnThis(),
+        insert: vi.fn().mockReturnThis(),
+        update: vi.fn().mockReturnThis(),
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        single: vi.fn()
+      };
+
+      // Mock the Supabase client
+      supabase.from = vi.fn().mockImplementation((table) => {
+        switch (table) {
+          case 'electrode':
+            return {
+              ...baseMock,
+              insert: vi.fn().mockReturnValue({
+                select: vi.fn().mockResolvedValue({
+                  data: [{ id: 1, label: 'E1' }],
+                  error: null
+                })
+              })
+            };
+          case 'localization':
+            return {
+              ...baseMock,
+              insert: vi.fn().mockReturnValue({
+                select: vi.fn().mockResolvedValue({
+                  data: [
+                    { id: 101, electrode_id: 1, contact: '1', tissue_type: 'GM', region_id: 1, file_id: 123 },
+                    { id: 102, electrode_id: 1, contact: '2', tissue_type: 'WM', region_id: 2, file_id: 123 }
+                  ],
+                  error: null
+                })
+              }),
+              select: vi.fn().mockReturnThis(),
+              order: vi.fn().mockReturnThis(),
+              limit: vi.fn().mockResolvedValue({
+                data: [{ id: 100 }],
+                error: null
+              })
+            };
+          case 'region_name':
+            return {
+              ...baseMock,
+              select: vi.fn().mockResolvedValue({
+                data: [
+                  { id: 1, name: 'Region A' },
+                  { id: 2, name: 'Region B' }
+                ],
+                error: null
+              }),
+              insert: vi.fn().mockReturnValue({
+                select: vi.fn().mockResolvedValue({
+                  data: [
+                    { id: 1, name: 'Region A' },
+                    { id: 2, name: 'Region B' }
+                  ],
+                  error: null
+                })
+              })
+            };
+          default:
+            return baseMock;
+        }
+      });
+    });
+
+    it('should save localization data successfully', async () => {
+      const mockData = {
+        'E1': {
+          description: 'Electrode 1',
+          type: 'DIXI',
+          '1': {
+            associatedLocation: 'GM',
+            contactDescription: 'Region A'
+          },
+          '2': {
+            associatedLocation: 'WM',
+            contactDescription: 'Region B'
+          }
+        }
+      };
+
+      const result = await saveLocalizationToDatabase(mockData, 123);
+
+      expect(result).toEqual({
+        electrodeCount: 1,
+        localizationCount: 2,
+        fileId: 123
+      });
+    });
+
+    it('should handle GM/GM case correctly', async () => {
+      const mockData = {
+        'E1': {
+          description: 'Electrode 1',
+          type: 'DIXI',
+          '1': {
+            associatedLocation: 'GM/GM',
+            contactDescription: 'Region A+Region B'
+          }
+        }
+      };
+
+      const result = await saveLocalizationToDatabase(mockData, 123);
+
+      expect(result).toEqual({
+        electrodeCount: 1,
+        localizationCount: 2,
+        fileId: 123
+      });
+    });
+
+    it('should handle database error', async () => {
+      const mockData = {
+        'E1': {
+          description: 'Electrode 1',
+          type: 'DIXI',
+          '1': {
+            associatedLocation: 'GM',
+            contactDescription: 'Region A'
+          }
+        }
+      };
+
+      // Override the mock to simulate a database error
+      supabase.from = vi.fn().mockImplementation((table) => {
+        if (table === 'electrode') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockResolvedValue({
+                data: null,
+                error: new Error('Database error')
+              })
+            })
+          };
+        }
+        return {
+          select: vi.fn().mockReturnThis(),
+          insert: vi.fn().mockReturnThis(),
+          update: vi.fn().mockReturnThis(),
+          delete: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockReturnThis(),
+          single: vi.fn()
+        };
+      });
+
+      await expect(saveLocalizationToDatabase(mockData, 123)).rejects.toThrow('Database error');
+    });
+
+    it('should handle invalid file ID', async () => {
+      const mockData = {
+        'E1': {
+          description: 'Electrode 1',
+          type: 'DIXI',
+          '1': {
+            associatedLocation: 'GM',
+            contactDescription: 'Region A'
+          }
+        }
+      };
+
+      await expect(saveLocalizationToDatabase(mockData, 'invalid')).rejects.toThrow('Invalid file ID');
+    });
+  });
+
+  describe('sendShareNotification', () => {
+    it('should send email notification successfully', async () => {
+      const mockEmailResponse = { id: '123', to: 'test@example.com' };
+      mockResend.emails.send.mockResolvedValue({ data: mockEmailResponse, error: null });
+
+      const result = await sendShareNotification(
+        'test@example.com',
+        'John Doe',
+        'Localization',
+        'patient123',
+        '2024-01-01'
+      );
+
+      expect(result).toEqual(mockEmailResponse);
+      expect(mockResend.emails.send).toHaveBeenCalledWith({
+        from: 'Wirecracker <send@wirecracker.com>',
+        to: 'test@example.com',
+        subject: 'Wirecracker: Localization shared with you',
+        html: `
+                <p>John Doe has shared a Localization with you for patient PAT-12/31/23.</p>
+                <p>Please log into <a href="https://wirecracker.com">wirecracker.com</a> to review the files.</p>
+            `
+      });
+    });
+
+    it('should handle email sending error', async () => {
+      const mockError = new Error('Failed to send email');
+      mockResend.emails.send.mockResolvedValue({ data: null, error: mockError });
+
+      await expect(sendShareNotification(
+        'test@example.com',
+        'John Doe',
+        'Localization',
+        'patient123',
+        '2024-01-01'
+      )).rejects.toThrow('Failed to send email');
+    });
+
+    it('should format patient ID and date correctly', async () => {
+      mockResend.emails.send.mockResolvedValue({ data: { id: '123' }, error: null });
+
+      await sendShareNotification(
+        'test@example.com',
+        'John Doe',
+        'Localization',
+        'patient123',
+        '2024-01-01'
+      );
+
+      expect(mockResend.emails.send).toHaveBeenCalledWith({
+        from: 'Wirecracker <send@wirecracker.com>',
+        to: 'test@example.com',
+        subject: 'Wirecracker: Localization shared with you',
+        html: `
+                <p>John Doe has shared a Localization with you for patient PAT-12/31/23.</p>
+                <p>Please log into <a href="https://wirecracker.com">wirecracker.com</a> to review the files.</p>
+            `
+      });
     });
   });
 }); 

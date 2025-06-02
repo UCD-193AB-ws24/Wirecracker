@@ -54,6 +54,48 @@ describe('File Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual(mockFiles);
     });
+
+    it('should return 401 with invalid session', async () => {
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      supabase.from.mockReturnValue(mockSessionChain);
+
+      const response = await request(app)
+        .get('/api/files')
+        .set('Authorization', 'Bearer invalid-token');
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Invalid or expired session');
+    });
+
+    it('should handle database error', async () => {
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      const mockFilesChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockResolvedValue({ data: null, error: new Error('Database error') })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockSessionChain)
+        .mockReturnValueOnce(mockFilesChain);
+
+      const response = await request(app)
+        .get('/api/files')
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Error fetching user files');
+    });
   });
 
   describe('POST /api/files/metadata', () => {
@@ -90,6 +132,52 @@ describe('File Routes', () => {
         'valid-token',
         fileData.patientId
       );
+    });
+
+    it('should handle missing required fields', async () => {
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      supabase.from.mockReturnValue(mockSessionChain);
+      handleFileRecord.mockRejectedValue(new Error('Missing required fields'));
+
+      const response = await request(app)
+        .post('/api/files/metadata')
+        .set('Authorization', 'Bearer valid-token')
+        .send({});
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Error saving file metadata');
+    });
+
+    it('should handle database error', async () => {
+      const fileData = {
+        fileId: '123',
+        fileName: 'test.txt',
+        creationDate: '2024-01-01',
+        modifiedDate: '2024-01-02',
+        patientId: 'patient1'
+      };
+
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      supabase.from.mockReturnValue(mockSessionChain);
+      handleFileRecord.mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .post('/api/files/metadata')
+        .set('Authorization', 'Bearer valid-token')
+        .send(fileData);
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Error saving file metadata');
     });
   });
 
@@ -355,4 +443,354 @@ describe('File Routes', () => {
       });
     });
   });
-}); 
+
+  describe('GET /api/files/dates-metadata', () => {
+    it('should return file dates metadata', async () => {
+      const mockFile = {
+        creation_date: '2024-01-01',
+        modified_date: '2024-01-02'
+      };
+
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      const mockFileChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockFile, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockSessionChain)
+        .mockReturnValueOnce(mockFileChain);
+
+      const response = await request(app)
+        .get('/api/files/dates-metadata?fileId=123')
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(mockFile);
+    });
+
+    it('should handle missing fileId', async () => {
+      const response = await request(app)
+        .get('/api/files/dates-metadata')
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('File ID is required');
+    });
+
+    it('should handle invalid session', async () => {
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      supabase.from.mockReturnValue(mockSessionChain);
+
+      const response = await request(app)
+        .get('/api/files/dates-metadata?fileId=123')
+        .set('Authorization', 'Bearer invalid-token');
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe('Invalid or expired session');
+    });
+  });
+
+  describe('POST /api/files/share-with-neurosurgeon', () => {
+    it('should share file successfully', async () => {
+      const shareData = {
+        fileId: '123',
+        email: 'neurosurgeon@example.com',
+        designationData: { some: 'data' },
+        localizationData: { some: 'data' }
+      };
+
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      const mockCurrentUserChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { name: 'Dr. Smith' }, error: null })
+      };
+
+      const mockTargetUserChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 2 }, error: null })
+      };
+
+      const mockFileChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ 
+          data: { 
+            file_id: '123',
+            patient_id: 'patient1',
+            creation_date: '2024-01-01'
+          }, 
+          error: null 
+        })
+      };
+
+      const mockInsertChain = {
+        insert: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ 
+          data: { file_id: '456' }, 
+          error: null 
+        })
+      };
+
+      const mockAssignmentChain = {
+        insert: vi.fn().mockResolvedValue({ error: null })
+      };
+
+      const mockDesignationChain = {
+        insert: vi.fn().mockResolvedValue({ error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockSessionChain)
+        .mockReturnValueOnce(mockCurrentUserChain)
+        .mockReturnValueOnce(mockTargetUserChain)
+        .mockReturnValueOnce(mockFileChain)
+        .mockReturnValueOnce(mockInsertChain)
+        .mockReturnValueOnce(mockAssignmentChain)
+        .mockReturnValueOnce(mockDesignationChain);
+
+      const response = await request(app)
+        .post('/api/files/share-with-neurosurgeon')
+        .set('Authorization', 'Bearer valid-token')
+        .send(shareData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toBe('File shared successfully');
+    });
+
+    it('should handle missing required fields', async () => {
+      const response = await request(app)
+        .post('/api/files/share-with-neurosurgeon')
+        .set('Authorization', 'Bearer valid-token')
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('File ID and email are required');
+    });
+
+    it('should handle user not found', async () => {
+      const shareData = {
+        fileId: '123',
+        email: 'nonexistent@example.com'
+      };
+
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      const mockCurrentUserChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { name: 'Dr. Smith' }, error: null })
+      };
+
+      const mockTargetUserChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockSessionChain)
+        .mockReturnValueOnce(mockCurrentUserChain)
+        .mockReturnValueOnce(mockTargetUserChain);
+
+      const response = await request(app)
+        .post('/api/files/share-with-neurosurgeon')
+        .set('Authorization', 'Bearer valid-token')
+        .send(shareData);
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('User not found');
+    });
+  });
+
+  describe('GET /api/shared-files', () => {
+    it('should return shared files', async () => {
+      const mockAssignments = [
+        { patient_id: '1' },
+        { patient_id: '2' }
+      ];
+
+      const mockFiles = [
+        {
+          patient_id: '1',
+          file_id: 1,
+          filename: 'test1.txt',
+          creation_date: '2024-01-01',
+          modified_date: '2024-01-02',
+          owner_user_id: 1
+        },
+        {
+          patient_id: '2',
+          file_id: 2,
+          filename: 'test2.txt',
+          creation_date: '2024-01-01',
+          modified_date: '2024-01-02',
+          owner_user_id: 1
+        }
+      ];
+
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      const mockAssignmentsChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        not: vi.fn().mockResolvedValue({ data: mockAssignments, error: null })
+      };
+
+      const mockFilesChain = {
+        select: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
+        order: vi.fn().mockResolvedValue({ data: mockFiles, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockSessionChain)
+        .mockReturnValueOnce(mockAssignmentsChain)
+        .mockReturnValueOnce(mockFilesChain);
+
+      const response = await request(app)
+        .get('/api/shared-files')
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body.patients).toBeDefined();
+      expect(response.body.patients.length).toBe(2);
+    });
+
+    it('should return empty array when no shared files', async () => {
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      const mockAssignmentsChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        not: vi.fn().mockResolvedValue({ data: [], error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockSessionChain)
+        .mockReturnValueOnce(mockAssignmentsChain);
+
+      const response = await request(app)
+        .get('/api/shared-files')
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(200);
+      expect(response.body.patients).toEqual([]);
+    });
+  });
+
+  describe('POST /api/mark-file-seen/:fileId', () => {
+    it('should mark file as seen', async () => {
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      // Create a mock that tracks the eq calls
+      const eqCalls = [];
+      const mockUpdateChain = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockImplementation((field, value) => {
+          eqCalls.push([field, value]);
+          return mockUpdateChain;
+        }),
+        mockResolvedValue: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      // Mock the from() calls in sequence
+      supabase.from
+        .mockReturnValueOnce(mockSessionChain)  // First call for sessions
+        .mockReturnValueOnce(mockUpdateChain);  // Second call for file_assignments
+
+      const response = await request(app)
+        .post('/api/mark-file-seen/123')
+        .set('Authorization', 'Bearer valid-token');
+
+      // Verify the mock calls
+      expect(supabase.from).toHaveBeenCalledWith('sessions');
+      expect(supabase.from).toHaveBeenCalledWith('file_assignments');
+      expect(mockUpdateChain.update).toHaveBeenCalledWith({ has_seen: true });
+      expect(eqCalls[0]).toEqual(['user_id', 1]);
+      expect(eqCalls[1]).toEqual(['file_id', '123']);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+    it('should handle missing fileId', async () => {
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      supabase.from.mockReturnValue(mockSessionChain);
+
+      const response = await request(app)
+        .post('/api/mark-file-seen/ ')
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should handle database error', async () => {
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      const mockUpdateChain = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: new Error('Database error') })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockSessionChain)
+        .mockReturnValueOnce(mockUpdateChain);
+
+      const response = await request(app)
+        .post('/api/mark-file-seen/123')
+        .set('Authorization', 'Bearer valid-token');
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Error marking file as seen');
+    });
+  });
+});
