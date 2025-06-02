@@ -9,12 +9,23 @@ import ContactSelection from "../StimulationPlanning/ContactSelection";
 vi.mock("../../utils/CSVParser", () => ({
     saveStimulationCSVFile: vi.fn(),
 }));
+
+// Mock the useError hook
+const mockShowError = vi.fn();
 vi.mock("../../context/ErrorContext", () => ({
-    useError: () => ({ showError: vi.fn() }),
+  useError: () => ({
+    showError: mockShowError,
+  }),
 }));
+
+// Mock the useWarning hook
+const mockShowWarning = vi.fn();
 vi.mock("../../context/WarningContext", () => ({
-    useWarning: () => ({ showWarning: vi.fn() }),
+  useWarning: () => ({
+    showWarning: mockShowWarning,
+  }),
 }));
+
 vi.mock("../../utils/MapConsecutive", () => ({
     __esModule: true,
     default: (arr, size, fn) => {
@@ -52,9 +63,9 @@ const mockElectrodes = [
     {
         label: "A",
         contacts: [
-            { associatedLocation: "frontal", mark: 1, surgeonMark: true, isPlanning: false, order: 1, frequency: 10, duration: 5, current: 1 },
-            { associatedLocation: "frontal", mark: 2, surgeonMark: true, isPlanning: false, order: 2, frequency: 10, duration: 5, current: 1 },
-            { associatedLocation: "frontal", mark: 0, surgeonMark: false, isPlanning: false, order: 3, frequency: 10, duration: 5, current: 1 },
+            { associatedLocation: "frontal", mark: 0, surgeonMark: false, isPlanning: false, order: 1, frequency: 10, duration: 5, current: 1 },
+            { associatedLocation: "frontal", mark: 2, surgeonMark: false, isPlanning: false, order: 2, frequency: 10, duration: 5, current: 1 },
+            { associatedLocation: "frontal", mark: 1, surgeonMark: true, isPlanning: false, order: 3, frequency: 10, duration: 5, current: 1 },
         ],
     },
     {
@@ -128,12 +139,12 @@ describe("ContactSelection", () => {
             render(<ContactSelection initialData={mockInitialData} onStateChange={vi.fn()} />);
         });
         // Find a contact pair (should be 1-2 for electrode A)
-        const contactPair = screen.getByText("1 - 2");
+        const contactPair = screen.getByText("2 - 3");
         await act(async () => {
             fireEvent.click(contactPair);
         });
         // Now it should appear in planning pane (as A1-2)
-        expect(screen.getByText(/A1-2/)).toBeDefined();
+        expect(screen.getByText(/A2-3/)).toBeDefined();
         // Remove from planning
         const removeBtn = screen.getByText("Remove");
         await act(async () => {
@@ -203,7 +214,6 @@ describe("ContactSelection", () => {
 
     test("shows error if sharing without email", async () => {
         const { useError } = await import("../../context/ErrorContext");
-        const { showError } = useError();
         await act(async () => {
             render(<ContactSelection initialData={mockInitialData} onStateChange={vi.fn()} />);
         });
@@ -222,7 +232,7 @@ describe("ContactSelection", () => {
         await act(async () => {
             fireEvent.click(shareModalBtn);
         });
-        expect(showError).toHaveBeenCalled();
+        expect(mockShowError).toHaveBeenCalled();
     });
 
     test("opens Neuropsychology tab when Open in Neuropsychology is clicked", async () => {
@@ -248,12 +258,12 @@ describe("ContactSelection", () => {
             render(<ContactSelection initialData={mockInitialData} onStateChange={vi.fn()} />);
         });
         // Add a contact to planning
-        const contactPair = screen.getByText("1 - 2");
+        const contactPair = screen.getByText("2 - 3");
         await act(async () => {
             fireEvent.click(contactPair);
         });
         // Should have bg-rose-300 for mark 1
-        const planningContact = screen.getByText(/A1-2/).closest("li");
+        const planningContact = screen.getByText(/A2-3/).closest("li");
         expect(planningContact.className).toContain("bg-rose-300");
     });
 });

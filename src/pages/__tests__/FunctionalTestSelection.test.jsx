@@ -9,12 +9,23 @@ const backendURL = __APP_CONFIG__.backendURL;
 vi.mock("../../utils/CSVParser", () => ({
     saveTestCSVFile: vi.fn(),
 }));
+
+// Mock the useError hook
+const mockShowError = vi.fn();
 vi.mock("../../context/ErrorContext", () => ({
-    useError: () => ({ showError: vi.fn() }),
+  useError: () => ({
+    showError: mockShowError,
+  }),
 }));
+
+// Mock the useWarning hook
+const mockShowWarning = vi.fn();
 vi.mock("../../context/WarningContext", () => ({
-    useWarning: () => ({ showWarning: vi.fn() }),
+  useWarning: () => ({
+    showWarning: mockShowWarning,
+  }),
 }));
+
 vi.mock("../../utils/MapConsecutive", () => ({
     __esModule: true,
     default: (arr, size, fn) => {
@@ -251,14 +262,13 @@ describe("FunctionalTestSelection", () => {
             getItem: vi.fn(() => null),
         });
         const { useError } = await import("../../context/ErrorContext");
-        const { showError } = useError();
         await act(async () => {
             render(<FunctionalTestSelection initialData={mockInitialData} savedState={{ fileId: "f1" }} />);
         });
         await act(async () => {
             fireEvent.click(screen.getByText("Save"));
         });
-        expect(showError).toHaveBeenCalled();
+        expect(mockShowError).toHaveBeenCalled();
     });
 
     test("shows 'No tests available' in popup if none", async () => {

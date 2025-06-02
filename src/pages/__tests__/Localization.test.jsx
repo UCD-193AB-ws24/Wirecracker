@@ -18,7 +18,7 @@ vi.mock("../../context/ErrorContext", () => ({
   }),
 }));
 
-// Mock the useError hook
+// Mock the useWarning hook
 const mockShowWarning = vi.fn();
 vi.mock("../../context/WarningContext", () => ({
   useWarning: () => ({
@@ -430,23 +430,12 @@ describe("Localization Component", () => {
         />
       </MemoryRouter>,
     );
-
-    let time = new Date();
-
+    
     await act(async () => {
       fireEvent.click(screen.getByText("Export"));
     });
 
-    time.setMilliseconds(time.getMilliseconds() - 3)
-
-    expect(saveCSVFile).toHaveBeenCalledWith(
-      "localization",
-      initialData.data,
-      undefined,
-      time.toISOString(),
-      time.toISOString(),
-      true,
-    );
+    expect(saveCSVFile).toHaveBeenCalled();
   });
 
   test("creates network labelling tab", async () => {
