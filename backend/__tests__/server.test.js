@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import dotenv from 'dotenv';
 import request from 'supertest';
+
+// Load environment variables before importing app
+dotenv.config();
+
+// Now import the app after environment is loaded
 import app from '../server.js';
 
 describe('Server Configuration', () => {

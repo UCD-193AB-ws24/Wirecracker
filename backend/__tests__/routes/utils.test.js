@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { supabase, TABLE_NAMES, generateAcronym, insertRegionsAndGetIds, handleFileRecord } from '../routes/utils.js';
+import { supabase, TABLE_NAMES, generateAcronym, insertRegionsAndGetIds, handleFileRecord } from '../../routes/utils.js';
 
 // Mock Supabase client
 vi.mock('@supabase/supabase-js', () => ({
@@ -47,8 +47,8 @@ describe('Utils', () => {
 
   describe('generateAcronym', () => {
     it('should extract uppercase letters from description', () => {
-      expect(generateAcronym('Test Description XYZ')).toBe('TDX');
-      expect(generateAcronym('ABC DEF GHI')).toBe('ADG');
+      expect(generateAcronym('Test Description XYZ')).toBe('TDXYZ');
+      expect(generateAcronym('ABC DEF GHI')).toBe('ABCDEFGHI');
     });
 
     it('should return empty string for no uppercase letters', () => {
@@ -64,7 +64,18 @@ describe('Utils', () => {
         { id: 2, name: 'Region B' }
       ];
       
-      supabase.from().select().mockResolvedValue({ 
+      const mockSelect = vi.fn().mockReturnThis();
+      const mockFrom = vi.fn().mockReturnValue({
+        select: mockSelect,
+        insert: vi.fn().mockReturnThis(),
+        update: vi.fn().mockReturnThis(),
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn()
+      });
+      
+      supabase.from = mockFrom;
+      mockSelect.mockResolvedValue({ 
         data: existingRegions, 
         error: null 
       });
@@ -81,13 +92,27 @@ describe('Utils', () => {
       const existingRegions = [{ id: 1, name: 'Region A' }];
       const newRegions = [{ id: 2, name: 'Region C' }];
       
-      supabase.from().select().mockResolvedValue({ 
-        data: existingRegions, 
-        error: null 
+      const mockSelect = vi.fn().mockReturnThis();
+      const mockInsert = vi.fn().mockReturnValue({
+        select: vi.fn().mockResolvedValue({ 
+          data: newRegions, 
+          error: null 
+        })
+      });
+      const mockFrom = vi.fn().mockReturnValue({
+        select: mockSelect,
+        insert: mockInsert,
+        update: vi.fn().mockReturnThis(),
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn()
       });
       
-      supabase.from().insert().select().mockResolvedValue({ 
-        data: newRegions, 
+      supabase.from = mockFrom;
+      
+      // First call for existing regions
+      mockSelect.mockResolvedValueOnce({ 
+        data: existingRegions, 
         error: null 
       });
       
@@ -108,15 +133,30 @@ describe('Utils', () => {
         modified_date: '2024-01-01'
       };
       
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: existingFile, 
-        error: null 
+      const mockSelect = vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ 
+            data: existingFile, 
+            error: null 
+          })
+        })
+      });
+      const mockUpdate = vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ 
+          data: null, 
+          error: null 
+        })
+      });
+      const mockFrom = vi.fn().mockReturnValue({
+        select: mockSelect,
+        insert: vi.fn().mockReturnThis(),
+        update: mockUpdate,
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn()
       });
       
-      supabase.from().update().eq().mockResolvedValue({ 
-        data: null, 
-        error: null 
-      });
+      supabase.from = mockFrom;
       
       await handleFileRecord(
         '123',
@@ -127,21 +167,61 @@ describe('Utils', () => {
         'patient1'
       );
       
-      expect(supabase.from().update).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalled();
     });
 
     it('should create new file record', async () => {
-      supabase.from().select().eq().single.mockResolvedValue({ 
+      const mockSelect = vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ 
+            data: null, 
+            error: null 
+          })
+        })
+      });
+      const mockInsert = vi.fn().mockResolvedValue({ 
+        data: null, 
+        error: null 
+      });
+      const mockFrom = vi.fn().mockReturnValue({
+        select: mockSelect,
+        insert: mockInsert,
+        update: vi.fn().mockReturnThis(),
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn()
+      });
+      
+      supabase.from = mockFrom;
+      
+      // Mock file check to return no existing file
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ 
+            data: null, 
+            error: null 
+          })
+        })
+      });
+      
+      // Mock session check to return valid user
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ 
+            data: { user_id: 1 }, 
+            error: null 
+          })
+        })
+      });
+      
+      // Mock file insert
+      mockInsert.mockResolvedValueOnce({ 
         data: null, 
         error: null 
       });
       
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: { user_id: 1 }, 
-        error: null 
-      });
-      
-      supabase.from().insert().mockResolvedValue({ 
+      // Mock file assignments insert
+      mockInsert.mockResolvedValueOnce({ 
         data: null, 
         error: null 
       });
@@ -155,18 +235,54 @@ describe('Utils', () => {
         'patient1'
       );
       
-      expect(supabase.from().insert).toHaveBeenCalled();
+      expect(mockInsert).toHaveBeenCalledTimes(2);
+      expect(mockInsert).toHaveBeenNthCalledWith(1, {
+        file_id: '123',
+        owner_user_id: 1,
+        filename: 'new.txt',
+        creation_date: '2024-01-01',
+        modified_date: '2024-01-02',
+        patient_id: 'patient1'
+      });
+      expect(mockInsert).toHaveBeenNthCalledWith(2, {
+        file_id: '123',
+        user_id: 1,
+        patient_id: 'patient1',
+        role: 'owner',
+        has_seen: true,
+        is_completed: false,
+        completed_at: null
+      });
     });
 
     it('should throw error for invalid session', async () => {
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: null, 
-        error: null 
+      const mockSelect = vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ 
+            data: null, 
+            error: null 
+          })
+        })
+      });
+      const mockFrom = vi.fn().mockReturnValue({
+        select: mockSelect,
+        insert: vi.fn().mockReturnThis(),
+        update: vi.fn().mockReturnThis(),
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn()
       });
       
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: null, 
-        error: null 
+      supabase.from = mockFrom;
+      
+      // Mock session check to return no session
+      mockSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ 
+            data: null, 
+            error: null 
+          })
+        })
       });
       
       await expect(handleFileRecord(
