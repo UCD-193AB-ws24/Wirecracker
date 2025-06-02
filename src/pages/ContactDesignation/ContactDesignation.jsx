@@ -343,19 +343,6 @@ const ContactDesignation = ({ initialData = {}, onStateChange, savedState = {} }
                 )}
             </div>
 
-            {/* Floating Help Button and Guide at the Bottom Left */}
-            {activeTab === "designation" ? (
-                <HelpButton
-                    title="Epileptic Network Labeling Page Help"
-                    instructions="Click on a contact to label and change its color."
-                />
-            ) : (
-                <HelpButton
-                    title="Resection Page Help"
-                    instructions="(Optional) Upload brain scan and contact coordinates. Click contact in brain scan or list to mark for surgery."
-                />
-            )}
-
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1
                             lg:bottom-6 lg:right-6 lg:flex-row lg:gap-2">
