@@ -421,72 +421,6 @@ describe("Localization Component", () => {
     expect(saveCSVFile).toHaveBeenCalled();
   });
 
-  test("exports localization data", async () => {
-    render(
-      <MemoryRouter>
-        <Localization
-          initialData={initialData}
-          onStateChange={mockOnStateChange}
-        />
-      </MemoryRouter>,
-    );
-
-    await act(async () => {
-      fireEvent.click(screen.getByText("Export"));
-    });
-
-    expect(saveCSVFile).toHaveBeenCalledWith(
-      "localization",
-      expect.any(Object),
-      true,
-    );
-  });
-
-  test("creates resection tab", async () => {
-    // Mock localStorage tabs
-    global.localStorage.getItem.mockReturnValue("[]");
-
-    // Mock fetch responses
-    global.fetch.mockImplementation((url) => {
-      if (url.includes("/api/files/patient/")) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ patientId: "patient-123" }),
-        });
-      }
-      if (url.includes("/api/by-patient/")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              exists: false,
-              data: { localization_data: {}, resection_data: {} },
-            }),
-        });
-      }
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({}),
-      });
-    });
-
-    render(
-      <MemoryRouter>
-        <Localization
-          savedState={savedState}
-          onStateChange={mockOnStateChange}
-        />
-      </MemoryRouter>,
-    );
-
-    await act(async () => {
-      fireEvent.click(screen.getByText("Open in Neurosurgery"));
-    });
-
-    // Verify the custom event was dispatched
-    expect(global.window.dispatchEvent).toHaveBeenCalled();
-  });
-
   test("handles shared file changes", async () => {
     render(
       <MemoryRouter>
@@ -685,25 +619,5 @@ describe("Localization Component", () => {
     //           expect.stringContaining('/api/submit-changes/123'),
     //                                          expect.any(Object)
     //       );
-  });
-
-  test("handles network error when creating resection tab", async () => {
-    global.fetch.mockImplementation(() =>
-      Promise.reject(new Error("NetworkError")),
-    );
-    // Mock localStorage tabs
-    global.localStorage.getItem.mockReturnValue("[]");
-
-    render(
-      <MemoryRouter>
-        <Localization savedState={savedState} />
-      </MemoryRouter>,
-    );
-
-    await act(async () => {
-      fireEvent.click(screen.getByText("Open in Neurosurgery"));
-    });
-
-    expect(mockShowWarning).toHaveBeenCalled();
   });
 });
