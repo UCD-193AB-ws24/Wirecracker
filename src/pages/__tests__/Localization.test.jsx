@@ -431,18 +431,25 @@ describe("Localization Component", () => {
       </MemoryRouter>,
     );
 
+    let time = new Date();
+
     await act(async () => {
       fireEvent.click(screen.getByText("Export"));
     });
 
+    time.setMilliseconds(time.getMilliseconds() - 3)
+
     expect(saveCSVFile).toHaveBeenCalledWith(
       "localization",
-      expect.any(Object),
+      initialData.data,
+      undefined,
+      time.toISOString(),
+      time.toISOString(),
       true,
     );
   });
 
-  test("creates resection tab", async () => {
+  test("creates network labelling tab", async () => {
     // Mock localStorage tabs
     global.localStorage.getItem.mockReturnValue("[]");
 
@@ -480,7 +487,7 @@ describe("Localization Component", () => {
     );
 
     await act(async () => {
-      fireEvent.click(screen.getByText("Open in Neurosurgery"));
+      fireEvent.click(screen.getByText("Open in Epilepsy Page"));
     });
 
     // Verify the custom event was dispatched
@@ -701,7 +708,7 @@ describe("Localization Component", () => {
     );
 
     await act(async () => {
-      fireEvent.click(screen.getByText("Open in Neurosurgery"));
+      fireEvent.click(screen.getByText("Open in Epilepsy Page"));
     });
 
     expect(mockShowWarning).toHaveBeenCalled();
