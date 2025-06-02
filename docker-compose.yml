@@ -1,3 +1,7 @@
+##### WARNING the docker compose does not work any more and I cannot figure out why it is not.
+##### The backend keep installing dependencies for frontend even though it has package.json for backend
+##### Please use npm run dev for both frontend and backend
+
 version: '3.8'
 
 services:
@@ -18,14 +22,13 @@ services:
 
   backend:
     build:
-      context: .  # Set context to root
       dockerfile: backend/Dockerfile
     container_name: wirecracker-backend
     ports:
       - "5000:5000"
     volumes:
-      - ./backend:/app
-      - /app/node_modules
+      - ./backend:/backend
+      - /backend/node_modules
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
