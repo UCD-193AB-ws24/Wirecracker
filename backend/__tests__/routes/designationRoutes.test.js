@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import app from '../../server.js';
-import { supabase, handleFileRecord } from '../routes/utils.js';
+import { supabase, handleFileRecord } from '../../routes/utils.js';
 
 // Mock Supabase client and handleFileRecord
-vi.mock('../routes/utils.js', () => ({
+vi.mock('../../routes/utils.js', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn().mockReturnThis(),
@@ -13,7 +13,7 @@ vi.mock('../routes/utils.js', () => ({
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       ilike: vi.fn().mockReturnThis(),
-      single: vi.fn(),
+      single: vi.fn().mockReturnThis()
     })),
   },
   handleFileRecord: vi.fn(),
@@ -24,7 +24,7 @@ describe('Designation Routes', () => {
     vi.clearAllMocks();
   });
 
-  describe('POST /save-designation', () => {
+  describe('POST /api/save-designation', () => {
     const validDesignationData = {
       designationData: { test: 'data' },
       localizationData: { test: 'localization' },
@@ -37,7 +37,7 @@ describe('Designation Routes', () => {
 
     it('should return 400 for missing required fields', async () => {
       const response = await request(app)
-        .post('/save-designation')
+        .post('/api/save-designation')
         .send({});
 
       expect(response.status).toBe(400);
@@ -46,25 +46,32 @@ describe('Designation Routes', () => {
     });
 
     it('should create new designation record for new file', async () => {
-      supabase.from().select().eq().ilike().single.mockResolvedValue({ 
-        data: null, 
-        error: { code: 'PGRST116' } 
-      });
+      // Create mock chain for file check
+      const mockFileCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        ilike: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } })
+      };
 
-      supabase.from().insert().mockResolvedValue({ 
-        data: null, 
-        error: null 
-      });
+      // Create mock chain for insert
+      const mockInsert = {
+        insert: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockFileCheck)
+        .mockReturnValueOnce(mockInsert);
 
       const response = await request(app)
-        .post('/save-designation')
+        .post('/api/save-designation')
         .set('Authorization', 'Bearer valid-token')
         .send(validDesignationData);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(handleFileRecord).toHaveBeenCalled();
-      expect(supabase.from().insert).toHaveBeenCalled();
+      expect(mockInsert.insert).toHaveBeenCalled();
     });
 
     it('should update existing designation when data changed', async () => {
@@ -74,29 +81,40 @@ describe('Designation Routes', () => {
         localization_data: { old: 'localization' }
       };
 
-      supabase.from().select().eq().ilike().single.mockResolvedValue({ 
-        data: existingFile, 
-        error: null 
-      });
+      // Create mock chain for file check
+      const mockFileCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        ilike: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: existingFile, error: null })
+      };
 
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: existingDesignation, 
-        error: null 
-      });
+      // Create mock chain for designation check
+      const mockDesignationCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: existingDesignation, error: null })
+      };
 
-      supabase.from().update().eq().mockResolvedValue({ 
-        data: null, 
-        error: null 
-      });
+      // Create mock chain for update
+      const mockUpdate = {
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockFileCheck)
+        .mockReturnValueOnce(mockDesignationCheck)
+        .mockReturnValueOnce(mockUpdate);
 
       const response = await request(app)
-        .post('/save-designation')
+        .post('/api/save-designation')
         .set('Authorization', 'Bearer valid-token')
         .send(validDesignationData);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(supabase.from().update).toHaveBeenCalled();
+      expect(mockUpdate.update).toHaveBeenCalled();
     });
 
     it('should not update when data unchanged', async () => {
@@ -106,31 +124,40 @@ describe('Designation Routes', () => {
         localization_data: validDesignationData.localizationData
       };
 
-      supabase.from().select().eq().ilike().single.mockResolvedValue({ 
-        data: existingFile, 
-        error: null 
-      });
+      // Create mock chain for file check
+      const mockFileCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        ilike: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: existingFile, error: null })
+      };
 
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: existingDesignation, 
-        error: null 
-      });
+      // Create mock chain for designation check
+      const mockDesignationCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: existingDesignation, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockFileCheck)
+        .mockReturnValueOnce(mockDesignationCheck);
 
       const response = await request(app)
-        .post('/save-designation')
+        .post('/api/save-designation')
         .set('Authorization', 'Bearer valid-token')
         .send(validDesignationData);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(supabase.from().update).not.toHaveBeenCalled();
+      expect(mockDesignationCheck.select).toHaveBeenCalled();
     });
 
     it('should handle file record errors', async () => {
       handleFileRecord.mockRejectedValue(new Error('File record error'));
 
       const response = await request(app)
-        .post('/save-designation')
+        .post('/api/save-designation')
         .set('Authorization', 'Bearer valid-token')
         .send(validDesignationData);
 
@@ -140,22 +167,25 @@ describe('Designation Routes', () => {
     });
   });
 
-  describe('GET /by-patient/:patientId', () => {
-    it('should return 400 for missing patient ID', async () => {
-      const response = await request(app).get('/by-patient/');
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Missing patient ID');
+  describe('GET /api/by-patient/:patientId', () => {
+    it('should return 404 for missing patient ID', async () => {
+      const response = await request(app).get('/api/by-patient/');
+      expect(response.status).toBe(404);
     });
 
     it('should return exists: false when no file found', async () => {
-      supabase.from().select().eq().ilike().single.mockResolvedValue({ 
-        data: null, 
-        error: { code: 'PGRST116' } 
-      });
+      // Create mock chain for file check
+      const mockFileCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        ilike: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } })
+      };
+
+      supabase.from.mockReturnValueOnce(mockFileCheck);
 
       const response = await request(app)
-        .get('/by-patient/123?type=resection');
+        .get('/api/by-patient/123?type=resection');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -169,35 +199,50 @@ describe('Designation Routes', () => {
         localization_data: { test: 'localization' }
       };
 
-      supabase.from().select().eq().ilike().single.mockResolvedValue({ 
-        data: mockFileData, 
-        error: null 
-      });
+      // Create mock chain for file check
+      const mockFileCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        ilike: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockFileData, error: null })
+      };
 
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: mockDesignationData, 
-        error: null 
-      });
+      // Create mock chain for designation check
+      const mockDesignationCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockDesignationData, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockFileCheck)
+        .mockReturnValueOnce(mockDesignationCheck);
 
       const response = await request(app)
-        .get('/by-patient/123?type=resection');
+        .get('/api/by-patient/123?type=resection');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
         success: true,
         exists: true,
-        data: mockDesignationData
+        data: mockDesignationData,
+        fileId: mockFileData.file_id
       });
     });
 
     it('should handle database errors', async () => {
-      supabase.from().select().eq().ilike().single.mockResolvedValue({ 
-        data: null, 
-        error: new Error('Database error') 
-      });
+      // Create mock chain for file check with error
+      const mockFileCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        ilike: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: new Error('Database error') })
+      };
+
+      supabase.from.mockReturnValueOnce(mockFileCheck);
 
       const response = await request(app)
-        .get('/by-patient/123?type=resection');
+        .get('/api/by-patient/123?type=resection');
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);

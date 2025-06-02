@@ -1,24 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import app from '../../server.js';
-import { supabase } from '../routes/utils.js';
+import { supabase, handleFileRecord } from '../../routes/utils.js';
 
-// Mock Supabase client
-vi.mock('../routes/utils.js', () => ({
+// Mock Supabase client and utility functions
+vi.mock('../../routes/utils.js', () => ({
   supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      single: vi.fn(),
-    })),
+    from: vi.fn(),
   },
   handleFileRecord: vi.fn(),
-  sendShareNotification: vi.fn(),
 }));
 
 describe('File Routes', () => {
@@ -26,9 +16,9 @@ describe('File Routes', () => {
     vi.clearAllMocks();
   });
 
-  describe('GET /files', () => {
+  describe('GET /api/files', () => {
     it('should return 401 without authentication token', async () => {
-      const response = await request(app).get('/files');
+      const response = await request(app).get('/api/files');
       expect(response.status).toBe(401);
       expect(response.body.error).toBe('No authentication token provided');
     });
@@ -39,18 +29,26 @@ describe('File Routes', () => {
         { file_id: 2, filename: 'test2.txt' }
       ];
 
-      supabase.from().select().eq().order().mockResolvedValue({ 
-        data: mockFiles, 
-        error: null 
-      });
+      // Mock session query
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
 
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: { user_id: 1 }, 
-        error: null 
-      });
+      // Mock files query
+      const mockFilesChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockResolvedValue({ data: mockFiles, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockSessionChain)
+        .mockReturnValueOnce(mockFilesChain);
 
       const response = await request(app)
-        .get('/files')
+        .get('/api/files')
         .set('Authorization', 'Bearer valid-token');
 
       expect(response.status).toBe(200);
@@ -58,7 +56,7 @@ describe('File Routes', () => {
     });
   });
 
-  describe('POST /files/metadata', () => {
+  describe('POST /api/files/metadata', () => {
     it('should save file metadata successfully', async () => {
       const fileData = {
         fileId: '123',
@@ -68,22 +66,34 @@ describe('File Routes', () => {
         patientId: 'patient1'
       };
 
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: { user_id: 1 }, 
-        error: null 
-      });
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      supabase.from.mockReturnValue(mockSessionChain);
+      handleFileRecord.mockResolvedValue(undefined);
 
       const response = await request(app)
-        .post('/files/metadata')
+        .post('/api/files/metadata')
         .set('Authorization', 'Bearer valid-token')
         .send(fileData);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
+      expect(handleFileRecord).toHaveBeenCalledWith(
+        fileData.fileId,
+        fileData.fileName,
+        fileData.creationDate,
+        fileData.modifiedDate,
+        'valid-token',
+        fileData.patientId
+      );
     });
   });
 
-  describe('GET /files/check-type', () => {
+  describe('GET /api/files/check-type', () => {
     it('should return file type information', async () => {
       const mockLocalizationData = [{ id: 1 }];
       const mockResectionData = { designation_data: {}, localization_data: {} };
@@ -91,19 +101,50 @@ describe('File Routes', () => {
       const mockTestSelectionData = { tests: [], contacts: [] };
       const mockStimulationData = { stimulation_data: {}, plan_order: [], is_mapping: false };
 
-      supabase.from().select().eq().limit().mockResolvedValue({ 
-        data: mockLocalizationData, 
-        error: null 
-      });
+      // Mock localization query
+      const mockLocalizationChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ data: mockLocalizationData, error: null })
+      };
 
-      supabase.from().select().eq().single
-        .mockResolvedValueOnce({ data: mockResectionData, error: null })
-        .mockResolvedValueOnce({ data: mockDesignationData, error: null })
-        .mockResolvedValueOnce({ data: mockTestSelectionData, error: null })
-        .mockResolvedValueOnce({ data: mockStimulationData, error: null });
+      // Mock resection query
+      const mockResectionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockResectionData, error: null })
+      };
+
+      // Mock designation query
+      const mockDesignationChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockDesignationData, error: null })
+      };
+
+      // Mock test selection query
+      const mockTestSelectionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockTestSelectionData, error: null })
+      };
+
+      // Mock stimulation query
+      const mockStimulationChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockStimulationData, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockLocalizationChain)
+        .mockReturnValueOnce(mockResectionChain)
+        .mockReturnValueOnce(mockDesignationChain)
+        .mockReturnValueOnce(mockTestSelectionChain)
+        .mockReturnValueOnce(mockStimulationChain);
 
       const response = await request(app)
-        .get('/files/check-type?fileId=123')
+        .get('/api/files/check-type?fileId=123')
         .set('Authorization', 'Bearer valid-token');
 
       expect(response.status).toBe(200);
@@ -134,7 +175,7 @@ describe('File Routes', () => {
     });
   });
 
-  describe('GET /files/localization', () => {
+  describe('GET /api/files/localization', () => {
     it('should return localization data', async () => {
       const mockLocalizationData = [
         {
@@ -147,13 +188,15 @@ describe('File Routes', () => {
         }
       ];
 
-      supabase.from().select().eq().mockResolvedValue({ 
-        data: mockLocalizationData, 
-        error: null 
-      });
+      const mockLocalizationChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: mockLocalizationData, error: null })
+      };
+
+      supabase.from.mockReturnValue(mockLocalizationChain);
 
       const response = await request(app)
-        .get('/files/localization?fileId=123')
+        .get('/api/files/localization?fileId=123')
         .set('Authorization', 'Bearer valid-token');
 
       expect(response.status).toBe(200);
@@ -161,16 +204,30 @@ describe('File Routes', () => {
     });
   });
 
-  describe('GET /files/patient/:fileId', () => {
+  describe('GET /api/files/patient/:fileId', () => {
     it('should return patient ID for file', async () => {
       const mockFile = { patient_id: 'patient1' };
 
-      supabase.from().select().eq().single
-        .mockResolvedValueOnce({ data: { user_id: 1 }, error: null })
-        .mockResolvedValueOnce({ data: mockFile, error: null });
+      // Mock session query
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
+
+      // Mock file query
+      const mockFileChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockFile, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockSessionChain)
+        .mockReturnValueOnce(mockFileChain);
 
       const response = await request(app)
-        .get('/files/patient/123')
+        .get('/api/files/patient/123')
         .set('Authorization', 'Bearer valid-token');
 
       expect(response.status).toBe(200);
@@ -178,29 +235,124 @@ describe('File Routes', () => {
     });
   });
 
-  describe('GET /patients/recent', () => {
+  describe('GET /api/patients/recent', () => {
     it('should return paginated patients with files', async () => {
       const mockPatients = [
-        { id: 1, name: 'Patient A', files: [{ id: 1, name: 'file1.txt' }] },
-        { id: 2, name: 'Patient B', files: [{ id: 2, name: 'file2.txt' }] }
+        { 
+          patient_id: '1',
+          latest_file: {
+            file_id: 1,
+            filename: 'anatomy.txt',
+            creation_date: '2024-01-01',
+            modified_date: '2024-01-02',
+            owner_user_id: 1,
+            patient_id: '1'
+          },
+          has_localization: true,
+          has_resection: false,
+          has_designation: false,
+          has_test_selection: false,
+          localization_file_id: 1,
+          resection_file_id: null,
+          designation_file_id: null,
+          test_selection_file_id: null,
+          localization_creation_date: '2024-01-01',
+          stimulation_types: {
+            mapping: null,
+            recreation: null,
+            ccep: null
+          }
+        },
+        { 
+          patient_id: '2',
+          latest_file: {
+            file_id: 2,
+            filename: 'neurosurgery.txt',
+            creation_date: '2024-01-01',
+            modified_date: '2024-01-02',
+            owner_user_id: 1,
+            patient_id: '2'
+          },
+          has_localization: false,
+          has_resection: true,
+          has_designation: false,
+          has_test_selection: false,
+          localization_file_id: null,
+          resection_file_id: 2,
+          designation_file_id: null,
+          test_selection_file_id: null,
+          localization_creation_date: null,
+          stimulation_types: {
+            mapping: null,
+            recreation: null,
+            ccep: null
+          }
+        }
       ];
 
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: { user_id: 1 }, 
-        error: null 
-      });
+      // Mock session query
+      const mockSessionChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { user_id: 1 }, error: null })
+      };
 
-      supabase.from().select().order().limit().offset().mockResolvedValue({ 
-        data: mockPatients, 
-        error: null 
-      });
+      // Mock file assignments query
+      const mockAssignmentsChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        not: vi.fn().mockResolvedValue({ 
+          data: [
+            { patient_id: '1' },
+            { patient_id: '2' }
+          ], 
+          error: null 
+        })
+      };
+
+      // Mock files query
+      const mockFilesChain = {
+        select: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
+        order: vi.fn().mockResolvedValue({ 
+          data: [
+            {
+              patient_id: '1',
+              file_id: 1,
+              filename: 'anatomy.txt',
+              creation_date: '2024-01-01',
+              modified_date: '2024-01-02',
+              owner_user_id: 1
+            },
+            {
+              patient_id: '2',
+              file_id: 2,
+              filename: 'neurosurgery.txt',
+              creation_date: '2024-01-01',
+              modified_date: '2024-01-02',
+              owner_user_id: 1
+            }
+          ], 
+          error: null 
+        })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockSessionChain)
+        .mockReturnValueOnce(mockAssignmentsChain)
+        .mockReturnValueOnce(mockFilesChain);
 
       const response = await request(app)
-        .get('/patients/recent?page=1&limit=10')
+        .get('/api/patients/recent?page=1&limit=10')
         .set('Authorization', 'Bearer valid-token');
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual(mockPatients);
+      expect(response.body).toEqual({
+        patients: mockPatients,
+        totalPatients: 2,
+        currentPage: 1,
+        totalPages: 1
+      });
     });
   });
 }); 

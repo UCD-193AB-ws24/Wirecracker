@@ -1,26 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import app from '../../server.js';
-import { supabase } from '../routes/utils.js';
+import { supabase } from '../../routes/utils.js';
 
 // Mock Supabase client
-vi.mock('../routes/utils.js', () => ({
+vi.mock('../../routes/utils.js', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn().mockReturnThis(),
       insert: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn(),
+      single: vi.fn().mockReturnThis()
     })),
   },
 }));
 
 // Mock bcrypt
 vi.mock('bcrypt', () => ({
-  compare: vi.fn(),
-  genSalt: vi.fn(),
-  hash: vi.fn(),
+  default: {
+    compare: vi.fn(),
+    genSalt: vi.fn(),
+    hash: vi.fn(),
+  }
 }));
 
 describe('Auth Routes', () => {
@@ -28,12 +30,21 @@ describe('Auth Routes', () => {
     vi.clearAllMocks();
   });
 
-  describe('POST /auth/login', () => {
+  describe('POST /api/auth/login', () => {
     it('should return 401 for invalid credentials', async () => {
-      supabase.from().select().eq().single.mockResolvedValue({ data: null, error: null });
-      
+      // Create mock chain for user check
+      const mockUserCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      supabase.from.mockReturnValueOnce(mockUserCheck);
+      const bcrypt = (await import('bcrypt')).default;
+      bcrypt.compare.mockResolvedValue(false);
+
       const response = await request(app)
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({ email: 'test@example.com', password: 'wrongpassword' });
       
       expect(response.status).toBe(401);
@@ -48,11 +59,27 @@ describe('Auth Routes', () => {
         password_hash: 'hashedpassword',
       };
       
-      supabase.from().select().eq().single.mockResolvedValue({ data: mockUser, error: null });
-      supabase.from().insert.mockResolvedValue({ data: null, error: null });
+      // Create mock chain for user check
+      const mockUserCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockUser, error: null })
+      };
+
+      // Create mock chain for session insert
+      const mockSessionInsert = {
+        insert: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockUserCheck)
+        .mockReturnValueOnce(mockSessionInsert);
+
+      const bcrypt = (await import('bcrypt')).default;
+      bcrypt.compare.mockResolvedValue(true);
       
       const response = await request(app)
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({ email: 'test@example.com', password: 'correctpassword', rememberMe: true });
       
       expect(response.status).toBe(200);
@@ -61,15 +88,19 @@ describe('Auth Routes', () => {
     });
   });
 
-  describe('POST /auth/signup', () => {
+  describe('POST /api/auth/signup', () => {
     it('should return 400 if user already exists', async () => {
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: { id: 1 }, 
-        error: null 
-      });
+      // Create mock chain for user check
+      const mockUserCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: { id: 1 }, error: null })
+      };
+
+      supabase.from.mockReturnValueOnce(mockUserCheck);
       
       const response = await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'existing@example.com',
           name: 'Existing User',
@@ -81,18 +112,35 @@ describe('Auth Routes', () => {
     });
 
     it('should create new user successfully', async () => {
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: null, 
-        error: { code: 'PGRST116' } 
-      });
-      
-      supabase.from().insert.mockResolvedValue({ 
-        data: [{ id: 1 }], 
-        error: null 
-      });
+      // Create mock chain for user check
+      const mockUserCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } })
+      };
+
+      // Create mock chain for user insert
+      const mockUserInsert = {
+        insert: vi.fn().mockReturnThis(),
+        select: vi.fn().mockResolvedValue({ data: [{ id: 1 }], error: null })
+      };
+
+      // Create mock chain for verification code insert
+      const mockCodeInsert = {
+        insert: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockUserCheck)
+        .mockReturnValueOnce(mockUserInsert)
+        .mockReturnValueOnce(mockCodeInsert);
+
+      const bcrypt = (await import('bcrypt')).default;
+      bcrypt.genSalt.mockResolvedValue('salt');
+      bcrypt.hash.mockResolvedValue('hashedPassword');
       
       const response = await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'new@example.com',
           name: 'New User',
@@ -105,15 +153,19 @@ describe('Auth Routes', () => {
     });
   });
 
-  describe('POST /auth/verify-email', () => {
+  describe('POST /api/auth/verify-email', () => {
     it('should return 404 for non-existent user', async () => {
-      supabase.from().select().eq().single.mockResolvedValue({ 
-        data: null, 
-        error: null 
-      });
+      // Create mock chain for user check
+      const mockUserCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      supabase.from.mockReturnValueOnce(mockUserCheck);
       
       const response = await request(app)
-        .post('/auth/verify-email')
+        .post('/api/auth/verify-email')
         .send({
           email: 'nonexistent@example.com',
           code: '123456'
@@ -127,14 +179,33 @@ describe('Auth Routes', () => {
       const mockUser = { id: 1 };
       const mockVerification = { id: 1, code: '123456' };
       
-      supabase.from().select().eq().single
-        .mockResolvedValueOnce({ data: mockUser, error: null })
-        .mockResolvedValueOnce({ data: mockVerification, error: null });
-      
-      supabase.from().delete().eq().mockResolvedValue({ data: null, error: null });
+      // Create mock chain for user check
+      const mockUserCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockUser, error: null })
+      };
+
+      // Create mock chain for verification check
+      const mockVerificationCheck = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: mockVerification, error: null })
+      };
+
+      // Create mock chain for verification delete
+      const mockVerificationDelete = {
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: null, error: null })
+      };
+
+      supabase.from
+        .mockReturnValueOnce(mockUserCheck)
+        .mockReturnValueOnce(mockVerificationCheck)
+        .mockReturnValueOnce(mockVerificationDelete);
       
       const response = await request(app)
-        .post('/auth/verify-email')
+        .post('/api/auth/verify-email')
         .send({
           email: 'test@example.com',
           code: '123456'
