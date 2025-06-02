@@ -1,6 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, test, expect } from 'vitest';
 import load_untouch_nii_hdr from '../load_untouch_nii_hdr.js';
-import FILE from '../FILE.js';
 
 describe('load_untouch_nii_hdr', () => {
   function createNiftiHeaderBuffer(littleEndian = true, includeTransform = true) {
@@ -101,7 +100,7 @@ describe('load_untouch_nii_hdr', () => {
     return buffer;
   }
 
-  it('should load a NIfTI header with transformations (little-endian)', () => {
+  test('should load a NIfTI header with transformations (little-endian)', () => {
     const buffer = createNiftiHeaderBuffer(true, true);
     const hdr = load_untouch_nii_hdr('ieee-le', buffer);
 
@@ -126,7 +125,7 @@ describe('load_untouch_nii_hdr', () => {
     expect(hdr.hist.srow_z).toEqual([0, 0, 1, 0]);
   });
 
-  it('should load a NIfTI header without transformations (big-endian)', () => {
+  test('should load a NIfTI header without transformations (big-endian)', () => {
     const buffer = createNiftiHeaderBuffer(false, false);
     const hdr = load_untouch_nii_hdr('ieee-be', buffer);
 
@@ -140,7 +139,7 @@ describe('load_untouch_nii_hdr', () => {
   });
 
 
-  it('should reset qform and sform codes for invalid magic', () => {
+  test('should reset qform and sform codes for invalid magic', () => {
     const buffer = createNiftiHeaderBuffer(true, true);
     // Corrupt the magic number
     const encoder = new TextEncoder();
@@ -153,7 +152,7 @@ describe('load_untouch_nii_hdr', () => {
     expect(hdr.hist.sform_code).toBe(0);
   });
 
-  it('should handle empty transformation fields when magic is invalid', () => {
+  test('should handle empty transformation fields when magic is invalid', () => {
     const buffer = createNiftiHeaderBuffer(true, false);
     // Set invalid magic
     new Uint8Array(buffer).set([0, 0, 0, 0], 148 + 196);
