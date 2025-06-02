@@ -18,7 +18,7 @@ vi.mock("../../context/ErrorContext", () => ({
   }),
 }));
 
-// Mock the useError hook
+// Mock the useWarning hook
 const mockShowWarning = vi.fn();
 vi.mock("../../context/WarningContext", () => ({
   useWarning: () => ({
@@ -28,6 +28,12 @@ vi.mock("../../context/WarningContext", () => ({
 
 vi.mock("../../App", () => ({
   GoogleSignInButton: () => <div>GoogleSignInButton</div>,
+}));
+
+// Mock the HelpButton component
+vi.mock("../../utils/HelpButton", () => ({
+    __esModule: true,
+    default: (props) => <div data-testid="help-btn">{props.title}</div>,
 }));
 
 const mockNavigate = vi.fn();
@@ -421,6 +427,68 @@ describe("Localization Component", () => {
     expect(saveCSVFile).toHaveBeenCalled();
   });
 
+  test("exports localization data", async () => {
+    render(
+      <MemoryRouter>
+        <Localization
+          initialData={initialData}
+          onStateChange={mockOnStateChange}
+        />
+      </MemoryRouter>,
+    );
+    
+    await act(async () => {
+      fireEvent.click(screen.getByText("Export"));
+    });
+
+    expect(saveCSVFile).toHaveBeenCalled();
+  });
+
+  test("creates network labelling tab", async () => {
+    // Mock localStorage tabs
+    global.localStorage.getItem.mockReturnValue("[]");
+
+    // Mock fetch responses
+    global.fetch.mockImplementation((url) => {
+      if (url.includes("/api/files/patient/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ patientId: "patient-123" }),
+        });
+      }
+      if (url.includes("/api/by-patient/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              exists: false,
+              data: { localization_data: {}, resection_data: {} },
+            }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({}),
+      });
+    });
+
+    render(
+      <MemoryRouter>
+        <Localization
+          savedState={savedState}
+          onStateChange={mockOnStateChange}
+        />
+      </MemoryRouter>,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Open in Epilepsy Page"));
+    });
+
+    // Verify the custom event was dispatched
+    expect(global.window.dispatchEvent).toHaveBeenCalled();
+  });
+
   test("handles shared file changes", async () => {
     render(
       <MemoryRouter>
@@ -619,5 +687,32 @@ describe("Localization Component", () => {
     //           expect.stringContaining('/api/submit-changes/123'),
     //                                          expect.any(Object)
     //       );
+  });
+
+  test("handles network error when creating resection tab", async () => {
+    global.fetch.mockImplementation(() =>
+      Promise.reject(new Error("NetworkError")),
+    );
+    // Mock localStorage tabs
+    global.localStorage.getItem.mockReturnValue("[]");
+
+    render(
+      <MemoryRouter>
+        <Localization savedState={savedState} />
+      </MemoryRouter>,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Open in Epilepsy Page"));
+    });
+
+    expect(mockShowWarning).toHaveBeenCalled();
+  });
+  
+  test("HelpButton renders with correct props", async () => {
+    await act(async () => {
+      render(<FunctionalTestSelection initialData={mockInitialData} />);
+    });
+    expect(screen.getByTestId("help-btn").textContent).toContain("Anatomy Page Help");
   });
 });

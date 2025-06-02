@@ -527,6 +527,11 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                 ))}
             </ul>
 
+            {/* Floating Help and Guide at the Bottom Left */}
+            <HelpButton
+                title="Epileptic Network Labeling Page Help"
+                instructions="Click on a contact to label and change its color."
+            />
 
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1
