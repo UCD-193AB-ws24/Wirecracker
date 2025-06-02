@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, test, expect, beforeEach } from 'vitest';
 import FILE from '../FILE.js';
 
 describe('FILE class', () => {
@@ -33,7 +33,7 @@ describe('FILE class', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize with default parameters', () => {
+    test('should initialize with default parameters', () => {
       const defaultFile = new FILE();
       expect(defaultFile.filename).toBe('');
       expect(defaultFile.littleEndian).toBe(true);
@@ -41,7 +41,7 @@ describe('FILE class', () => {
       expect(defaultFile.content).toBeUndefined();
     });
 
-    it('should initialize with specified parameters', () => {
+    test('should initialize with specified parameters', () => {
       const bigEndianFile = new FILE('data.bin', 'ieee-be');
       expect(bigEndianFile.filename).toBe('data.bin');
       expect(bigEndianFile.littleEndian).toBe(false);
@@ -49,7 +49,7 @@ describe('FILE class', () => {
   });
 
   describe('fopen', () => {
-    it('should set content and reset offset', () => {
+    test('should set content and reset offset', () => {
       expect(file.content).toBeInstanceOf(DataView);
       expect(file.offset).toBe(0);
       expect(file.content.byteLength).toBe(testBuffer.byteLength);
@@ -57,7 +57,7 @@ describe('FILE class', () => {
   });
 
   describe('fclose', () => {
-    it('should clear content and reset offset', () => {
+    test('should clear content and reset offset', () => {
       file.fclose();
       expect(file.content).toBeNull();
       expect(file.offset).toBe(0);
@@ -65,101 +65,101 @@ describe('FILE class', () => {
   });
 
   describe('fread', () => {
-    it('should read single int32', () => {
+    test('should read single int32', () => {
       const value = file.fread(1, 'int32');
       expect(value).toBe(123456789);
       expect(file.offset).toBe(4);
     });
 
-    it('should read multiple int32', () => {
+    test('should read multiple int32', () => {
       const values = file.fread(2, 'int32');
       expect(values).toEqual([123456789, -987654321]);
       expect(file.offset).toBe(8);
     });
 
-    it('should read single int16', () => {
+    test('should read single int16', () => {
       file.fseek(8, 'bof');
       const value = file.fread(1, 'int16');
       expect(value).toBe(-1);
       expect(file.offset).toBe(10);
     });
 
-    it('should read multiple int16', () => {
+    test('should read multiple int16', () => {
       file.fseek(8, 'bof');
       const values = file.fread(2, 'int16');
       expect(values).toEqual([-1, -36]);
       expect(file.offset).toBe(12);
     });
 
-    it('should read single char', () => {
+    test('should read single char', () => {
       file.fseek(36, 'bof');
       const value = file.fread(1, 'char');
       expect(value).toBe(-128);
       expect(file.offset).toBe(37);
     });
 
-    it('should read single int8', () => {
+    test('should read single int8', () => {
       file.fseek(36, 'bof');
       const value = file.fread(1, 'int8');
       expect(value).toBe(-128);
       expect(file.offset).toBe(37);
     });
 
-    it('should read multiple int8', () => {
+    test('should read multiple int8', () => {
       file.fseek(36, 'bof');
       const value = file.fread(2, 'int8');
       expect(value).toEqual([-128, -1]);
       expect(file.offset).toBe(38);
     });
 
-    it('should read single uint32', () => {
+    test('should read single uint32', () => {
       const value = file.fread(1, 'uint32');
       expect(value).toBe(123456789);
       expect(file.offset).toBe(4);
     });
 
-    it('should read multiple uint32', () => {
+    test('should read multiple uint32', () => {
       const values = file.fread(2, 'uint32');
       expect(values).toEqual([123456789, 3307312975]);
       expect(file.offset).toBe(8);
     });
 
-    it('should read single uint16', () => {
+    test('should read single uint16', () => {
       file.fseek(8, 'bof');
       const value = file.fread(1, 'uint16');
       expect(value).toBe(65535);
       expect(file.offset).toBe(10);
     });
 
-    it('should read multiple uint16', () => {
+    test('should read multiple uint16', () => {
       file.fseek(8, 'bof');
       const values = file.fread(2, 'uint16');
       expect(values).toEqual([65535, 65500]);
       expect(file.offset).toBe(12);
     });
 
-    it('should read single uint8 by default', () => {
+    test('should read single uint8 by default', () => {
       file.fseek(37, 'bof');
       const value = file.fread(1);
       expect(value).toBe(255);
       expect(file.offset).toBe(38);
     });
 
-    it('should read single uchar (alias for uint8)', () => {
+    test('should read single uchar (alias for uint8)', () => {
       file.fseek(37, 'bof');
       const value = file.fread(1, 'uchar');
       expect(value).toBe(255);
       expect(file.offset).toBe(38);
     });
 
-    it('should read single float32', () => {
+    test('should read single float32', () => {
       file.fseek(12, 'bof');
       const value = file.fread(1, 'float32');
       expect(value).toBeCloseTo(3.14159, 5);
       expect(file.offset).toBe(16);
     });
 
-    it('should read multiple float32', () => {
+    test('should read multiple float32', () => {
       file.fseek(12, 'bof');
       const value = file.fread(2, 'float32');
       expect(value[0]).toBeCloseTo(3.14159, 5);
@@ -167,14 +167,14 @@ describe('FILE class', () => {
       expect(file.offset).toBe(20);
     });
 
-    it('should read single float64', () => {
+    test('should read single float64', () => {
       file.fseek(20, 'bof');
       const value = file.fread(1, 'float64');
       expect(value).toBeCloseTo(2.718281828459045, 15);
       expect(file.offset).toBe(28);
     });
 
-    it('should read multiple float64', () => {
+    test('should read multiple float64', () => {
       file.fseek(20, 'bof');
       const value = file.fread(2, 'float64');
       expect(value[0]).toBeCloseTo(2.718281828459045, 15);
@@ -182,40 +182,40 @@ describe('FILE class', () => {
       expect(file.offset).toBe(36);
     });
 
-    it('should read string', () => {
+    test('should read string', () => {
       file.fseek(38, 'bof');
       const str = file.fread(12, 'string');
       expect(str).toBe('Hello World!');
       expect(file.offset).toBe(50);
     });
 
-    it('should handle reading beyond buffer bounds', () => {
+    test('should handle reading beyond buffer bounds', () => {
       file.fseek(70, 'bof');
       expect(() => file.fread(20, 'uint8')).toThrow();
     });
   });
 
   describe('fseek', () => {
-    it('should seek from beginning of file', () => {
+    test('should seek from beginning of file', () => {
       file.fseek(10, 'bof');
       expect(file.offset).toBe(10);
     });
 
-    it('should seek from current position', () => {
+    test('should seek from current position', () => {
       file.fseek(5, 'cof');
       expect(file.offset).toBe(5);
       file.fseek(3, 'cof');
       expect(file.offset).toBe(8);
     });
 
-    it('should seek from end of file', () => {
+    test('should seek from end of file', () => {
       file.fseek(-5, 'eof');
       expect(file.offset).toBe(testBuffer.byteLength - 5);
     });
   });
 
   describe('frewind', () => {
-    it('should reset offset to 0', () => {
+    test('should reset offset to 0', () => {
       file.fseek(20, 'bof');
       file.frewind();
       expect(file.offset).toBe(0);
@@ -223,7 +223,7 @@ describe('FILE class', () => {
   });
 
   describe('ftell', () => {
-    it('should return current offset', () => {
+    test('should return current offset', () => {
       expect(file.ftell()).toBe(0);
       file.fseek(15, 'bof');
       expect(file.ftell()).toBe(15);
@@ -243,7 +243,7 @@ describe('FILE class', () => {
       bigEndianFile.fopen(buffer);
     });
 
-    it('should read big-endian int32', () => {
+    test('should read big-endian int32', () => {
       const value = bigEndianFile.fread(1, 'int32');
       expect(value).toBe(0x12345678);
     });
