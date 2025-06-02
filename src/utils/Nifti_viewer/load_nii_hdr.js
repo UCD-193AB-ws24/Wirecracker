@@ -39,7 +39,7 @@ export default function load_nii_hdr ( filename, data ) {
 
         fid.frewind();
         if ( fid.fread(1, 'int32') !== 348 ) {
-            throw 'File ${filename} is corrupted.'
+            throw `File ${filename} is corrupted.`
         }
         hdr = read_header(fid);
     }
@@ -62,7 +62,7 @@ function read_header ( fid ) {
     dsr.dime = image_dimension(fid);
     dsr.hist = data_history(fid);
 
-    if ( !dsr.hist.magic === 'n+1' && !dsr.hist.magic === 'ni1' ) {
+    if ( !(dsr.hist.magic === 'n+1') && !(dsr.hist.magic === 'ni1') ) {
         dsr.hist.qform_code = 0;
         dsr.hist.sform_code = 0;
     }
