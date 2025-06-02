@@ -12,7 +12,6 @@ import DatabaseTable from "./pages/DatabaseTable";
 import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
 import { parseCSVFile, Identifiers } from './utils/CSVParser';
 import Localization from './pages/Localization';
-import ContactDesignation from './pages/ContactDesignation/ContactDesignation';
 import Designation from './pages/ContactDesignation/DesignationPage';
 import Resection from './pages/ContactDesignation/ResectionPage';
 import { FcGoogle } from 'react-icons/fc';
@@ -841,20 +840,77 @@ const HomePage = () => {
 
         try {
             const { identifier, data, metadata } = await parseCSVFile(file, false, (msg) => setError(msg));
-            // TODO: add resection option
-            if (identifier === Identifiers.LOCALIZATION) {
+            // Check for existing designation tabs
+            const tabs = JSON.parse(localStorage.getItem('tabs') || '[]');
+            if (identifier.includes(Identifiers.LOCALIZATION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'localization' || tab.content === 'csv-localization') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('localization', { name: 'Anatomy', data: {data: data}, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            } else if (identifier === Identifiers.RESECTION) {
+            } else if (identifier.includes(Identifiers.RESECTION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'resection' || tab.content === 'csv-resection') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('resection', { name: 'Neurosurgery', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            } else if (identifier === Identifiers.DESIGNATION) {
+            } else if (identifier.includes(Identifiers.DESIGNATION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'designation' || tab.content === 'csv-designation') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('designation', { name: 'Epilepsy', data: data.data, originalData: data.originalData, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            } else if (identifier === Identifiers.STIMULATION_FUNCTION) {
+            } else if (identifier.includes(Identifiers.STIMULATION_FUNCTION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'functional-mapping' || tab.content === 'csv-functional-mapping') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('functional-mapping', { name: 'Functional Mapping', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            }else if (identifier === Identifiers.STIMULATION_RECREATION) {
+            }else if (identifier.includes(Identifiers.STIMULATION_RECREATION)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'seizure-recreation' || tab.content === 'csv-seizure-recreation') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('seizure-recreation', { name: 'Seizure Recreation', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            }else if (identifier === Identifiers.STIMULATION_CCEP) {
+            }else if (identifier.includes(Identifiers.STIMULATION_CCEP)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'cceps' || tab.content === 'csv-cceps') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('cceps', { name: 'CCEPs', data: data, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
-            }else if (identifier === Identifiers.TEST_PLANNING) {
+            }else if (identifier.includes(Identifiers.TEST_PLANNING)) {
+                const existingTab = tabs.find(tab =>
+                    (tab.content === 'functional-test' || tab.content === 'csv-functional-test') &&
+                    tab.state?.patientId === metadata.patientId
+                );
+                if (existingTab) {
+                    // Close the existing tab
+                    closeTab(existingTab.id);
+                }
                 openSavedFile('csv-functional-test', { name: 'Neuropsychology', data: {data : data}, patientId: metadata.patientId, creationDate: metadata.creationDate, modifiedDate: metadata.modifiedDate, fileId: metadata.fileId });
             }
         } catch (err) {
@@ -1642,6 +1698,18 @@ const PatientDetails = ({ patient, onClose, openSavedFile }) => {
                 window.dispatchEvent(new CustomEvent('setActiveTab', { detail: { tabId: existingTab.id } }));
                 onClose();
                 return;
+            }
+            else {
+                const existingPatientTab = existingTabs.find(tab => tab.state?.patientId === patient.patient_id);
+                if (existingPatientTab) {
+                    // Close all tabs for this patient
+                    const patientTabIds = existingTabs
+                        .filter(tab => tab.state?.patientId === patient.patient_id)
+                        .map(tab => tab.id);
+                    for (const tabId of patientTabIds) {
+                        window.dispatchEvent(new CustomEvent('closeTab', { detail: { tabId: tabId } }));
+                    }
+                }
             }
 
             // If this is a shared file, mark it as seen

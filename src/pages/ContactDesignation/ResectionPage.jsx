@@ -1357,6 +1357,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     onChange={handleCSVFileUpload}
                     style={{ display: 'none' }}
                     id="coorInput"
+                    aria-label="Open Coordinate File"
                 />
                 <div className="flex flex-col items-center gap-2">
                     <button
@@ -1377,6 +1378,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     onChange={handleNIfTIFileUpload}
                     style={{ display: 'none' }}
                     id="niftiInput"
+                    aria-label="Open NIfTI File"
                 />
                 <div className="flex flex-col items-center gap-2">
                     <button
@@ -1412,6 +1414,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                             width={fixedMainViewSize}
                             height={fixedMainViewSize}
                             className={"max-w-[" + fixedMainViewSize + "] max-h-[" + fixedMainViewSize + "] border border-gray-300 rounded-lg shadow-sm"}
+                            data-testid="main-canvas"
                         />
                         <div className="absolute top-1 right-1 bg-black bg-opacity-50 text-white px-1 py-1 rounded text-xs flex-row
                                         lg:top-2 lg:right-2 lg:px-2 lg:text-sm">
