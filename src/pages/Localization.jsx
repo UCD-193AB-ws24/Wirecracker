@@ -831,7 +831,8 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     email: shareEmail,
                     designationData: saveCSVFile(Identifiers.LOCALIZATION, electrodes, savedState.patientId, creationDate, modifiedDate, false, fileId),
                     localizationData: electrodes,
-                    existingEpilepsyFileId: designationResult.exists ? designationResult.fileId : null
+                    existingEpilepsyFileId: designationResult.exists ? designationResult.fileId : null,
+                    patientId: savedState.patientId
                 })
             });
 
