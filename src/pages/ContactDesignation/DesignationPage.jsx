@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
 import { useError } from '../../context/ErrorContext';
 import { useWarning } from '../../context/WarningContext';
+import HelpButton from "../../utils/HelpButton.jsx";
 
 const backendURL = __APP_CONFIG__.backendURL;
 
@@ -526,6 +527,12 @@ const Designation = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     </li>
                 ))}
             </ul>
+
+            {/* Floating Help and Guide at the Bottom Left */}
+            <HelpButton
+                title="Epileptic Network Labeling Page Help"
+                instructions="Click on a contact to label and change its color."
+            />
 
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1

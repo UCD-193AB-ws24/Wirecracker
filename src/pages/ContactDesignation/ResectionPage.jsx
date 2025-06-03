@@ -6,6 +6,7 @@ import { useError } from '../../context/ErrorContext';
 import { useWarning } from '../../context/WarningContext';
 import { niftiStorage } from '../../utils/IndexedDBStorage';
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
+import HelpButton from "../../utils/HelpButton.jsx";
 
 const backendURL = __APP_CONFIG__.backendURL;
 
@@ -367,6 +368,12 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     </ul>
                 </div>
             )}
+
+            {/* Floating Help and Guide at the Bottom Left */}
+            <HelpButton
+                title="Resection Page Help"
+                instructions="(Optional) Upload brain scan and contact coordinates. Click contact in brain scan or list to mark for surgery."
+            />
 
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1
