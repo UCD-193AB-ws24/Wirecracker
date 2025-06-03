@@ -99,7 +99,8 @@ const FunctionalTestSelection = ({
     }, []);
 
     useEffect(() => {
-        onStateChange(state);
+        if (typeof onStateChange === 'function')
+            onStateChange(state);
     }, [state]);
 
     useEffect(() => {
@@ -224,6 +225,7 @@ const FunctionalTestSelection = ({
             }
             return Array.from(newSet);
         });
+        console.log(expandedTests)
     };
 
     const exportTests = async (tests, contacts, download = true) => {
@@ -364,7 +366,7 @@ const FunctionalTestSelection = ({
                         {/* Display added tests */}
                         <div className="mt-2">
                             {tests[contactPair[0].id]?.map((test, index) => {
-                                const testKey = `${contactPair[0].id} - ${test.id}`;
+                                const testKey = `${contactPair[0].id}-${test.id}`;
                                 return (
                                     <div
                                         key={index}

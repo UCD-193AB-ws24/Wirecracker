@@ -201,23 +201,6 @@ class FILE
                 }
                 break;
 
-            case 'float16':
-                if ( number == 1 )
-                {
-                    result = this.content.getFloat16(this.offset, this.littleEndian);
-                    this.offset += 2;
-                }
-                else
-                {
-                    result = [];
-                    for ( var i = 0; i < number; i++ )
-                    {
-                        result.push(this.content.getFloat16(this.offset, this.littleEndian));
-                        this.offset += 2;
-                    }
-                }
-                break;
-
             case 'string':
                 const stringView = new DataView(this.content.buffer, this.offset, number);
                 const decoder = new TextDecoder('utf-8');

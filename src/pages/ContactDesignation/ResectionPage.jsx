@@ -6,6 +6,7 @@ import { useError } from '../../context/ErrorContext';
 import { useWarning } from '../../context/WarningContext';
 import { niftiStorage } from '../../utils/IndexedDBStorage';
 import { saveDesignationCSVFile } from "../../utils/CSVParser";
+import HelpButton from "../../utils/HelpButton.jsx";
 
 const backendURL = __APP_CONFIG__.backendURL;
 
@@ -367,6 +368,13 @@ const Resection = ({ initialData = {}, onStateChange, savedState = {} }) => {
                     </ul>
                 </div>
             )}
+
+            {/* Floating Help and Guide at the Bottom Left */}
+            <HelpButton
+                title="Resection Page Help"
+                instructions="(Optional) Upload brain scan and contact coordinates. Click contact in brain scan or list to mark for surgery."
+            />
+
             {/* Floating Save and Export Buttons at the Bottom Right */}
             <div className="fixed bottom-2 right-2 z-50 flex flex-col gap-1
                             lg:bottom-6 lg:right-6 lg:flex-row lg:gap-2">
@@ -1357,6 +1365,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     onChange={handleCSVFileUpload}
                     style={{ display: 'none' }}
                     id="coorInput"
+                    aria-label="Open Coordinate File"
                 />
                 <div className="flex flex-col items-center gap-2">
                     <button
@@ -1377,6 +1386,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                     onChange={handleNIfTIFileUpload}
                     style={{ display: 'none' }}
                     id="niftiInput"
+                    aria-label="Open NIfTI File"
                 />
                 <div className="flex flex-col items-center gap-2">
                     <button
@@ -1412,6 +1422,7 @@ const NIFTIimage = ({ isLoaded, onLoad, electrodes, onContactClick, onStateChang
                             width={fixedMainViewSize}
                             height={fixedMainViewSize}
                             className={"max-w-[" + fixedMainViewSize + "] max-h-[" + fixedMainViewSize + "] border border-gray-300 rounded-lg shadow-sm"}
+                            data-testid="main-canvas"
                         />
                         <div className="absolute top-1 right-1 bg-black bg-opacity-50 text-white px-1 py-1 rounded text-xs flex-row
                                         lg:top-2 lg:right-2 lg:px-2 lg:text-sm">

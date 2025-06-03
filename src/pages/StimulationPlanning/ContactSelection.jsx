@@ -181,8 +181,8 @@ const ContactList = ({ electrodes, onDrop, onClick, droppedContacts, areAllVisib
             // Only show contacts that haven't been dropped to planning
             const notDropped = !(droppedContacts.some((c) => c.id === contacts[0].id));
 
-            // In default state, only show pairs where both contacts have surgeonMark
-            const bothSurgeonMarked = contacts[0].surgeonMark && contacts[1].surgeonMark;
+            // In default state, show pairs where at least one contact has a surgeon mark
+            const bothSurgeonMarked = contacts[0].surgeonMark || contacts[1].surgeonMark;
 
             return (
                 !(contacts[0].isPlanning) && (

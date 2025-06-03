@@ -70,10 +70,10 @@ export default function load_nii_ext ( filename, data )
         fid.frewind();
         if ( fid.fread(1, 'int32') !== 348 )
         {
-            throw 'File ${filename} is corrupted.'
+            throw `File ${filename} is corrupted.`
         }
 
-        if ( new_ext )
+        if ( extension === '.nii' )
         {
             fid.fseek(108, 'bof');
             vox_offset = fid.fread(1, 'float32');
@@ -107,7 +107,7 @@ function read_extension ( fid, vox_offset )
         ext.extension = fid.fread(4, 'uint8');
     }
 
-    if ( ext.length == 0 || ext.extension[0] == 0 )
+    if ( !ext.extension || ext.extension[0] == 0 )
     {
         ext = [];
         return ext;
@@ -120,7 +120,7 @@ function read_extension ( fid, vox_offset )
         ext.section[i] = {};
         ext.section[i].esize = fid.fread(1,'int32');
         ext.section[i].ecode = fid.fread(1,'int32');
-        ext.section[i].edata = fid.fread(ext.section(i).esize-8, 'char');
+        ext.section[i].edata = fid.fread(ext.section[i].esize-8, 'char');
         i = i + 1;
     }
 
