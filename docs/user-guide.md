@@ -1,330 +1,318 @@
-# **COMPUTER SCIENCE AND ENGINEERING**
-
-# **WIRECRACKER**
-
-# **USER GUIDE**
-
-# Aditya Bhatia, Noor-Aysha Saadat, Chris Wang, and Yuecheng Zhao
+<div align="center">
+<h2>COMPUTER SCIENCE AND ENGINEERING</h2>
+<h1>WIRECRACKER</h1>
+ 
+Aditya Bhatia, Noor-Aysha Saadat, Chris Wang, and Yuecheng Zhao
 
 Department of Computer Science  
 University of California, Davis  
 ECS 193AB
-
-# May 2025
-
-# 
-
-# 
-
-# 
-
-# 
-
-# 
-
-# **Table of Contents** {#table-of-contents}
-
-**[Table of Contents	2](#table-of-contents)**
-
-[**Preface	6**](#preface)
-
-[**Overview of Product	6**](#overview-of-product)
-
-[**Installation or Distribution	7**](#installation-or-distribution)
-
-[**Engineering Standards and Design Constraints	7**](#engineering-standards-and-design-constraints)
-
-[Social and Ethical Considerations	7](#social-and-ethical-considerations)
-
-[Development Standards and Workflow	7](#development-standards-and-workflow)
-
-[Coding Standards	8](#coding-standards)
-
-[Workflow Standards	8](#workflow-standards)
-
-[Documentation and Requirements Tracking	8](#documentation-and-requirements-tracking)
-
-[**Home Page	8**](#home-page)
-
-[Overview	9](#overview)
-
-[Key Features	9](#key-features)
-
-[Sidebar Navigation	9](#sidebar-navigation)
-
-[My Files	9](#my-files)
-
-[Recent Files	9](#recent-files)
-
-[Patient Modal	10](#patient-modal)
-
-[Central Action Buttons	10](#central-action-buttons)
-
-[Top Navigation – Tab Creation	11](#top-navigation-–-tab-creation)
-
-[Troubleshooting	11](#troubleshooting)
-
-[**Anatomy Page	12**](#anatomy-page)
-
-[Overview	12](#overview-1)
-
-[Key Features	12](#key-features-1)
-
-[Interface Layout	12](#interface-layout)
-
-[Creating an Electrode	13](#creating-an-electrode)
-
-[Electrode Modal Details	13](#electrode-modal-details)
-
-[Managing Electrodes	14](#managing-electrodes)
-
-[Editing a Contact	14](#editing-a-contact)
-
-[Workflow Integration	14](#workflow-integration)
-
-[Troubleshooting	15](#troubleshooting-1)
-
-[**Epilepsy Page	15**](#epilepsy-page)
-
-[Overview	15](#overview-2)
-
-[Key Features	15](#key-features-2)
-
-[Interface Layout	15](#interface-layout-1)
-
-[Using the Designation Page	16](#using-the-designation-page)
-
-[Filtering Electrodes	16](#filtering-electrodes)
-
-[Marking Contacts	16](#marking-contacts)
-
-[Neurosurgeon Marks	16](#neurosurgeon-marks)
-
-[Keyboard Shortcuts	16](#keyboard-shortcuts)
-
-[Visual Design Guide	17](#visual-design-guide)
-
-[Troubleshooting	17](#troubleshooting-2)
-
-[**Neurosurgery Tool	18**](#neurosurgery-tool)
-
-[Overview	18](#overview-3)
-
-[Key Features	18](#key-features-3)
-
-[Getting Started	18](#getting-started)
-
-[Loading Data	18](#loading-data)
-
-[Interface Layout	18](#interface-layout-2)
-
-[Main Components	18](#main-components)
-
-[Navigation Controls	19](#navigation-controls)
-
-[Slice Navigation	19](#slice-navigation)
-
-[View Orientation	19](#view-orientation)
-
-[Working with Electrode Contacts	19](#working-with-electrode-contacts)
-
-[Contact Visualization	19](#contact-visualization)
-
-[Manipulating Contacts	19](#manipulating-contacts)
-
-[Color Coding	20](#color-coding)
-
-[Working Without Loaded Imaging Data	20](#working-without-loaded-imaging-data)
-
-[Contact Tile Interface	20](#contact-tile-interface)
-
-[Marking Contacts Without Images	20](#marking-contacts-without-images)
-
-[Transition to Full View	20](#transition-to-full-view)
-
-[When to Use Tile View	21](#when-to-use-tile-view)
-
-[Troubleshooting	21](#troubleshooting-3)
-
-[Common Issues	21](#common-issues)
-
-[**Contact Selection & Stimulation Planning Tool	21**](#contact-selection-&-stimulation-planning-tool)
-
-[Overview	21](#overview-4)
-
-[Key Features	21](#key-features-4)
-
-[Interface Layout	22](#interface-layout-3)
-
-[Main Components	22](#main-components-1)
-
-[Getting Started	22](#getting-started-1)
-
-[Loading Data	22](#loading-data-1)
-
-[Using the Contact List	22](#using-the-contact-list)
-
-[Basic Interactions	22](#basic-interactions)
-
-[Important Behavior Differences:	22](#important-behavior-differences:)
-
-[Contact Display	23](#contact-display)
-
-[Visibility Options	23](#visibility-options)
-
-[Using the Planning Pane	23](#using-the-planning-pane)
-
-[Adding Contacts	23](#adding-contacts)
-
-[Configuring Parameters	23](#configuring-parameters)
-
-[Reordering Contacts	23](#reordering-contacts)
-
-[Removing Contacts	24](#removing-contacts)
-
-[Pairing Contacts	24](#pairing-contacts)
-
-[Saving and Exporting	24](#saving-and-exporting)
-
-[Saving Work	24](#saving-work)
-
-[Exporting Data	24](#exporting-data)
-
-[Troubleshooting	24](#troubleshooting-4)
-
-[Common Issues	24](#common-issues-1)
-
-[**Functional Test Selection Tool	25**](#functional-test-selection-tool)
-
-[Overview	25](#overview-5)
-
-[Key Features	25](#key-features-5)
-
-[Interface Layout	25](#interface-layout-4)
-
-[Main Components	25](#main-components-2)
-
-[Getting Started	26](#getting-started-2)
-
-[Loading Data	26](#loading-data-2)
-
-[Using the Tool	26](#using-the-tool)
-
-[Auto-Assigning Tests	26](#auto-assigning-tests)
-
-[Manual Test Assignment	26](#manual-test-assignment)
-
-[Viewing Test Details	26](#viewing-test-details)
-
-[Managing Assigned Tests	27](#managing-assigned-tests)
-
-[Saving and Exporting	27](#saving-and-exporting-1)
-
-[Saving Work	27](#saving-work-1)
-
-[Exporting Data	27](#exporting-data-1)
-
-[Data Interpretation	27](#data-interpretation)
-
-[Troubleshooting	27](#troubleshooting-5)
-
-[Common Issues	27](#common-issues-2)
-
-**Appendix………………………………………………………………………………………………...28**
-
-[**Introduction	28**](#introduction)
-
-[**Technology Survey	28**](#technology-survey)
-
-[Front-end	29](#front-end)
-
-[CSS framework	29](#css-framework)
-
-[● Tailwind CSS	29](#tailwind-css)
-
-[● Bootstrap	29](#bootstrap)
-
-[JavaScript framework	29](#javascript-framework)
-
-[● React.js	29](#react.js)
-
-[● Vue.js	29](#vue.js)
-
-[UI SDK	30](#ui-sdk)
-
-[● Flutter	30](#flutter)
-
-[● React Native	30](#react-native)
-
-[● Figma	30](#figma)
-
-[Back-end	30](#back-end)
-
-[● Django	30](#django)
-
-[● Node.js	30](#node.js)
-
-[● Dart	31](#dart)
-
-[Full-stack	31](#full-stack)
-
-[● Next.js	31](#next.js)
-
-[● Blazor	31](#blazor)
-
-[Database	31](#database)
-
-[APIs Used	32](#apis-used)
-
-[Project Management Software	32](#project-management-software)
-
-[**System Architecture Overview	32**](#system-architecture-overview)
-
-[UI Components:	34](#ui-components:)
-
-[**User Stories	34**](#user-stories)
-
-[**Prototyping Code	36**](#prototyping-code)
-
-[**Technologies Employed	36**](#technologies-employed)
-
-[**Real-World Constraint Analysis	36**](#real-world-constraint-analysis)
-
-[Cost	36](#cost)
-
-[Space	36](#space)
-
-[Security	36](#security)
-
-[Privacy	37](#privacy)
-
-[Scalability	37](#scalability)
-
-[Maintainability	37](#maintainability)
-
-[Acceptance Test	37](#acceptance-test)
-
-[**Social and Legal Aspects	37**](#social-and-legal-aspects)
-
-[**Glossary of Terms	37**](#glossary-of-terms)
-
-# 
-
-# 
-
-# 
-
-# 
-
-# 
-
-# **Preface** {#preface}
+May 2025
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li><a href="#preface">Preface</a></li>
+    <li><a href="#overview-of-product">Overview of Product</a></li>
+    <li><a href="#installation-or-distribution">Installation or Distribution</a></li>
+    <li>
+      <a href="#engineering-standards-and-design-constraints">Engineering Standards and Design Constraints</a>
+      <ul>
+        <li><a href="#social-and-ethical-considerations">Social and Ethical Considerations</a></li>
+        <li>
+          <a href="#development-standards-and-workflow">Development Standards and Workflow</a>
+          <ul>
+            <li><a href="#coding-standards">Coding Standards</a></li>
+            <li><a href="#workflow-standards">Workflow Standards</a></li>
+            <li><a href="#documentation-and-requirements-tracking">Documentation and Requirements Tracking</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="#home-page">Home Page</a>
+      <ul>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#key-features">Key Features</a></li>
+        <li>
+          <a href="#sidebar-navigation">Sidebar Navigation</a>
+          <ul>
+            <li><a href="#my-files">My Files</a></li>
+            <li><a href="#recent-files">Recent Files</a></li>
+          </ul>
+        </li>
+        <li><a href="#patient-modal">Patient Modal</a></li>
+        <li><a href="#central-action-buttons">Central Action Buttons</a></li>
+        <li><a href="#top-navigation-tab-creation">Top Navigation: Tab Creation</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#anatomy-page">Anatomy Page</a>
+      <ul>
+        <li><a href="#overview-1">Overview</a></li>
+        <li><a href="#key-features-1">Key Features</a></li>
+        <li><a href="#interface-layout">Interface Layout</a></li>
+        <li>
+          <a href="#creating-an-electrode">Creating an Electrode</a>
+          <ul>
+            <li><a href="#electrode-modal-details">Electrode Modal Details</a></li>
+          </ul>
+        </li>
+        <li><a href="#managing-electrodes">Managing Electrodes</a></li>
+        <li><a href="#editing-a-contact">Editing a Contact</a></li>
+        <li><a href="#workflow-integration">Workflow Integration</a></li>
+        <li><a href="#troubleshooting-1">Troubleshooting</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#epilepsy-page">Epilepsy Page</a>
+      <ul>
+        <li><a href="#overview-2">Overview</a></li>
+        <li><a href="#key-features-2">Key Features</a></li>
+        <li><a href="#interface-layout-1">Interface Layout</a></li>
+        <li>
+          <a href="#using-the-designation-page">Using the Designation Page</a>
+          <ul>
+            <li><a href="#filtering-electrodes">Filtering Electrodes</a></li>
+            <li><a href="#marking-contacts">Marking Contacts</a></li>
+            <li><a href="#neurosurgeon-marks">Neurosurgeon Marks</a></li>
+          </ul>
+        </li>
+        <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+        <li><a href="#visual-design-guide">Visual Design Guide</a></li>
+        <li><a href="#troubleshooting-2">Troubleshooting</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#neurosurgery-tool">Neurosurgery Tool</a>
+      <ul>
+        <li><a href="#overview-3">Overview</a></li>
+        <li><a href="#key-features-3">Key Features</a></li>
+        <li>
+          <a href="#interface-layout-2">Interface Layout</a>
+          <ul>
+            <li><a href="#main-components">Main Components</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#getting-started">Getting Started</a>
+          <ul>
+            <li><a href="#loading-data">Loading Data</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#navigation-controls">Navigation Controls</a>
+          <ul>
+            <li><a href="#slice-navigation">Slice Navigation</a></li>
+            <li><a href="#view-orientation">View Orientation</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#working-with-electrode-contacts">Working with Electrode Contacts</a>
+          <ul>
+            <li><a href="#contact-visualization">Contact Visualization</a></li>
+            <li><a href="#manipulating-contacts">Manipulating Contacts</a></li>
+          </ul>
+        </li>
+        <li><a href="#color-coding">Color Coding</a></li>
+        <li>
+          <a href="#working-without-loaded-imaging-data">Working Without Loaded Imaging Data</a>
+          <ul>
+            <li><a href="#contact-tile-interface">Contact Tile Interface</a></li>
+            <li><a href="#marking-contacts-without-images">Marking Contacts Without Images</a></li>
+            <li><a href="#transition-to-full-view">Transition to Full View</a></li>
+            <li><a href="#when-to-use-tile-view">When to Use Tile View</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#troubleshooting-3">Troubleshooting</a>
+          <ul>
+            <li><a href="#common-issues">Common Issues</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="#contact-selection-&-stimulation-planning-tool">Contact Selection & Stimulation Planning Tool</a>
+      <ul>
+        <li><a href="#overview-4">Overview</a></li>
+        <li><a href="#key-features-4">Key Features</a></li>
+        <li>
+          <a href="#interface-layout-3">Interface Layout</a>
+          <ul>
+            <li><a href="#main-components-1">Main Components</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#getting-started-1">Getting Started</a>
+          <ul>
+            <li><a href="#loading-data-1">Loading Data</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#using-the-contact-list">Using the Contact List</a>
+          <ul>
+            <li><a href="#basic-interactions">Basic Interactions</a></li>
+            <li><a href="#important-behavior-differences">Important Behavior Differences</a></li>
+            <li><a href="#contact-display">Contact Display</a></li>
+            <li><a href="#visibility-options">Visibility Options</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#using-the-planning-pane">Using the Planning Pane</a>
+          <ul>
+            <li><a href="#adding-contacts">Adding Contacts</a></li>
+            <li><a href="#configuring-parameters">Configuring Parameters</a></li>
+            <li><a href="#reordering-contacts">Reordering Contacts</a></li>
+            <li><a href="#removing-contacts">Removing Contacts</a></li>
+          </ul>
+        </li>
+        <li><a href="#pairing-contacts">Pairing Contacts</a></li>
+        <li>
+          <a href="#saving-and-exporting">Saving and Exporting</a>
+          <ul>
+            <li><a href="#saving-work">Saving Work</a></li>
+            <li><a href="#exporting-data">Exporting Data</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#troubleshooting-4">Troubleshooting</a>
+          <ul>
+            <li><a href="#common-issues-1">Common Issues</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="#functional-test-selection-tool">Functional Test Selection Tool</a>
+      <ul>
+        <li><a href="#overview-5">Overview</a></li>
+        <li><a href="#key-features-5">Key Features</a></li>
+        <li>
+          <a href="#interface-layout-4">Interface Layout</a>
+          <ul>
+            <li><a href="#main-components-2">Main Components</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#getting-started-2">Getting Started</a>
+          <ul>
+            <li><a href="#loading-data-2">Loading Data</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#using-the-tool">Using the Tool</a>
+          <ul>
+            <li><a href="#auto-assigning-tests">Auto-Assigning Tests</a></li>
+            <li><a href="#manual-test-assignment">Manual Test Assignment</a></li>
+            <li><a href="#viewing-test-details">Viewing Test Details</a></li>
+            <li><a href="#managing-assigned-tests">Managing Assigned Tests</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#saving-and-exporting-1">Saving and Exporting</a>
+          <ul>
+            <li><a href="#saving-work-1">Saving Work</a></li>
+            <li><a href="#exporting-data-1">Exporting Data</a></li>
+          </ul>
+        </li>
+        <li><a href="#data-interpretation">Data Interpretation</a></li>
+        <li>
+          <a href="#troubleshooting-5">Troubleshooting</a>
+          <ul>
+            <li><a href="#common-issues-2">Common Issues</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#Appendix">Appendix</a></li>
+    <li><a href="#introduction">Introduction</a></li>
+    <li>
+      <a href="#technology-survey">Technology Survey</a>
+      <ul>
+        <li>
+          <a href="#front-end">Front-end</a>
+          <ul>
+           <li>
+            <a href="#css-framework">CSS Framework</a>
+            <ul>
+              <li><a href="#tailwind-css">Tailwind CSS</a></li>
+              <li><a href="#bootstrap">Bootstrap</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#javascript-framework">JavaScript Framework</a>
+            <ul>
+              <li><a href="#react.js">React.js</a></li>
+              <li><a href="#vue.js">Vue.js</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#ui-sdk">UI SDK</a>
+            <ul>
+              <li><a href="#flutter">Flutter</a></li>
+              <li><a href="#react-native">React Native</a></li>
+              <li><a href="#figma">Figma</a></li>
+            </ul>
+          </li>
+          </ul>
+        </li>
+        <li>
+          <a href="#back-end">Back-end</a>
+          <ul>
+            <li><a href="#django">Django</a></li>
+            <li><a href="#node.js">Node.js</a></li>
+            <li><a href="#dart">Dart</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#full-stack">Full-stack</a>
+          <ul>
+            <li><a href="#next.js">Next.js</a></li>
+            <li><a href="#blazor">Blazor</a></li>
+          </ul>
+        </li>
+        <li><a href="#database">Database</a></li>
+        <li><a href="#apis-used">APIs Used</a></li>
+        <li><a href="#project-management-software">Project Management Software</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#system-architecture-overview">System Architecture Overview</a>
+      <ul>
+        <li><a href="#ui-components">UI Components</a></li>
+      </ul>
+    </li>
+    <li><a href="#user-stories">User Stories</a></li>
+    <li><a href="#prototyping-code">Prototyping Code</a></li>
+    <li><a href="#technologies-employed">Technologies Employed</a></li>
+    <li>
+      <a href="#real-world-constraint-analysis">Real-World Constraint Analysis</a>
+      <ul>
+        <li><a href="#cost">Cost</a></li>
+        <li><a href="#space">Space</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+        <li><a href="#scalability">Scalability</a></li>
+        <li><a href="#maintainability">Maintainability</a></li>
+        <li><a href="#acceptance-test">Acceptance Test</a></li>
+      </ul>
+    </li>
+    <li><a href="#social-and-legal-aspects">Social and Legal Aspects</a></li>
+    <li><a href="#glossary-of-terms">Glossary of Terms</a></li>
+  </ol>
+</details>
+
+# **Preface**
 
 This user guide provides comprehensive instructions for the Wirecracker, a web-based application developed to support the planning of brain stimulations in patients with epilepsy. It is intended for medical professionals and researchers, including epileptologists, neurosurgeons, neuropsychologists, and neuroscientists involved in the clinical assessment and treatment of epilepsy.
 
 The tool fosters collaborative, interdisciplinary planning by integrating clinical data across specialties. This guide will assist users in navigating core features such as mapping seizure onset zones, planning surgical resections, assigning functional tests, and configuring stimulation protocols.
 
-# **Overview of Product** {#overview-of-product}
+# **Overview of Product**
 
 The Wirecracker Stimulation Planning Tool is a **full-stack web application** developed using **React** for the frontend, **Node.js** for the backend, and **Supabase** for real-time database and authentication management. It centralizes and organizes complex clinical data to assist in patient-specific planning for brain stimulation procedures.
 
@@ -350,7 +338,7 @@ Key Features Include:
 
 The tool aims to bridge specialties, reduce miscommunication, and support evidence-based, patient-tailored stimulation strategies.
 
-# **Installation or Distribution** {#installation-or-distribution}
+# **Installation or Distribution**
 
 The Wirecracker Stimulation Planning Tool is a **cloud-based application**, accessible via any modern web browser. No installation is required.
 
@@ -358,9 +346,9 @@ The Wirecracker Stimulation Planning Tool is a **cloud-based application**, acce
 
 User access is managed through Supabase authentication. Please feel free to use your email to make an account and test the application out.
 
-# **Engineering Standards and Design Constraints** {#engineering-standards-and-design-constraints}
+# **Engineering Standards and Design Constraints**
 
-### **Social and Ethical Considerations** {#social-and-ethical-considerations}
+### **Social and Ethical Considerations**
 
 This application was developed with a strong emphasis on **patient privacy, ethical collaboration, and clinical accuracy**:
 
@@ -374,11 +362,11 @@ This application was developed with a strong emphasis on **patient privacy, ethi
 
 The team adhered to the principles outlined in the **Belmont Report** for clinical ethics and followed HIPAA-aligned standards for handling sensitive health data.
 
-### **Development Standards and Workflow** {#development-standards-and-workflow}
+### **Development Standards and Workflow**
 
 Development was guided by internal team agreements and industry-standard practices:
 
-#### **Coding Standards** {#coding-standards}
+#### **Coding Standards**
 
 * **Frontend**: React.js with functional components and hooks. Styling is consistent using utility-first CSS (TailwindCSS or equivalent).
 
@@ -388,7 +376,7 @@ Development was guided by internal team agreements and industry-standard practic
 
 Code adheres to the **Airbnb JavaScript Style Guide**, enforced via ESLint and Prettier.
 
-#### **Workflow Standards** {#workflow-standards}
+#### **Workflow Standards**
 
 * Version control through **Git** and **GitHub**, with enforced pull requests, code reviews, and branching (feature/hotfix/main) strategy.
 
@@ -396,7 +384,7 @@ Code adheres to the **Airbnb JavaScript Style Guide**, enforced via ESLint and P
 
 * Continuous integration and deployment were tested manually in a staging environment before production deployment.
 
-#### **Documentation and Requirements Tracking** {#documentation-and-requirements-tracking}
+#### **Documentation and Requirements Tracking**
 
 * All features and UI decisions were traced to a **requirements document** collaboratively written at project initiation.
 
@@ -404,15 +392,15 @@ Code adheres to the **Airbnb JavaScript Style Guide**, enforced via ESLint and P
 
 * Internal documentation was kept in Notion and GitHub README files, while this user guide serves as the official external documentation.
 
-# **Home Page** {#home-page}
+# **Home Page**
 
-### **Overview** {#overview}
+### **Overview**
 
 The Home Page serves as the central dashboard for navigating and managing patient data within the Wirecracker Stimulation Planning Tool. It supports a **tab-based workflow**, where each open tab corresponds to a patient and their associated files. This layout enables users to quickly access, create, and organize patient-specific plans across specialties.
 
 ---
 
-### **Key Features** {#key-features}
+### **Key Features**
 
 * Patient tab system for parallel, multi-file workflow
 
@@ -426,9 +414,9 @@ The Home Page serves as the central dashboard for navigating and managing patien
 
 ---
 
-### **Sidebar Navigation** {#sidebar-navigation}
+### **Sidebar Navigation**
 
-#### **My Files** {#my-files}
+#### **My Files**
 
 Organized into two expandable subcategories:
 
@@ -442,7 +430,7 @@ Organized into two expandable subcategories:
 
   * Displays patients whose files have been **approved for final review or clinical use**.
 
-#### **Recent Files** {#recent-files}
+#### **Recent Files**
 
 Shows the **most recently edited patients**.
 
@@ -452,7 +440,7 @@ Shows the **most recently edited patients**.
 
 ---
 
-### **Patient Modal** {#patient-modal}
+### **Patient Modal**
 
 When clicking on any patient from the sidebar or central buttons, a **Patient Modal** is shown. This modal includes:
 
@@ -476,7 +464,7 @@ When clicking on any patient from the sidebar or central buttons, a **Patient Mo
 
 ---
 
-### **Central Action Buttons** {#central-action-buttons}
+### **Central Action Buttons**
 
 Located in the center of the Home Page:
 
@@ -504,7 +492,7 @@ Located in the center of the Home Page:
 
 ---
 
-### **Top Navigation – Tab Creation** {#top-navigation-–-tab-creation}
+### **Top Navigation: Tab Creation**
 
 * A **"+" button** in the upper-right corner allows users to create a **new patient tab** at any time
 
@@ -512,7 +500,7 @@ Located in the center of the Home Page:
 
 ---
 
-### **Troubleshooting** {#troubleshooting}
+### **Troubleshooting**
 
 | Issue | Solution |
 | ----- | ----- |
@@ -521,13 +509,13 @@ Located in the center of the Home Page:
 | Cannot upload CSV | Verify file was generated by Wirecracker and is unmodified |
 | Missing recent file | Check that edits were saved before closing the session |
 
-# **Anatomy Page** {#anatomy-page}
+# **Anatomy Page**
 
-### **Overview** {#overview-1}
+### **Overview**
 
 The Anatomy page allows users to define and configure electrode placements on the brain. This is typically the first step in planning a patient’s stimulation workflow. It supports anatomical localization, contact setup, and collaborative sharing with epileptologists.
 
-### **Key Features** {#key-features-1}
+### **Key Features**
 
 * Electrode creation via a floating action button
 
@@ -543,7 +531,7 @@ The Anatomy page allows users to define and configure electrode placements on th
 
 ---
 
-### **Interface Layout** {#interface-layout}
+### **Interface Layout**
 
 The page consists of:
 
@@ -559,13 +547,13 @@ The page consists of:
 
 ---
 
-### **Creating an Electrode** {#creating-an-electrode}
+### **Creating an Electrode**
 
 1. **Click the "+" button** (bottom-right corner).
 
 2. A **modal** will appear with the following fields and options:
 
-#### **Electrode Modal Details** {#electrode-modal-details}
+#### **Electrode Modal Details**
 
 * **Label**: Enter the electrode name.
 
@@ -595,7 +583,7 @@ Once saved, the electrode appears as a **blue bar** on the page.
 
 ---
 
-### **Managing Electrodes** {#managing-electrodes}
+### **Managing Electrodes**
 
 * **Edit**: Click the **pen icon** to reopen the electrode modal.
 
@@ -607,7 +595,7 @@ Once saved, the electrode appears as a **blue bar** on the page.
 
 ---
 
-### **Editing a Contact** {#editing-a-contact}
+### **Editing a Contact**
 
 In the contact modal, users can classify each contact's brain location using one of five predefined types:
 
@@ -621,7 +609,7 @@ In the contact modal, users can classify each contact's brain location using one
 
 ---
 
-### **Workflow Integration** {#workflow-integration}
+### **Workflow Integration**
 
 At the bottom of the page are two buttons to continue planning:
 
@@ -637,7 +625,7 @@ At the bottom of the page are two buttons to continue planning:
 
 ---
 
-### **Troubleshooting** {#troubleshooting-1}
+### **Troubleshooting**
 
 | Issue | Solution |
 | ----- | ----- |
@@ -648,19 +636,19 @@ At the bottom of the page are two buttons to continue planning:
 
 For best results, use the Anatomy page on a desktop or laptop device.
 
-# **Epilepsy Page** {#epilepsy-page}
+# **Epilepsy Page**
 
-## **Overview** {#overview-2}
+## **Overview**
 
 The epilepsy page allows epileptologists to mark and categorize electrode contacts with different visual designations. This interface provides keyboard-optimized workflow for efficient contact marking during activity monitoring.
 
-## **Key Features** {#key-features-2}
+## **Key Features**
 
 * Keyboard-controlled electrode filtering  
 * Visual contact marking system  
 * Quick cycling through designation states
 
-## **Interface Layout** {#interface-layout-1}
+## **Interface Layout**
 
 The page consists of:
 
@@ -668,9 +656,9 @@ The page consists of:
 2. Electrode cards (one per electrode)  
 3. Contact buttons within each card
 
-## **Using the Designation Page** {#using-the-designation-page}
+## **Using the Designation Page**
 
-### **Filtering Electrodes** {#filtering-electrodes}
+### **Filtering Electrodes**
 
 1. **By keyboard**:  
    * Press any letter key to filter electrodes starting with that letter  
@@ -680,7 +668,7 @@ The page consists of:
    * Current filter appears below the header  
    * Only matching electrodes remain visible
 
-### **Marking Contacts** {#marking-contacts}
+### **Marking Contacts**
 
 **Click any contact** to cycle through available marks:
 
@@ -689,14 +677,14 @@ The page consists of:
 3. Amber (orange): Seizure Network  
 4. Stone (gray): Out of Brain
 
-### **Neurosurgeon Marks** {#neurosurgeon-marks}
+### **Neurosurgeon Marks**
 
 * Contacts with surgeon marks have:  
   * Thicker dark gray border  
   * Normal mark colors underneath  
 * These are set in the resection page
 
-## **Keyboard Shortcuts** {#keyboard-shortcuts}
+## **Keyboard Shortcuts**
 
 | Key | Action |
 | ----- | ----- |
@@ -704,7 +692,7 @@ The page consists of:
 | Esc | Clear current filter |
 | Backspace | Clear current filter |
 
-## **Visual Design Guide** {#visual-design-guide}
+## **Visual Design Guide**
 
 | Color | Meaning |
 | ----- | ----- |
@@ -714,7 +702,7 @@ The page consists of:
 | Stone (gray) | Out of Brain |
 | Thick gray border | Marked by Neurosurgeon in Resection page |
 
-## **Troubleshooting** {#troubleshooting-2}
+## **Troubleshooting**
 
 **Issue**: Cannot save to database
 
@@ -730,13 +718,13 @@ The page consists of:
 
 For optimal performance, use this interface on a desktop/laptop computer with a keyboard. Touchscreen devices may work but won't benefit from the keyboard filtering features.
 
-# **Neurosurgery Tool** {#neurosurgery-tool}
+# **Neurosurgery Tool**
 
-## **Overview** {#overview-3}
+## **Overview**
 
 The Resection Planning tool provides a comprehensive interface for visualizing electrode contacts in anatomical context and planning surgical resections. It combines NIfTI image visualization with electrode coordinate data for precise surgical planning.
 
-## **Key Features** {#key-features-3}
+## **Key Features**
 
 * Multi-planar NIfTI image visualization (Axial, Coronal, Sagittal)  
 * Electrode contact marking and selection  
@@ -744,9 +732,9 @@ The Resection Planning tool provides a comprehensive interface for visualizing e
 * Contact information display  
 * Surgical marking capabilities
 
-## **Getting Started** {#getting-started}
+## **Getting Started**
 
-### **Loading Data** {#loading-data}
+### **Loading Data**
 
 1. **Load (MRI) NIfTI File**:  
    * Click "Open NIfTI File" button  
@@ -757,9 +745,9 @@ The Resection Planning tool provides a comprehensive interface for visualizing e
    * Select a CSV file with electrode coordinates  
    * File must contain columns: \[Electrode, Contact, x, y, z\]
 
-## **Interface Layout** {#interface-layout-2}
+## **Interface Layout**
 
-### **Main Components** {#main-components}
+### **Main Components**
 
 1. **Primary View (Large Canvas)**:  
    * Displays the current primary plane (default: Axial)  
@@ -774,26 +762,26 @@ The Resection Planning tool provides a comprehensive interface for visualizing e
    * Displays location, mark status, and surgeon mark status  
    * Updates in real-time as you hover over contacts
 
-## **Navigation Controls** {#navigation-controls}
+## **Navigation Controls**
 
-### **Slice Navigation** {#slice-navigation}
+### **Slice Navigation**
 
 * **Mouse Wheel**: Scroll up/down to move through slices
 
-### **View Orientation** {#view-orientation}
+### **View Orientation**
 
 * **Click any secondary view** to swap it with the main view  
 * The clicked view becomes the new primary view
 
-## **Working with Electrode Contacts** {#working-with-electrode-contacts}
+## **Working with Electrode Contacts**
 
-### **Contact Visualization** {#contact-visualization}
+### **Contact Visualization**
 
 * Contacts appear as colored circles overlaid on the anatomical images  
 * Colors indicate mark status (see Color Coding section)  
 * Surgeon-marked contacts have thick black borders
 
-### **Manipulating Contacts** {#manipulating-contacts}
+### **Manipulating Contacts**
 
 * **Hover on a Contact**: View information of the contact in the information pane  
 * **Single Click**: Toggle surgeon mark (add/remove thick black border)  
@@ -803,7 +791,7 @@ The Resection Planning tool provides a comprehensive interface for visualizing e
   * Click and drag to create a selection rectangle  
   * All contacts within the rectangle will be selected
 
-## **Color Coding** {#color-coding}
+## **Color Coding**
 
 | Color | Meaning |
 | ----- | ----- |
@@ -814,18 +802,18 @@ The Resection Planning tool provides a comprehensive interface for visualizing e
 
 **Surgeon Marks**: Thick black border indicates surgeon-confirmed contacts
 
-## **Working Without Loaded Imaging Data** {#working-without-loaded-imaging-data}
+## **Working Without Loaded Imaging Data**
 
 When no NIfTI file is loaded, the interface displays all electrode contacts as interactive tiles for basic marking functionality:
 
-### **Contact Tile Interface** {#contact-tile-interface}
+### **Contact Tile Interface**
 
 * **Layout**:  
   * Electrodes are grouped by their label (e.g., A1, B2)  
   * Each contact appears as a colored tile showing its number and location  
   * Tiles use the same color coding system as the imaging view
 
-### **Marking Contacts Without Images** {#marking-contacts-without-images}
+### **Marking Contacts Without Images**
 
 1. **Single Click**:  
    * Toggles the surgeon mark status (adds/removes thick black border)  
@@ -835,22 +823,22 @@ When no NIfTI file is loaded, the interface displays all electrode contacts as i
    * Pink/Orange/Gray: Marked with different designations  
    * Black border: Mark by neurosurgeon
 
-### **Transition to Full View** {#transition-to-full-view}
+### **Transition to Full View**
 
 * Once NIfTI data and contact coordinates are loaded:  
   1. All existing marks are preserved  
   2. Contacts automatically appear in their anatomical positions  
   3. The tile view is replaced by the imaging interface
 
-### **When to Use Tile View** {#when-to-use-tile-view}
+### **When to Use Tile View**
 
 * For preliminary marking before imaging data is available  
 * Quick review of existing contact designations  
 * Basic planning when detailed imaging isn't required
 
-## **Troubleshooting** {#troubleshooting-3}
+## **Troubleshooting**
 
-### **Common Issues** {#common-issues}
+### **Common Issues**
 
 1. **Contacts Not Appearing**:  
    * Verify coordinate file loaded correctly  
@@ -867,22 +855,22 @@ When no NIfTI file is loaded, the interface displays all electrode contacts as i
 
 For additional support, consult your system administrator or technical support team.
 
-# **Contact Selection & Stimulation Planning Tool** {#contact-selection-&-stimulation-planning-tool}
+# **Contact Selection & Stimulation Planning Tool**
 
-## **Overview** {#overview-4}
+## **Overview**
 
 This tool allows clinicians to plan electrode contacts and order of stimulation for functional mapping, CCEPs, or seizure recreation purposes. The interface supports drag-and-drop organization of contacts and parameter configuration.
 
-## **Key Features** {#key-features-4}
+## **Key Features**
 
 * Interactive contact selection with drag-and-drop  
 * Stimulation parameter configuration (frequency, duration, current)  
 * Contact pairing functionality  
 * Save/export capabilities
 
-## **Interface Layout** {#interface-layout-3}
+## **Interface Layout**
 
-### **Main Components** {#main-components-1}
+### **Main Components**
 
 1. **Contact List (Left Panel)**:  
    * Displays all available electrode contacts grouped by electrode  
@@ -896,17 +884,17 @@ This tool allows clinicians to plan electrode contacts and order of stimulation 
    * Pairing toggle (P)  
    * Visibility toggle (T)
 
-## **Getting Started** {#getting-started-1}
+## **Getting Started**
 
-### **Loading Data** {#loading-data-1}
+### **Loading Data**
 
 The tool automatically loads data from the previous contact designation / resection page.
 
 The tool can also load from a CSV provided in the main screen provided that the CSV is in the correct format. 
 
-## **Using the Contact List** {#using-the-contact-list}
+## **Using the Contact List**
 
-### **Basic Interactions** {#basic-interactions}
+### **Basic Interactions**
 
 * **Single Click**:  
   * Adds the contact to the end of the planning pane list  
@@ -917,14 +905,14 @@ The tool can also load from a CSV provided in the main screen provided that the 
   * Visual indicator shows where contact will be inserted  
   * Drag from planning pane back to contact list to remove completely
 
-### **Important Behavior Differences:** {#important-behavior-differences:}
+### **Important Behavior Differences**
 
 | Action | Position in Planning Pane |
 | ----- | ----- |
 | **Click** | Always appends to end |
 | **Drag & Drop** | Insert at any position |
 
-### **Contact Display** {#contact-display}
+### **Contact Display**
 
 * **Color Coding**:  
   * Red: Seizure Onset Zone  
@@ -934,20 +922,20 @@ The tool can also load from a CSV provided in the main screen provided that the 
   * Shows which contact is paired with the current one  
   * All possible pairs are shown at once
 
-### **Visibility Options** {#visibility-options}
+### **Visibility Options**
 
 * **Toggle Button (T)**:  
   * Shows/hides unmarked contacts  
   * Helps focus on clinically relevant contacts
 
-## **Using the Planning Pane** {#using-the-planning-pane}
+## **Using the Planning Pane**
 
-### **Adding Contacts** {#adding-contacts}
+### **Adding Contacts**
 
 1. Drag contacts from left panel  
 2. Or click on contacts in left panel
 
-### **Configuring Parameters** {#configuring-parameters}
+### **Configuring Parameters**
 
 For each contact in planning pane:
 
@@ -955,38 +943,38 @@ For each contact in planning pane:
 2. **Duration (s)**: Set stimulation duration  
 3. **Current (mA)**: Set stimulation current
 
-### **Reordering Contacts** {#reordering-contacts}
+### **Reordering Contacts**
 
 * Drag contacts within pane to reorder  
 * Visual indicator shows drop position
 
-### **Removing Contacts** {#removing-contacts}
+### **Removing Contacts**
 
 * Click "Remove" button on contact card  
 * Or drag back to contact list
 
-## **Pairing Contacts** {#pairing-contacts}
+## **Pairing Contacts**
 
 1. All possible consecutive pairs are shown (eg \- 1-2, 2-3, 3-4)  
 2. Click on a pair that is needed. Make sure not to then also add a pair that shares one of the contacts (eg \- if 1-2 is in planning pane, then ensure that 3-4 is added next and not 2-3)  
 3. System automatically updates both contacts in pair  
 4. Paired contacts appear together in planning pane
 
-## **Saving and Exporting** {#saving-and-exporting}
+## **Saving and Exporting**
 
-### **Saving Work** {#saving-work}
+### **Saving Work**
 
 Click "Save" button to save the work on the database
 
-### **Exporting Data** {#exporting-data}
+### **Exporting Data**
 
 Click "Export" button to generate and download CSV file
 
 *  This will save the data on the database as well
 
-## **Troubleshooting** {#troubleshooting-4}
+## **Troubleshooting**
 
-### **Common Issues** {#common-issues-1}
+### **Common Issues**
 
 **Contacts Not Appearing**:
 
@@ -1004,13 +992,13 @@ Click "Export" button to generate and download CSV file
 
 For additional support, consult your system administrator or technical support team.
 
-# **Functional Test Selection Tool** {#functional-test-selection-tool}
+# **Functional Test Selection Tool**
 
-## **Overview** {#overview-5}
+## **Overview**
 
 This tool enables clinicians to select and manage functional mapping tests for marked electrode contacts. It provides test recommendations based on anatomical location and clinical evidence.
 
-## **Key Features** {#key-features-5}
+## **Key Features**
 
 * Automated test recommendations  
 * Manual test selection interface  
@@ -1018,9 +1006,9 @@ This tool enables clinicians to select and manage functional mapping tests for m
 * Detailed test information  
 * Save/export capabilities
 
-## **Interface Layout** {#interface-layout-4}
+## **Interface Layout**
 
-### **Main Components** {#main-components-2}
+### **Main Components**
 
 1. **Contact List**:  
    * Displays all contacts with their stimulation parameters  
@@ -1039,9 +1027,9 @@ This tool enables clinicians to select and manage functional mapping tests for m
    * Shows available tests filtered by contact location  
    * Displays detailed test information
 
-## **Getting Started** {#getting-started-2}
+## **Getting Started**
 
-### **Loading Data** {#loading-data-2}
+### **Loading Data**
 
 The tool automatically loads:
 
@@ -1049,9 +1037,9 @@ The tool automatically loads:
 * Initial data (if provided)  
 * Demo data (if no patient data exists)
 
-## **Using the Tool** {#using-the-tool}
+## **Using the Tool**
 
-### **Auto-Assigning Tests** {#auto-assigning-tests}
+### **Auto-Assigning Tests**
 
 1. Click "Auto-Assign Best Tests" button  
 2. System automatically:  
@@ -1059,7 +1047,7 @@ The tool automatically loads:
    * Selects tests with highest population evidence and disruption rates  
    * Assigns one test per contact
 
-### **Manual Test Assignment** {#manual-test-assignment}
+### **Manual Test Assignment**
 
 1. **For a specific contact**:  
    * Click "+ Add Test" button below the contact  
@@ -1070,7 +1058,7 @@ The tool automatically loads:
    * Click test name again to view details  
    * Click "Confirm" to assign the test
 
-### **Viewing Test Details** {#viewing-test-details}
+### **Viewing Test Details**
 
 * **Basic Info**: Always visible in test cards  
   * Test name  
@@ -1082,7 +1070,7 @@ The tool automatically loads:
   * Shows full description  
   * Includes "More Details" link (opens in new tab)
 
-### **Managing Assigned Tests** {#managing-assigned-tests}
+### **Managing Assigned Tests**
 
 1. **Remove a test**:  
    * Click the "×" button on the test card  
@@ -1091,27 +1079,27 @@ The tool automatically loads:
    * Currently tests display in assignment order  
    * Manual reordering not implemented in this version
 
-## **Saving and Exporting** {#saving-and-exporting-1}
+## **Saving and Exporting**
 
-### **Saving Work** {#saving-work-1}
+### **Saving Work**
 
 Click "Save" button to save the work on the database
 
-### **Exporting Data** {#exporting-data-1}
+### **Exporting Data**
 
 Click "Export" button to generate and download CSV file
 
 *  This will save the data on the database as well
 
-## **Data Interpretation** {#data-interpretation}
+## **Data Interpretation**
 
 * **Population**: Number of cases supporting this test  
 * **Disruption Rate**: Percentage showing functional effect  
 * **Tags**: Test categories (e.g., motor, language)
 
-## **Troubleshooting** {#troubleshooting-5}
+## **Troubleshooting**
 
-### **Common Issues** {#common-issues-2}
+### **Common Issues**
 
 **No Tests Available**:
 
@@ -1131,27 +1119,27 @@ Click "Export" button to generate and download CSV file
 
 For additional support, consult your system administrator or technical support team.
 
-**Appendix**
+# **Appendix**
 
 Emails:  
-[htxbhatia@ucdavis.edu](mailto:htxbhatia@ucdavis.edu)[cswang@ucdavis.edu](mailto:cswang@ucdavis.edu)[nsaadat@ucdavis.edu](mailto:nsaadat@ucdavis.edu)[Yuecheng Zhao](mailto:datzhao@ucdavis.edu)
+[contact@wirecracker.com](mailto:contact@wirecracker.com)
 
-# Introduction {#introduction}
+# Introduction
 
 As written by Jack Reynolds in the project description, “Epilepsy is a disorder characterized by recurrent periods of abnormal electrical activity in the brain, known as seizures. To reduce or eliminate seizures from occurring, brain surgery may be considered. However, before surgery can take place, medical professionals must understand the functional ability of the underlying brain tissue to make sure that no healthy or necessary functions such as speech will be negatively affected by the procedure.”  
 This is accomplished by conducting a series of tests using electrodes implanted in the patient's brain. Currently, few variations of these tests exist, and the most commonly used tests are not diverse or specific enough to identify all brain functionalities. Additionally, there is no centralized place to share tests with other health centers, nor is there any place to share the results of the tests. Wirecracker allows tests curated and created by Dr. Toprani, Dr. Weakley, and Jack Reynolds to be available for epilepsy researchers around the world. The planning and execution of stimulation on patients' brains is very time-sensitive and requires good coordination between many medical professionals with different specializations. Wirecracker streamlines the process and provides a platform where the team can share the plans and approve (or edit) them without miscommunication.
 
-# Technology Survey {#technology-survey}
+# Technology Survey
 
 Conclusion: For the front end, we decided to use Tailwind CSS for the CSS framework and React.js for the JavaScript framework. For the back end, we will use Node.js. This allows us to have a full JS stack. The database will be PostgreSQL as requested by the client, and the PMS will be GitHub Projects.
 
-## **Front-end** {#front-end}
+## **Front-end**
 
 The client has requested multiple tools, including an electrode localization tool, a test planning tool, and a database lookup tool. The application is likely to be a multi-page application.
 
-### ***CSS framework*** {#css-framework}
+### ***CSS framework***
 
-* #### Tailwind CSS {#tailwind-css}
+* #### Tailwind CSS
 
   * Pros  
     * Highly customizable with minimal effort.  
@@ -1161,7 +1149,7 @@ The client has requested multiple tools, including an electrode localization too
     * Learning curve for those unfamiliar with utility classes.  
     * Can result in a cluttered HTML structure.
 
-* #### Bootstrap {#bootstrap}
+* #### Bootstrap
 
   * Pros  
     * Pre-built components make development faster.  
@@ -1173,9 +1161,9 @@ The client has requested multiple tools, including an electrode localization too
 
 Conclusion: We decided to go with Tailwind CSS as the CSS framework as it is the easiest and most performant solution while providing high customizability. 
 
-### ***JavaScript framework*** {#javascript-framework}
+### ***JavaScript framework***
 
-* #### React.js {#react.js}
+* #### React.js
 
   * Pros  
     * Large community support and ecosystem.  
@@ -1184,7 +1172,7 @@ Conclusion: We decided to go with Tailwind CSS as the CSS framework as it is the
     * JSX (syntax used by React) may have a learning curve  
     * Requires additional libraries or tools to handle other aspects like routing, data fetching, and state management.
 
-* #### Vue.js {#vue.js}
+* #### Vue.js
 
   * Pros  
     * Simpler learning curve compared to React.  
@@ -1196,9 +1184,9 @@ Conclusion: We decided to go with Tailwind CSS as the CSS framework as it is the
 
 Conclusion: We will be using React.js as our front-end framework. Pairing React with Node will allow us to have a full JS stack and React has a better ecosystem and community support.
 
-### ***UI SDK*** {#ui-sdk}
+### ***UI SDK***
 
-* #### Flutter {#flutter}
+* #### Flutter
 
   * Pros  
     * High-performance rendering engine.  
@@ -1207,7 +1195,7 @@ Conclusion: We will be using React.js as our front-end framework. Pairing React 
     * Requires learning Dart, which is less commonly used.  
     * Web support is not as mature as mobile.
 
-* #### React Native {#react-native}
+* #### React Native
 
   * Pros  
     * Uses JavaScript, which aligns with the front end.  
@@ -1216,7 +1204,7 @@ Conclusion: We will be using React.js as our front-end framework. Pairing React 
     * Performance may not match native apps.  
     * Limited access to some native APIs without third-party libraries.
 
-* #### Figma {#figma}
+* #### Figma
 
   * Pros  
     * Excellent for prototyping and design collaboration.  
@@ -1228,11 +1216,11 @@ Conclusion: We will be using React.js as our front-end framework. Pairing React 
 
 Conclusion: Due to the ease of use and collaborative capabilities, we will be using Figma for prototyping and design. 
 
-## **Back-end** {#back-end}
+## **Back-end**
 
 The client requested the technology used in the web application to be something easy to learn for ease of maintenance in the future.
 
-* #### Django {#django}
+* #### Django
 
   * Pros  
     * The client likely knows some degree of Python.  
@@ -1240,7 +1228,7 @@ The client requested the technology used in the web application to be something 
   * Cons  
     * Multiple language stack, which may complicate a thing or two
 
-* #### Node.js {#node.js}
+* #### Node.js
 
   * Pros  
     * If the UI is in JavaScript, we can have a full JS stack.  
@@ -1248,7 +1236,7 @@ The client requested the technology used in the web application to be something 
   * Cons  
     * Less structured compared to Django.
 
-* #### Dart {#dart}
+* #### Dart
 
   * Pros  
     * Works well with Flutter for full-stack development.  
@@ -1259,9 +1247,9 @@ The client requested the technology used in the web application to be something 
 
 Conclusion: We will be using Node.js as the back end. Node.js is a well-supported and commonly used framework and it will make it easier for future developers to contribute to the project. Using Node.js also allows us to have a full JS stack.
 
-## **Full-stack** {#full-stack}
+## **Full-stack**
 
-* #### Next.js {#next.js}
+* #### Next.js
 
   * Pros  
     * It is basically React.js \+ Node.js  
@@ -1271,7 +1259,7 @@ Conclusion: We will be using Node.js as the back end. Node.js is a well-supporte
     * Can be overkill for small projects  
     * Limited flexibility compared to doing React \+ Node separately
 
-* #### Blazor {#blazor}
+* #### Blazor
 
   * Pros  
     * Allows full-stack development with C\#.  
@@ -1282,23 +1270,23 @@ Conclusion: We will be using Node.js as the back end. Node.js is a well-supporte
 
 Conclusion: We will not be choosing any Full-Stack framework. Blazor is out due to its Windows-centric development environment and lesser community support compared to JS, and we prefer the flexibility of React \+ Node over Next.js.
 
-## **Database** {#database}
+## **Database**
 
 Conclusion: For the Database, the client has experience in PostgreSQL and for ease of maintenance in the future, we decided that it is best to use what they have experience in.  
 We went forward with Supabase, which is a user-friendly backend-as-a-service. This allowed us to focus on the application logic rather than being tied up in building our own backend infrastructure.
 
-## **APIs Used** {#apis-used}
+## **APIs Used**
 
 1. Resend API  
    1. Resend is an email API designed for developers to easily build, test, and send transactional emails at scale. We use their API to send out verification codes to new users to add an extra layer of security to the application. Additionally, the Resend API is used for users to share different plans to other Wirecracker users, enabling asynchronous editing.  
 2. Google OAuth  
    1. To make creating an account easier but still secure, we utilized Google’s access tokens to allow users to sign up and log in with their Google accounts.
 
-## **Project Management Software** {#project-management-software}
+## **Project Management Software**
 
 Conclusion: We will be using GitHub Projects since that is what is required by the class.
 
-# System Architecture Overview {#system-architecture-overview}
+# System Architecture Overview
 
 **Frontend:**
 
@@ -1358,7 +1346,7 @@ Conclusion: We will be using GitHub Projects since that is what is required by t
   * Designation data has information about the surgeon marks for future stimulation plans  
   * Localization data has the information of each contact saved in a JSON structure
 
-### **UI Components:** {#ui-components:}
+### **UI Components**
 
 * Shared Components  
   * Dropdown menus  
@@ -1372,7 +1360,7 @@ Conclusion: We will be using GitHub Projects since that is what is required by t
 
 ![][image1]
 
-# User Stories {#user-stories}
+# User Stories
 
 1. As an epileptologist, I would like to create a list of electrodes inserted into patients' brains with ease and share the list with other doctors working together on a shared intuitive platform.  
 2. As a neurosurgeon, I need to see and work on the stimulation plans to understand what parts of the patient’s brains are impacted the most. However, unlike an epileptologist, I am used to working with real-life representations of a patient’s brain rather than thinking of electrodes in a CSV-like format, which is what epileptologists primarily work with. It would be very beneficial for me to be able to review and edit stimulation plans on a physical brain simulation, which can then be translated into a stimulation plan exported to a CSV for the epileptologist to look over. This helps prevent miscommunication between the epileptologist who is doing research and me.  
@@ -1391,12 +1379,12 @@ Conclusion: We will be using GitHub Projects since that is what is required by t
 15. As a future developer on this project, I would like to be working on a project that is well documented, using a framework that I understand, and is easily scalable. I would like to be able to understand the design choices that the original developers made, and be able to improve upon the application.  
 16. As someone who looks through grant applications, I would prefer to give funding to a scalable project that has practical application and is easily usable. The more intuitive this website is to use (and to further develop), the more likely I would be to give funding.
 
-# Prototyping Code {#prototyping-code}
+# Prototyping Code
 
 All the source code will be hosted in GitHub as open source.  
 [https://github.com/UCD-193AB-ws24/Wirecracker](https://github.com/UCD-193AB-ws24/Wirecracker)
 
-# Technologies Employed {#technologies-employed}
+# Technologies Employed
 
 **CSS Framework \-** Tailwind CSS  
 **Javascript Framework \-** React.js  
@@ -1406,42 +1394,42 @@ All the source code will be hosted in GitHub as open source.
 
 # Real-World Constraint Analysis {#real-world-constraint-analysis}
 
-## **Cost** {#cost}
+## **Cost**
 
 During the development phase, the cost will be $0. We are using Supabase to store information since it is scalable, and our needs align with the free tier for now. In addition, we are using Vercel to host the website, which also has a free developer tier.  
 For the final product, the cost will be under $50 a month to pay for both Supabase and Vercel. While the clients are not expecting significant website usage, its long-term usage requires the paid versions of both.
 
-## **Space** {#space}
+## **Space**
 
 Due to the fact that the data should be text/number-based and easy to store and there will be relatively few accesses to the website due to highly specific use cases, we will be using a relatively small database.
 
-## **Security** {#security}
+## **Security**
 
 Single Sign On to login to the web application and other measures needed for HIPAA compliance. As a team, we thought about integrating CAS into this application for security, but our client informed us that their vision included the web application to be used in different hospitals and by epileptologists that aren’t a part of UC Davis.  
 With sign up, we use 2FA with a verification code sent to the user’s email address.
 
-## **Privacy** {#privacy}
+## **Privacy**
 
 Data stored on the cloud must be HIPAA-compliant. This can be done by completely anonymizing the data.
 
-## **Scalability** {#scalability}
+## **Scalability**
 
 The app is going to be open source and it will use commonly used frameworks that allow 3rd party developers to easily add features to the app in the future.
 
-## **Maintainability** {#maintainability}
+## **Maintainability**
 
 We are using technologies that have plenty of documentation and are widely used, especially for projects that have a similar scope. 
 
-## **Acceptance Test** {#acceptance-test}
+## **Acceptance Test**
 
 To ensure client satisfaction, we are having weekly meetings in which we go through the progress made. Additionally, biweekly, we will have the clients go through the website, noting pain points and features that they seem to like.  
 We will also conduct user testing with hopefully more than just epileptologists, as we have been in contact with the client discussing potential user testers. The target goal is to have neuropsychologists and neurosurgeons go through the website and give their feedback.
 
-# **Social and Legal Aspects** {#social-and-legal-aspects}
+# **Social and Legal Aspects**
 
 By the nature of this project, the application will handle patient data and must be HIPAA compliant. While most patient data will be stored locally, for data stored on the cloud, we plan to implement an authentication system that includes user IDs and passwords, with the addition of multi-factor authentication. Additionally, patient data on cloud storage can be encrypted and tagged to ensure both confidentiality and integrity.
 
-# **Glossary of Terms** {#glossary-of-terms}
+# **Glossary of Terms**
 
 EEG \- Electroencephalogram. A medical test measuring brain electrical activity.  
 Epileptologist \- A neurologist specializing in epilepsy  
