@@ -1,4 +1,4 @@
-# **Resection Planning Page**
+# **Neurosurgery Tool**
 
 ## **Overview**
 

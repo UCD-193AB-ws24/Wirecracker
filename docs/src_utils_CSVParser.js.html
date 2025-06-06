@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en" style="font-size:16px"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Source: src/utils/CSVParser.js</title><!--[if lt IE 9]>
       <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]--><script src="scripts/third-party/hljs.js" defer="defer"></script><script src="scripts/third-party/hljs-line-num.js" defer="defer"></script><script src="scripts/third-party/popper.js" defer="defer"></script><script src="scripts/third-party/tippy.js" defer="defer"></script><script src="scripts/third-party/tocbot.min.js"></script><script>var baseURL="/",locationPathname="";baseURL=(locationPathname=document.location.pathname).substr(0,locationPathname.lastIndexOf("/")+1)</script><link rel="stylesheet" href="styles/clean-jsdoc-theme.min.css"><svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:none"><defs><symbol id="copy-icon" viewbox="0 0 488.3 488.3"><g><path d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z"/><path d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z"/></g></symbol><symbol id="search-icon" viewBox="0 0 512 512"><g><g><path d="M225.474,0C101.151,0,0,101.151,0,225.474c0,124.33,101.151,225.474,225.474,225.474    c124.33,0,225.474-101.144,225.474-225.474C450.948,101.151,349.804,0,225.474,0z M225.474,409.323    c-101.373,0-183.848-82.475-183.848-183.848S124.101,41.626,225.474,41.626s183.848,82.475,183.848,183.848    S326.847,409.323,225.474,409.323z"/></g></g><g><g><path d="M505.902,476.472L386.574,357.144c-8.131-8.131-21.299-8.131-29.43,0c-8.131,8.124-8.131,21.306,0,29.43l119.328,119.328    c4.065,4.065,9.387,6.098,14.715,6.098c5.321,0,10.649-2.033,14.715-6.098C514.033,497.778,514.033,484.596,505.902,476.472z"/></g></g></symbol><symbol id="font-size-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11.246 15H4.754l-2 5H.6L7 4h2l6.4 16h-2.154l-2-5zm-.8-2L8 6.885 5.554 13h4.892zM21 12.535V12h2v8h-2v-.535a4 4 0 1 1 0-6.93zM19 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol><symbol id="add-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></symbol><symbol id="minus-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M5 11h14v2H5z"/></symbol><symbol id="dark-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"/></symbol><symbol id="light-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></symbol><symbol id="reset-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M18.537 19.567A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10c0 2.136-.67 4.116-1.81 5.74L17 12h3a8 8 0 1 0-2.46 5.772l.997 1.795z"/></symbol><symbol id="down-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.7803 6.21967C13.0732 6.51256 13.0732 6.98744 12.7803 7.28033L8.53033 11.5303C8.23744 11.8232 7.76256 11.8232 7.46967 11.5303L3.21967 7.28033C2.92678 6.98744 2.92678 6.51256 3.21967 6.21967C3.51256 5.92678 3.98744 5.92678 4.28033 6.21967L8 9.93934L11.7197 6.21967C12.0126 5.92678 12.4874 5.92678 12.7803 6.21967Z"></path></symbol><symbol id="codepen-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M16.5 13.202L13 15.535v3.596L19.197 15 16.5 13.202zM14.697 12L12 10.202 9.303 12 12 13.798 14.697 12zM20 10.869L18.303 12 20 13.131V10.87zM19.197 9L13 4.869v3.596l3.5 2.333L19.197 9zM7.5 10.798L11 8.465V4.869L4.803 9 7.5 10.798zM4.803 15L11 19.131v-3.596l-3.5-2.333L4.803 15zM4 13.131L5.697 12 4 10.869v2.262zM2 9a1 1 0 0 1 .445-.832l9-6a1 1 0 0 1 1.11 0l9 6A1 1 0 0 1 22 9v6a1 1 0 0 1-.445.832l-9 6a1 1 0 0 1-1.11 0l-9-6A1 1 0 0 1 2 15V9z"/></symbol><symbol id="close-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></symbol><symbol id="menu-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></symbol></defs></svg></head><body data-theme="fallback-light"><div class="sidebar-container"><div class="sidebar" id="sidebar"><div class="sidebar-items-container"><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-modules"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Designation.html">Designation</a></div><div class="sidebar-section-children"><a href="module-Resection.html">Resection</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer.html">nifti_viewer</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer_matlab_functions.html">nifti_viewer/matlab_functions</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-classes"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-nifti_viewer-FILE.html">FILE</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-global"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#Dropdown">Dropdown</a></div><div class="sidebar-section-children"><a href="global.html#Identifiers">Identifiers</a></div><div class="sidebar-section-children"><a href="global.html#Legend">Legend</a></div><div class="sidebar-section-children"><a href="global.html#LegendItem">LegendItem</a></div><div class="sidebar-section-children"><a href="global.html#UserDocumentation">UserDocumentation</a></div><div class="sidebar-section-children"><a href="global.html#generateAcronym">generateAcronym</a></div><div class="sidebar-section-children"><a href="global.html#handleFileRecord">handleFileRecord</a></div><div class="sidebar-section-children"><a href="global.html#insertRegionsAndGetIds">insertRegionsAndGetIds</a></div><div class="sidebar-section-children"><a href="global.html#mapConsecutive">mapConsecutive</a></div><div class="sidebar-section-children"><a href="global.html#parseCSVFile">parseCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#parseDesignation">parseDesignation</a></div><div class="sidebar-section-children"><a href="global.html#parseLocalization">parseLocalization</a></div><div class="sidebar-section-children"><a href="global.html#parseStimulation">parseStimulation</a></div><div class="sidebar-section-children"><a href="global.html#parseTests">parseTests</a></div><div class="sidebar-section-children"><a href="global.html#saveCSVFile">saveCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveDesignationCSVFile">saveDesignationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveLocalizationToDatabase">saveLocalizationToDatabase</a></div><div class="sidebar-section-children"><a href="global.html#saveStimulationCSVFile">saveStimulationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveTestCSVFile">saveTestCSVFile</a></div></div></div></div></div><div class="navbar-container" id="VuAckcnZhf"><nav class="navbar"><div class="navbar-left-items"></div><div class="navbar-right-items"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#dark-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div><nav></nav></nav></div><div class="toc-container"><div class="toc-content"><span class="bold">On this page</span><div id="eed4d2a0bfd64539bb9df78095dec881"></div></div></div><div class="body-wrapper"><div class="main-content"><div class="main-wrapper"><section id="source-page" class="source-page"><header><h1 id="title" class="has-anchor">src_utils_CSVParser.js</h1></header><article><pre class="prettyprint source lang-js"><code>import Papa from 'papaparse';
+    <![endif]--><script src="scripts/third-party/hljs.js" defer="defer"></script><script src="scripts/third-party/hljs-line-num.js" defer="defer"></script><script src="scripts/third-party/popper.js" defer="defer"></script><script src="scripts/third-party/tippy.js" defer="defer"></script><script src="scripts/third-party/tocbot.min.js"></script><script>var baseURL="/",locationPathname="";baseURL=(locationPathname=document.location.pathname).substr(0,locationPathname.lastIndexOf("/")+1)</script><link rel="stylesheet" href="styles/clean-jsdoc-theme.min.css"><svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:none"><defs><symbol id="copy-icon" viewbox="0 0 488.3 488.3"><g><path d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z"/><path d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z"/></g></symbol><symbol id="search-icon" viewBox="0 0 512 512"><g><g><path d="M225.474,0C101.151,0,0,101.151,0,225.474c0,124.33,101.151,225.474,225.474,225.474    c124.33,0,225.474-101.144,225.474-225.474C450.948,101.151,349.804,0,225.474,0z M225.474,409.323    c-101.373,0-183.848-82.475-183.848-183.848S124.101,41.626,225.474,41.626s183.848,82.475,183.848,183.848    S326.847,409.323,225.474,409.323z"/></g></g><g><g><path d="M505.902,476.472L386.574,357.144c-8.131-8.131-21.299-8.131-29.43,0c-8.131,8.124-8.131,21.306,0,29.43l119.328,119.328    c4.065,4.065,9.387,6.098,14.715,6.098c5.321,0,10.649-2.033,14.715-6.098C514.033,497.778,514.033,484.596,505.902,476.472z"/></g></g></symbol><symbol id="font-size-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11.246 15H4.754l-2 5H.6L7 4h2l6.4 16h-2.154l-2-5zm-.8-2L8 6.885 5.554 13h4.892zM21 12.535V12h2v8h-2v-.535a4 4 0 1 1 0-6.93zM19 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol><symbol id="add-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></symbol><symbol id="minus-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M5 11h14v2H5z"/></symbol><symbol id="dark-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"/></symbol><symbol id="light-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></symbol><symbol id="reset-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M18.537 19.567A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10c0 2.136-.67 4.116-1.81 5.74L17 12h3a8 8 0 1 0-2.46 5.772l.997 1.795z"/></symbol><symbol id="down-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.7803 6.21967C13.0732 6.51256 13.0732 6.98744 12.7803 7.28033L8.53033 11.5303C8.23744 11.8232 7.76256 11.8232 7.46967 11.5303L3.21967 7.28033C2.92678 6.98744 2.92678 6.51256 3.21967 6.21967C3.51256 5.92678 3.98744 5.92678 4.28033 6.21967L8 9.93934L11.7197 6.21967C12.0126 5.92678 12.4874 5.92678 12.7803 6.21967Z"></path></symbol><symbol id="codepen-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M16.5 13.202L13 15.535v3.596L19.197 15 16.5 13.202zM14.697 12L12 10.202 9.303 12 12 13.798 14.697 12zM20 10.869L18.303 12 20 13.131V10.87zM19.197 9L13 4.869v3.596l3.5 2.333L19.197 9zM7.5 10.798L11 8.465V4.869L4.803 9 7.5 10.798zM4.803 15L11 19.131v-3.596l-3.5-2.333L4.803 15zM4 13.131L5.697 12 4 10.869v2.262zM2 9a1 1 0 0 1 .445-.832l9-6a1 1 0 0 1 1.11 0l9 6A1 1 0 0 1 22 9v6a1 1 0 0 1-.445.832l-9 6a1 1 0 0 1-1.11 0l-9-6A1 1 0 0 1 2 15V9z"/></symbol><symbol id="close-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></symbol><symbol id="menu-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></symbol></defs></svg></head><body data-theme="fallback-light"><div class="sidebar-container"><div class="sidebar" id="sidebar"><div class="sidebar-items-container"><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-modules"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-DatabaseLookup.html">DatabaseLookup</a></div><div class="sidebar-section-children"><a href="module-Designation.html">Designation</a></div><div class="sidebar-section-children"><a href="module-Resection.html">Resection</a></div><div class="sidebar-section-children"><a href="module-UserDocumentation.html">UserDocumentation</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer.html">nifti_viewer</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer_matlab_functions.html">nifti_viewer/matlab_functions</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-classes"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-nifti_viewer-FILE.html">FILE</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-global"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#Dropdown">Dropdown</a></div><div class="sidebar-section-children"><a href="global.html#HelpButton">HelpButton</a></div><div class="sidebar-section-children"><a href="global.html#Identifiers">Identifiers</a></div><div class="sidebar-section-children"><a href="global.html#Legend">Legend</a></div><div class="sidebar-section-children"><a href="global.html#LegendItem">LegendItem</a></div><div class="sidebar-section-children"><a href="global.html#generateAcronym">generateAcronym</a></div><div class="sidebar-section-children"><a href="global.html#handleFileRecord">handleFileRecord</a></div><div class="sidebar-section-children"><a href="global.html#insertRegionsAndGetIds">insertRegionsAndGetIds</a></div><div class="sidebar-section-children"><a href="global.html#mapConsecutive">mapConsecutive</a></div><div class="sidebar-section-children"><a href="global.html#parseCSVFile">parseCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#parseDesignation">parseDesignation</a></div><div class="sidebar-section-children"><a href="global.html#parseLocalization">parseLocalization</a></div><div class="sidebar-section-children"><a href="global.html#parseStimulation">parseStimulation</a></div><div class="sidebar-section-children"><a href="global.html#parseTests">parseTests</a></div><div class="sidebar-section-children"><a href="global.html#saveCSVFile">saveCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveDesignationCSVFile">saveDesignationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveLocalizationToDatabase">saveLocalizationToDatabase</a></div><div class="sidebar-section-children"><a href="global.html#saveStimulationCSVFile">saveStimulationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveTestCSVFile">saveTestCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#sendShareNotification">sendShareNotification</a></div></div></div></div></div><div class="navbar-container" id="VuAckcnZhf"><nav class="navbar"><div class="navbar-left-items"></div><div class="navbar-right-items"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#dark-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div><nav></nav></nav></div><div class="toc-container"><div class="toc-content"><span class="bold">On this page</span><div id="eed4d2a0bfd64539bb9df78095dec881"></div></div></div><div class="body-wrapper"><div class="main-content"><div class="main-wrapper"><section id="source-page" class="source-page"><header><h1 id="title" class="has-anchor">src_utils_CSVParser.js</h1></header><article><pre class="prettyprint source lang-js"><code>import Papa from 'papaparse';
 import contact from '../pages/ContactDesignation/contact';
 
 const IDENTIFIER_LINE_2 = "### THESE TWO LINES SERVES AS IDENTIFIER. DO NOT DELETE ###";
@@ -16,6 +16,9 @@ export const Identifiers = Object.freeze({
     DESIGNATION:             "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR DESIGNATION ###",
     STIMULATION:             "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR CCEPS / SEIZURE RECREATION PLANNING ###",
     STIMULATION_FUNCTION:    "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR FUNCTIONAL MAPPING PLANNING ###",
+    STIMULATION_RECREATION:   "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR SEIZURE RECREATION PLANNING ###",
+    STIMULATION_CCEP:         "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR CCEPS PLANNING ###",
+    RESECTION:               "### THIS CSV IS INTENDED TO BE USED AT WIRECRACKER.COM FOR RESECTION ###",
 });
 
 /**
@@ -43,12 +46,15 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
 
             if (!coordinates &amp;&amp; (lines.length &lt; 2 ||
                 (
-                    lines[0].trim() !== Identifiers.TEST_PLANNING &amp;&amp;
-                    lines[0].trim() !== Identifiers.LOCALIZATION &amp;&amp;
-                    lines[0].trim() !== Identifiers.DESIGNATION &amp;&amp;
-                    lines[0].trim() !== Identifiers.STIMULATION &amp;&amp;
-                    lines[0].trim() !== Identifiers.STIMULATION_FUNCTION
-                ) || lines[1].trim() !== IDENTIFIER_LINE_2 )) {
+                    !lines[0].trim().includes(Identifiers.TEST_PLANNING) &amp;&amp;
+                    !lines[0].trim().includes(Identifiers.LOCALIZATION) &amp;&amp;
+                    !lines[0].trim().includes(Identifiers.DESIGNATION) &amp;&amp;
+                    !lines[0].trim().includes(Identifiers.STIMULATION) &amp;&amp;
+                    !lines[0].trim().includes(Identifiers.STIMULATION_FUNCTION) &amp;&amp;
+                    !lines[0].trim().includes(Identifiers.STIMULATION_RECREATION) &amp;&amp;
+                    !lines[0].trim().includes(Identifiers.STIMULATION_CCEP) &amp;&amp;
+                    !lines[0].trim().includes(Identifiers.RESECTION)
+                ) || !lines[1].trim().includes(IDENTIFIER_LINE_2) )) {
                 const errorMsg = "Invalid file. The first line must be the correct identifier.";
                 if (showError) showError(errorMsg);
                 reject(new Error(errorMsg));
@@ -57,20 +63,39 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
 
             let identifier;
             let csvWithoutIdentifier;
+            let metadata = {
+                patientId: '',
+                creationDate: null,
+                modifiedDate: null,
+                fileId: null
+            };
+
             if (!coordinates) { 
                 identifier = lines[0].trim();
-                // Parse CSV content excluding the identifier line
-                csvWithoutIdentifier = lines.slice(2).join("\n");
+                // Extract metadata from the CSV header
+                for (let i = 2; i &lt; 6; i++) {
+                    if (lines[i].startsWith('PatientID:')) {
+                        metadata.patientId = lines[i].split('PatientID:')[1].trim();
+                    } else if (lines[i].startsWith('CreatedDate:')) {
+                        metadata.creationDate = lines[i].split('CreatedDate:')[1].trim();
+                    } else if (lines[i].startsWith('ModifiedDate:')) {
+                        metadata.modifiedDate = lines[i].split('ModifiedDate:')[1].trim();
+                    } else if (lines[i].startsWith('FileID:')) {
+                        metadata.fileId = lines[i].split('FileID:')[1].trim();
+                    }
+                }
+                // Parse CSV content excluding the identifier and metadata lines
+                csvWithoutIdentifier = lines.slice(6).join("\n");
             } else {
                 identifier = "coordinates";
                 csvWithoutIdentifier = lines.join("\n");
             }
 
-            if (identifier === Identifiers.LOCALIZATION) {
-                resolve({ identifier, data: parseLocalization(csvWithoutIdentifier) });
+            if (identifier.includes(Identifiers.LOCALIZATION)) {
+                resolve({ identifier, data: parseLocalization(csvWithoutIdentifier), metadata });
                 return;
             }
-            else if (identifier === Identifiers.DESIGNATION) {
+            else if (identifier.includes(Identifiers.DESIGNATION) || identifier.includes(Identifiers.RESECTION)) {
                 // First parse as localization to get the original structure
                 const localizationData = parseLocalization(csvWithoutIdentifier);
                 // Then parse as designation for the current state
@@ -80,18 +105,18 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
                     data: {
                         originalData: localizationData,
                         data: designationData
-                    }
+                    },
+                    metadata
                 });
                 return;
             }
-            else if (identifier === Identifiers.STIMULATION || identifier === Identifiers.STIMULATION_FUNCTION) {
-                // const designationData = parseDesignation(csvWithoutIdentifier);
+            else if (identifier.includes(Identifiers.STIMULATION) || identifier.includes(Identifiers.STIMULATION_FUNCTION) || identifier.includes(Identifiers.STIMULATION_RECREATION) || identifier.includes(Identifiers.STIMULATION_CCEP)) {
                 const stimulationData = parseStimulation(csvWithoutIdentifier);
-                resolve({identifier, data: stimulationData, isFunctionalMapping: identifier === Identifiers.STIMULATION_FUNCTION});
+                resolve({identifier, data: stimulationData, metadata});
                 return;
             }
-            else if (identifier === Identifiers.TEST_PLANNING) {
-                resolve({ identifier, data: parseTests(csvWithoutIdentifier) });
+            else if (identifier.includes(Identifiers.TEST_PLANNING)) {
+                resolve({ identifier, data: parseTests(csvWithoutIdentifier), metadata });
                 return;
             }
 
@@ -101,7 +126,7 @@ export function parseCSVFile(file, coordinates = false, showError = null) {
                 skipEmptyLines: true,
                 dynamicTyping: true, // Ensures correct data types for numbers
                 complete: function (results) {
-                    resolve({ identifier, data: results.data });
+                    resolve({ identifier, data: results.data, metadata });
                 },
                 error: function (err) {
                     if (showError) showError("Parsing error: " + err.message);
@@ -194,6 +219,7 @@ function parseDesignation(csvData) {
         
         const contactObj = {
             ...(new contact(associatedLocation, mark, surgeonMark)),
+            id: `${label}${contactNumber}`,
             index: contactNumber,
             __electrodeDescription__: electrodeDescription,
             __contactDescription__: contactDescription,
@@ -224,6 +250,7 @@ function parseDesignation(csvData) {
 function parseStimulation(csvData) {
     const parsedData = {};
     const rows = Papa.parse(csvData, { header: true, skipEmptyLines: true }).data;
+    const planOrder = [];
 
     // First pass: Group by electrode label and collect contacts
     rows.forEach(row => {
@@ -239,6 +266,7 @@ function parseStimulation(csvData) {
         const frequency = parseFloat(row.Frequency) || 105; // TODO : ask what default value should be
         const duration = parseFloat(row.Duration) || 3.0;
         const current = parseFloat(row.Current) || 2.445;
+        const order = parseInt(row.PlanOrder) || -1;
 
         // Process associated location based on GM presence
         if (associatedLocation === 'GM') {
@@ -262,20 +290,18 @@ function parseStimulation(csvData) {
             ...(new contact(associatedLocation, mark, surgeonMark)),
             __electrodeDescription__: electrodeDescription,
             __contactDescription__: contactDescription,
+            id: label + contactNumber,
             index: contactNumber,
             pair: pair,
             isPlanning: isPlanning,
             duration: duration,
             frequency: frequency,
             current: current,
+            order: order
         };
 
-        if (isPlanning) {
-            contactObj.order = parseInt(row.PlanOrder);
-            if (contactObj.order &lt; 0) {
-                if (showError) showError("error found on csv. Contact(s) will be missing from planning pane.");
-                contactObj.isPlanning = false;
-            }
+        if (isPlanning &amp;&amp; order >= 0) {
+            planOrder[order] = contactObj.id;
         }
 
         // Add to contacts array at the correct index (contactNumber - 1)
@@ -287,10 +313,13 @@ function parseStimulation(csvData) {
     });
 
     // Convert to array format matching demo data
-    return Object.values(parsedData).map(electrode => ({
-        label: electrode.label,
-        contacts: electrode.contacts.filter(contact => contact !== null) // Remove any null entries
-    }));
+    return {
+        data: Object.values(parsedData).map(electrode => ({
+            label: electrode.label,
+            contacts: electrode.contacts.filter(contact => contact !== null) // Remove any null entries
+        })),
+        planOrder: planOrder.filter(Boolean) // Remove any null/undefined entries
+    };
 }
 
 /**
@@ -300,9 +329,10 @@ function parseStimulation(csvData) {
  * @returns {Object} A data structure with the format [{ label: 'A'', contacts: [contact, contact, ...] }, ... ]
  */
 function parseTests(csvData) {
-    const contacts = [];
+    const parsedData = {};
     const tests = {};
     const rows = Papa.parse(csvData, { header: true, skipEmptyLines: true }).data;
+    let hasAnyTests = false;
 
     // First pass: Group by electrode label and collect contacts
     rows.forEach(row => {
@@ -314,10 +344,11 @@ function parseTests(csvData) {
         const surgeonMark = row.SurgeonMark.trim() === "true"; // Convert to boolean
         const pair = parseInt(row.Pair);
         const electrodeDescription = row.ElectrodeDescription.trim();
-        const frequency = parseFloat(row.Frequency) || 105; // TODO : ask what default value should be
+        const frequency = parseFloat(row.Frequency) || 105;
         const duration = parseFloat(row.Duration) || 3.0;
         const current = parseFloat(row.Current) || 2.445;
-        const testID = row.TestID.trim();
+        const testID = row.TestID.trim() || "No test";
+        const isPlanning = row.IsPlanning ? row.IsPlanning.trim() === "true" : true; // Default to true if not specified
 
         // Process associated location based on GM presence
         if (associatedLocation === 'GM') {
@@ -328,7 +359,13 @@ function parseTests(csvData) {
             const [desc1, desc2] = contactDescription.split('+');
             associatedLocation = `${desc1}/${desc2}`;
         }
-        // For other cases (like WM), keep the original associatedLocation
+
+        if (!parsedData[label]) {
+            parsedData[label] = {
+                label: label,
+                contacts: []
+            };
+        }
 
         const contactObj = {
             ...(new contact(associatedLocation, mark, surgeonMark)),
@@ -341,15 +378,19 @@ function parseTests(csvData) {
             duration: duration,
             frequency: frequency,
             current: current,
+            isPlanning: isPlanning
         };
 
-        // Add contact if it doesn't already exist
-        if (!contacts.some(c => c.id === contactObj.id)) {
-            contacts.push(contactObj);
+        // Add to contacts array at the correct index (contactNumber - 1)
+        // Ensure the array is large enough
+        while (parsedData[label].contacts.length &lt; contactNumber) {
+            parsedData[label].contacts.push(null);
         }
+        parsedData[label].contacts[contactNumber - 1] = contactObj;
 
         // Add test ID to the contact's test list
-        if (testID !== "") {
+        if (testID !== "No test") {
+            hasAnyTests = true;
             if (!tests[contactObj.id]) {
                 tests[contactObj.id] = [];
             }
@@ -358,7 +399,13 @@ function parseTests(csvData) {
     });
 
     // Convert to array format matching demo data
-    return {contacts: contacts, tests: tests};
+    return {
+        contacts: Object.values(parsedData).map(electrode => ({
+            label: electrode.label,
+            contacts: electrode.contacts.filter(contact => contact !== null) // Remove any null entries
+        })),
+        tests: hasAnyTests ? tests : {}
+    };
 }
 
 /**
@@ -366,11 +413,24 @@ function parseTests(csvData) {
  * 
  * @param {string} identifier - The identifier for the first line.
  * @param {Object} data - The data to be saved.
+ * @param {string} patientId - The patient ID for the first line.
+ * @param {string} createdDate - The created date for the first line.
+ * @param {string} modifiedDate - The modified date for the first line.
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {Object|void} The parsed data if download is false, otherwise void.
  */
-export function saveCSVFile(identifier, data, download = true) {
+export function saveCSVFile(identifier, data, patientId = '', createdDate = null, modifiedDate = null, download = true, fileId = null) {
+    const currentDate = new Date().toISOString();
+    const finalPatientId = patientId || data.patientId || '';
+    const finalCreatedDate = createdDate || currentDate;
+    const finalModifiedDate = modifiedDate || currentDate;
+    const finalFileId = fileId || data.fileId || '';
+
     let csvContent = `${identifier}\n${IDENTIFIER_LINE_2}\n`;
+    csvContent += `PatientID:${finalPatientId}\n`;
+    csvContent += `CreatedDate:${finalCreatedDate}\n`;
+    csvContent += `ModifiedDate:${finalModifiedDate}\n`;
+    csvContent += `FileID:${finalFileId}\n`;
     let returnData = [];
     
     if (identifier === Identifiers.LOCALIZATION) {
@@ -412,7 +472,7 @@ export function saveCSVFile(identifier, data, download = true) {
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "localization_" + new Date().toISOString().split('T')[0] + ".csv";
+        link.download = "anatomy_" + new Date().toISOString().split('T')[0] + ".csv";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -430,11 +490,25 @@ export function saveCSVFile(identifier, data, download = true) {
  * 
  * @param {Object[]} designationData - The data to be saved.
  * @param {Object[]} localizationData - The localization data to be used.
+ * @param {string} patientId - The patient ID for the first line.
+ * @param {string} createdDate - The created date for the first line.
+ * @param {string} modifiedDate - The modified date for the first line.
  * @param {boolean} download - Whether to download the file or return the data.
+ * @param {string} type - The type of designation data.
  * @returns {string} The CSV content.
  */
-export function saveDesignationCSVFile(designationData, localizationData, download = true) {
-    let csvContent = `${Identifiers.DESIGNATION}\n${IDENTIFIER_LINE_2}\n`;
+export function saveDesignationCSVFile(designationData, localizationData, patientId = '', createdDate = null, modifiedDate = null, download = true, type = 'designation', fileId = null) {
+    const currentDate = new Date().toISOString();
+    const finalPatientId = patientId || localizationData.patientId || '';
+    const finalCreatedDate = createdDate || currentDate;
+    const finalModifiedDate = modifiedDate || currentDate;
+    const finalFileId = fileId || designationData.fileId || '';
+
+    let csvContent = `${type === 'resection' ? Identifiers.RESECTION : Identifiers.DESIGNATION}\n${IDENTIFIER_LINE_2}\n`;
+    csvContent += `PatientID:${finalPatientId}\n`;
+    csvContent += `CreatedDate:${finalCreatedDate}\n`;
+    csvContent += `ModifiedDate:${finalModifiedDate}\n`;
+    csvContent += `FileID:${finalFileId}\n`;
     const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Type"];
     csvContent += headers.join(",") + "\n";
 
@@ -482,7 +556,7 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "designation_" + new Date().toISOString().split('T')[0] + ".csv";
+        link.download = `${type === 'resection' ? 'neurosurgery' : 'epilepsy'}_${new Date().toISOString().split('T')[0]}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -495,12 +569,41 @@ export function saveDesignationCSVFile(designationData, localizationData, downlo
  * Saves a CSV file from data and downloads it or returns the data.
  *
  * @param {Object[]} stimulationData - The data to be saved.
+ * @param {string} planOrder - The plan order for the stimulation.
+ * @param {string} type - The type of stimulation.
+ * @param {string} patientId - The patient ID for the first line.
+ * @param {string} createdDate - The created date for the first line.
+ * @param {string} modifiedDate - The modified date for the first line.
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {string} The CSV content.
  */
-export function saveStimulationCSVFile(stimulationData, planOrder, isFunctionalMapping = false, download = true) {
-    let csvContent = isFunctionalMapping ? `${Identifiers.STIMULATION_FUNCTION}\n${IDENTIFIER_LINE_2}\n` : `${Identifiers.STIMULATION}\n${IDENTIFIER_LINE_2}\n`;
-    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning", "Frequency", "Duration", "Current", "PlanOrder"];
+export function saveStimulationCSVFile(stimulationData, planOrder, type = 'mapping', patientId = '', createdDate = null, modifiedDate = null, download = true, fileId = null) {
+    const currentDate = new Date().toISOString();
+    const finalPatientId = patientId || stimulationData.patientId || '';
+    const finalCreatedDate = createdDate || currentDate;
+    const finalModifiedDate = modifiedDate || currentDate;
+    const finalFileId = fileId || stimulationData.fileId || '';
+
+    let csvContent = '';
+    switch(type) {
+        case 'mapping':
+            csvContent = `${Identifiers.STIMULATION_FUNCTION}\n${IDENTIFIER_LINE_2}\n`;
+            break;
+        case 'recreation':
+            csvContent = `${Identifiers.STIMULATION_RECREATION}\n${IDENTIFIER_LINE_2}\n`;
+            break;
+        case 'ccep':
+            csvContent = `${Identifiers.STIMULATION_CCEP}\n${IDENTIFIER_LINE_2}\n`;
+            break;
+        default:
+            throw new Error('Invalid stimulation type');
+    }
+    
+    csvContent += `PatientID:${finalPatientId}\n`;
+    csvContent += `CreatedDate:${finalCreatedDate}\n`;
+    csvContent += `ModifiedDate:${finalModifiedDate}\n`;
+    csvContent += `FileID:${finalFileId}\n`;
+    const headers = ["Label", "ContactNumber", "ElectrodeDescription", "ContactDescription", "AssociatedLocation", "Mark", "SurgeonMark", "Pair", "IsPlanning", "Frequency", "Duration", "Current", "PlanOrder", "Type"];
     csvContent += headers.join(",") + "\n";
 
     // Create a map of electrode contacts for quick lookup
@@ -527,6 +630,7 @@ export function saveStimulationCSVFile(stimulationData, planOrder, isFunctionalM
                 contact.duration,
                 contact.current,
                 order,
+                type
             ].join(",");
         }).join("\n");
     })
@@ -537,7 +641,7 @@ export function saveStimulationCSVFile(stimulationData, planOrder, isFunctionalM
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "stimulation_" + new Date().toISOString().split('T')[0] + ".csv";
+        link.download = `stimulation_${type}_${new Date().toISOString().split('T')[0]}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -551,11 +655,24 @@ export function saveStimulationCSVFile(stimulationData, planOrder, isFunctionalM
  *
  * @param {Object[]} testData - The test data to be saved.
  * @param {Object[]} contacts - Contacts associated with tests.
+ * @param {string} patientId - The patient ID for the first line.
+ * @param {string} createdDate - The created date for the first line.
+ * @param {string} modifiedDate - The modified date for the first line.
  * @param {boolean} download - Whether to download the file or return the data.
  * @returns {string} The CSV content.
  */
-export function saveTestCSVFile(testData, contacts, download = true) {
+export function saveTestCSVFile(testData, contacts, patientId = '', createdDate = null, modifiedDate = null, download = true, fileId = null) {
+    const currentDate = new Date().toISOString();
+    const finalPatientId = patientId || '';
+    const finalCreatedDate = createdDate || currentDate;
+    const finalModifiedDate = modifiedDate || currentDate;
+    const finalFileId = fileId || testData.fileId || '';
+
     let csvContent = `${Identifiers.TEST_PLANNING}\n${IDENTIFIER_LINE_2}\n`;
+    csvContent += `PatientID:${finalPatientId}\n`;
+    csvContent += `CreatedDate:${finalCreatedDate}\n`;
+    csvContent += `ModifiedDate:${finalModifiedDate}\n`;
+    csvContent += `FileID:${finalFileId}\n`;
     const headers = [
             "Label",
             "ContactNumber",
@@ -568,15 +685,18 @@ export function saveTestCSVFile(testData, contacts, download = true) {
             "Frequency",
             "Duration",
             "Current",
-            "TestID" // Added TestID for associating tests
+            "TestID",
+            "TestName",
+            "IsPlanning"
         ];
 
-        // Create CSV rows
-        const rows = contacts.flatMap(contact => {
+    // Create CSV rows
+    const rows = contacts.map(electrode => {
+        return electrode.contacts.map(contact => {
             const contactTests = testData[contact.id] || [];
             if (contactTests.length === 0) {
-                return [[
-                    contact.electrodeLabel, // Label
+                return [
+                    electrode.label, // Label
                     contact.index, // ContactNumber
                     contact.__electrodeDescription__, // ElectrodeDescription
                     contact.__contactDescription__, // ContactDescription
@@ -587,36 +707,43 @@ export function saveTestCSVFile(testData, contacts, download = true) {
                     contact.frequency, // Frequency
                     contact.duration, // Duration
                     contact.current, // Current
-                    "", // No test
-                ]];
+                    "No test", // No test
+                    "No test name", // No test name
+                    contact.isPlanning // IsPlanning
+                ].join(",");
             }
-            return contactTests.map(test => [
-                contact.electrodeLabel, // Label
-                contact.index, // ContactNumber
-                contact.__electrodeDescription__, // ElectrodeDescription
-                contact.__contactDescription__, // ContactDescription
-                contact.associatedLocation, // AssociatedLocation
-                contact.mark, // Mark
-                contact.surgeonMark, // SurgeonMark
-                contact.pair, // Pair
-                contact.frequency, // Frequency
-                contact.duration, // Duration
-                contact.current, // Current
-                test.id, // TestID
-            ]);
-        });
+            return contactTests.map(test => {
+                return [
+                    electrode.label, // Label
+                    contact.index, // ContactNumber
+                    contact.__electrodeDescription__, // ElectrodeDescription
+                    contact.__contactDescription__, // ContactDescription
+                    contact.associatedLocation, // AssociatedLocation
+                    contact.mark, // Mark
+                    contact.surgeonMark, // SurgeonMark
+                    contact.pair, // Pair
+                    contact.frequency, // Frequency
+                    contact.duration, // Duration
+                    contact.current, // Current
+                    test.id, // TestID
+                    test.name || "", // TestName
+                    contact.isPlanning // IsPlanning
+                ].join(",");
+            });
+        }).join("\n");
+    });
 
-        // Combine headers and rows into CSV format
-        csvContent += [
-            headers.join(','), // Header row
-            ...rows.map(row => row.join(',')) // Data rows
-        ].join('\n');
+    // Combine headers and rows into CSV format
+    csvContent += [
+        headers.join(','), // Header row
+        ...rows // Data rows
+    ].join('\n');
 
     if (download) {
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "tests_" + new Date().toISOString().split('T')[0] + ".csv";
+        link.download = "neuropsychology_" + new Date().toISOString().split('T')[0] + ".csv";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -624,4 +751,4 @@ export function saveTestCSVFile(testData, contacts, download = true) {
 
     return csvContent;
 }
-</code></pre></article></section></div></div></div><div class="search-container" id="PkfLWpAbet" style="display:none"><div class="wrapper" id="iCxFxjkHbP"><button class="icon-button search-close-button" id="VjLlGakifb" aria-label="close search"><svg><use xlink:href="#close-icon"></use></svg></button><div class="search-box-c"><svg><use xlink:href="#search-icon"></use></svg> <input type="text" id="vpcKVYIppa" class="search-input" placeholder="Search..." autofocus></div><div class="search-result-c" id="fWwVHRuDuN"><span class="search-result-c-text">Type anything to view search result</span></div></div></div><div class="mobile-menu-icon-container"><button class="icon-button" id="mobile-menu" data-isopen="false" aria-label="menu"><svg><use xlink:href="#menu-icon"></use></svg></button></div><div id="mobile-sidebar" class="mobile-sidebar-container"><div class="mobile-sidebar-wrapper"><div class="mobile-nav-links"></div><div class="mobile-sidebar-items-c"><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-modules"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Designation.html">Designation</a></div><div class="sidebar-section-children"><a href="module-Resection.html">Resection</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer.html">nifti_viewer</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer_matlab_functions.html">nifti_viewer/matlab_functions</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-classes"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-nifti_viewer-FILE.html">FILE</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-global"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#Dropdown">Dropdown</a></div><div class="sidebar-section-children"><a href="global.html#Identifiers">Identifiers</a></div><div class="sidebar-section-children"><a href="global.html#Legend">Legend</a></div><div class="sidebar-section-children"><a href="global.html#LegendItem">LegendItem</a></div><div class="sidebar-section-children"><a href="global.html#UserDocumentation">UserDocumentation</a></div><div class="sidebar-section-children"><a href="global.html#generateAcronym">generateAcronym</a></div><div class="sidebar-section-children"><a href="global.html#handleFileRecord">handleFileRecord</a></div><div class="sidebar-section-children"><a href="global.html#insertRegionsAndGetIds">insertRegionsAndGetIds</a></div><div class="sidebar-section-children"><a href="global.html#mapConsecutive">mapConsecutive</a></div><div class="sidebar-section-children"><a href="global.html#parseCSVFile">parseCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#parseDesignation">parseDesignation</a></div><div class="sidebar-section-children"><a href="global.html#parseLocalization">parseLocalization</a></div><div class="sidebar-section-children"><a href="global.html#parseStimulation">parseStimulation</a></div><div class="sidebar-section-children"><a href="global.html#parseTests">parseTests</a></div><div class="sidebar-section-children"><a href="global.html#saveCSVFile">saveCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveDesignationCSVFile">saveDesignationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveLocalizationToDatabase">saveLocalizationToDatabase</a></div><div class="sidebar-section-children"><a href="global.html#saveStimulationCSVFile">saveStimulationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveTestCSVFile">saveTestCSVFile</a></div></div></div><div class="mobile-navbar-actions"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#dark-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div></div></div><script type="text/javascript" src="scripts/core.min.js"></script><script src="scripts/search.min.js" defer="defer"></script><script src="scripts/third-party/fuse.js" defer="defer"></script><script type="text/javascript">var tocbotInstance=tocbot.init({tocSelector:"#eed4d2a0bfd64539bb9df78095dec881",contentSelector:".main-content",headingSelector:"h1, h2, h3",hasInnerContainers:!0,scrollContainer:".main-content",headingsOffset:130,onClick:bringLinkToView})</script></body></html>
+</code></pre></article></section></div></div></div><div class="search-container" id="PkfLWpAbet" style="display:none"><div class="wrapper" id="iCxFxjkHbP"><button class="icon-button search-close-button" id="VjLlGakifb" aria-label="close search"><svg><use xlink:href="#close-icon"></use></svg></button><div class="search-box-c"><svg><use xlink:href="#search-icon"></use></svg> <input type="text" id="vpcKVYIppa" class="search-input" placeholder="Search..." autofocus></div><div class="search-result-c" id="fWwVHRuDuN"><span class="search-result-c-text">Type anything to view search result</span></div></div></div><div class="mobile-menu-icon-container"><button class="icon-button" id="mobile-menu" data-isopen="false" aria-label="menu"><svg><use xlink:href="#menu-icon"></use></svg></button></div><div id="mobile-sidebar" class="mobile-sidebar-container"><div class="mobile-sidebar-wrapper"><div class="mobile-nav-links"></div><div class="mobile-sidebar-items-c"><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-modules"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-DatabaseLookup.html">DatabaseLookup</a></div><div class="sidebar-section-children"><a href="module-Designation.html">Designation</a></div><div class="sidebar-section-children"><a href="module-Resection.html">Resection</a></div><div class="sidebar-section-children"><a href="module-UserDocumentation.html">UserDocumentation</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer.html">nifti_viewer</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer_matlab_functions.html">nifti_viewer/matlab_functions</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-classes"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-nifti_viewer-FILE.html">FILE</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-global"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#Dropdown">Dropdown</a></div><div class="sidebar-section-children"><a href="global.html#HelpButton">HelpButton</a></div><div class="sidebar-section-children"><a href="global.html#Identifiers">Identifiers</a></div><div class="sidebar-section-children"><a href="global.html#Legend">Legend</a></div><div class="sidebar-section-children"><a href="global.html#LegendItem">LegendItem</a></div><div class="sidebar-section-children"><a href="global.html#generateAcronym">generateAcronym</a></div><div class="sidebar-section-children"><a href="global.html#handleFileRecord">handleFileRecord</a></div><div class="sidebar-section-children"><a href="global.html#insertRegionsAndGetIds">insertRegionsAndGetIds</a></div><div class="sidebar-section-children"><a href="global.html#mapConsecutive">mapConsecutive</a></div><div class="sidebar-section-children"><a href="global.html#parseCSVFile">parseCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#parseDesignation">parseDesignation</a></div><div class="sidebar-section-children"><a href="global.html#parseLocalization">parseLocalization</a></div><div class="sidebar-section-children"><a href="global.html#parseStimulation">parseStimulation</a></div><div class="sidebar-section-children"><a href="global.html#parseTests">parseTests</a></div><div class="sidebar-section-children"><a href="global.html#saveCSVFile">saveCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveDesignationCSVFile">saveDesignationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveLocalizationToDatabase">saveLocalizationToDatabase</a></div><div class="sidebar-section-children"><a href="global.html#saveStimulationCSVFile">saveStimulationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveTestCSVFile">saveTestCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#sendShareNotification">sendShareNotification</a></div></div></div><div class="mobile-navbar-actions"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#dark-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div></div></div><script type="text/javascript" src="scripts/core.min.js"></script><script src="scripts/search.min.js" defer="defer"></script><script src="scripts/third-party/fuse.js" defer="defer"></script><script type="text/javascript">var tocbotInstance=tocbot.init({tocSelector:"#eed4d2a0bfd64539bb9df78095dec881",contentSelector:".main-content",headingSelector:"h1, h2, h3",hasInnerContainers:!0,scrollContainer:".main-content",headingsOffset:130,onClick:bringLinkToView})</script></body></html>

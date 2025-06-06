@@ -4,17 +4,6 @@ Almost all the comments are left untouched.
 -->
 <a id="readme-top"></a>
 
-
-
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
-
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -35,7 +24,7 @@ Almost all the comments are left untouched.
   <p align="center">
     A planning tool for epileptologists
     <br />
-    <a href="https://www.wirecracker.com/documentations"><strong>Visit documentations</strong></a>
+    <a href="https://www.wirecracker.com/usage-docs/index"><strong>Visit documentations</strong></a>
     <br />
     <br />
     <a href="https://www.wirecracker.com">Visit site</a>
@@ -87,7 +76,7 @@ Key Development Goals:
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Usage of the website can be found in the [documentation page](https://www.wirecracker.com/documentations)
+Usage of the website can be found in the [documentation page](https://www.wirecracker.com/usage-docs/index)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -95,7 +84,7 @@ Usage of the website can be found in the [documentation page](https://www.wirecr
 <!-- SELF HOSTING -->
 ## Self Hosting
 
-This section provides a guide for self-hosting. For development, please refer to [code documentation](https://www.wirecracker.com/documentations/code) and readme in each folder.
+This section provides a guide for self-hosting. For development, please refer to [code documentation](https://www.wirecracker.com/docs/index.html) and readme in each folder.
 
 ### Prerequisites
 
@@ -109,162 +98,10 @@ Followings are required to host your own Wirecracker
 You are required to have database with following tables in supabase.
 Data we used for core functionality can be located in ```./data``` foulder
 #### Core functionality:
-```mermaid
-erDiagram
-cort {
-  int4 id
-  text name
-  text acronym
-  text electrode_label
-  bpchar hemisphere
-  text lobe
-}
-cort_gm {
-  int4 cort_id
-  int4 gm_id
-  varchar reference_id
-}
-gm {
-  int4 id
-  text name
-  text acronym
-}
-reference {
-  varchar isbn_issn_doi
-  text title
-  text authors
-  text publisher
-  text publication_date
-  varchar access_date
-}
-cort_gm }|--|| gm : ""
-cort_gm }|--|| cort : ""
-cort_gm |o--|| reference : ""
-test {
-  int4 id
-  text name
-  text description
-}
-tag {
-  int4 id
-  text name
-}
-test_tag {
-  int4 test_id
-  int4 tag_id
-}
-test_tag }o--|| test : ""
-test_tag }o--|| tag : ""
-function {
-  int4 id
-  text name
-  text description
-}
-function_test {
-  int4 function_id
-  int4 test_id
-  varchar reference_id
-}
-function_test }o--|| function : ""
-function_test }o--|| test : ""
-function_test }o--|| reference : ""
-gm_function {
-  int4 gm_id
-  int4 function_id
-  varchar reference_id
-}
-gm_function }o--|| gm : ""
-gm_function }o--|| function : ""
-gm_function }o--|| reference : ""
-```
+![supabase ERD for core functionality](docs/supabase-core.png)
+
 #### File share and cloud saving
-```mermaid
-erDiagram
-users{
-  uuid id
-  text email
-  text name
-  text password_hash
-  timestamp created_at
-}
-email_verification_codes {
-  uuid id
-  uuid user_id
-  text code
-  timestamp expires_at
-  timestamp created_at
-}
-sessions {
-  uuid id
-  uuid user_id
-  text token
-  timestamp expires_at
-  timestamp created_at
-}
-email_verification_codes }o--|| users : ""
-sessions }o--|| users : ""
-files {
-  int4 file_id
-  uuid owner_user_id
-  varchar filename
-  timestamp creation_date
-  timestamp modified_date
-}
-files }o--|| users : ""
-fileshares {
-  int4 share_id
-  int4 file_id
-  uuid shared_with_user_id
-  varchar permission_level
-  timestamp shared_date
-}
-fileshares }o--|| files : ""
-fileshares }o--|| users : ""
-localization {
-  int8 id
-  int8 electrode_id
-  int4 contact
-  varchar tissue_type
-  int8 region_id
-  int4 file_id
-}
-electrode {
-  int8 id
-  varchar acronym
-  text description
-  int4 contact_number
-  text label
-}
-region_name {
-  int8 id
-  text name
-}
-localization |o--|| files : ""
-localization |o--|| electrode : ""
-localization }o--|| region_name : ""
-stimulation {
-  int8 id
-  json stimulation_data
-  json plan_order
-  bool is_mapping
-  int4 file_id
-}
-stimulation |o--|| files : ""
-designation {
-  int8 id
-  json designation_data
-  json localization_data
-  int4 file_id
-}
-designation |o--|| files : ""
-test_selection {
-  int8 id
-  json tests
-  json contacts
-  int4 file_id
-}
-test_selection |o--|| files : ""
-```
+![supabase ERD for file share and cloud saving functionality](docs/supabase-user.png)
 
 ### Installation
 
@@ -303,27 +140,22 @@ test_selection |o--|| files : ""
    }
    ```
 5. Start it
-   - Using docker
-     ```sh
-     docker compose up --build
-     ```
-   - Manually
-     1. Install npm packages on frontend
-        ```sh
-        npm install
-        ```
-     3. Run frontend
-        ```sh
-        npm run dev
-        ```
-     4. On separate console, install npm packages on backend
-        ```sh
-        cd backend; npm install
-        ```
-     5. Run backend
-        ```sh
-        npm run dev
-        ```
+   1. Install npm packages on frontend
+      ```sh
+      npm install
+      ```
+   2. Run frontend
+      ```sh
+      npm run dev
+      ```
+   3. On separate console, install npm packages on backend
+      ```sh
+      cd backend; npm install
+      ```
+   4. Run backend
+      ```sh
+      npm run dev
+      ```
    
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -331,6 +163,7 @@ test_selection |o--|| files : ""
 
 <!-- CONTRIBUTING -->
 <!-- Excerted from Angular repo -->
+
 ## Contributing Guidelines
 
 Read our [contributing guidelines][contributing] to learn about our submission process, coding rules, and more.
