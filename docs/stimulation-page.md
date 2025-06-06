@@ -1,4 +1,4 @@
-# **Contact Selection & Stimulation Planning Page**
+# **Contact Selection & Stimulation Planning Tool**
 
 ## **Overview**
 
@@ -48,7 +48,7 @@ The tool can also load from a CSV provided in the main screen provided that the 
   * Visual indicator shows where contact will be inserted
   * Drag from planning pane back to contact list to remove completely
 
-### **Important Behavior Differences:**
+### **Important Behavior Differences**
 
 | Action | Position in Planning Pane |
 | ----- | ----- |
@@ -63,7 +63,7 @@ The tool can also load from a CSV provided in the main screen provided that the 
   * Gray: Unmarked/Default
 * **Pairing Indicator**:
   * Shows which contact is paired with the current one
-  * Updated when cycling through pairs
+  * All possible pairs are shown at once
 
 ### **Visibility Options**
 
@@ -98,10 +98,8 @@ For each contact in planning pane:
 
 ## **Pairing Contacts**
 
-### **Changing Pairs**
-
-1. Click "P" floating button
-2. Click on a contact to cycle through pairing options
+1. All possible consecutive pairs are shown (eg \- 1-2, 2-3, 3-4)
+2. Click on a pair that is needed. Make sure not to then also add a pair that shares one of the contacts (eg \- if 1-2 is in planning pane, then ensure that 3-4 is added next and not 2-3)
 3. System automatically updates both contacts in pair
 4. Paired contacts appear together in planning pane
 

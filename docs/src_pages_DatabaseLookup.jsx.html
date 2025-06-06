@@ -1,0 +1,1098 @@
+<!DOCTYPE html><html lang="en" style="font-size:16px"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Source: src/pages/DatabaseLookup.jsx</title><!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]--><script src="scripts/third-party/hljs.js" defer="defer"></script><script src="scripts/third-party/hljs-line-num.js" defer="defer"></script><script src="scripts/third-party/popper.js" defer="defer"></script><script src="scripts/third-party/tippy.js" defer="defer"></script><script src="scripts/third-party/tocbot.min.js"></script><script>var baseURL="/",locationPathname="";baseURL=(locationPathname=document.location.pathname).substr(0,locationPathname.lastIndexOf("/")+1)</script><link rel="stylesheet" href="styles/clean-jsdoc-theme.min.css"><svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:none"><defs><symbol id="copy-icon" viewbox="0 0 488.3 488.3"><g><path d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z"/><path d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z"/></g></symbol><symbol id="search-icon" viewBox="0 0 512 512"><g><g><path d="M225.474,0C101.151,0,0,101.151,0,225.474c0,124.33,101.151,225.474,225.474,225.474    c124.33,0,225.474-101.144,225.474-225.474C450.948,101.151,349.804,0,225.474,0z M225.474,409.323    c-101.373,0-183.848-82.475-183.848-183.848S124.101,41.626,225.474,41.626s183.848,82.475,183.848,183.848    S326.847,409.323,225.474,409.323z"/></g></g><g><g><path d="M505.902,476.472L386.574,357.144c-8.131-8.131-21.299-8.131-29.43,0c-8.131,8.124-8.131,21.306,0,29.43l119.328,119.328    c4.065,4.065,9.387,6.098,14.715,6.098c5.321,0,10.649-2.033,14.715-6.098C514.033,497.778,514.033,484.596,505.902,476.472z"/></g></g></symbol><symbol id="font-size-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11.246 15H4.754l-2 5H.6L7 4h2l6.4 16h-2.154l-2-5zm-.8-2L8 6.885 5.554 13h4.892zM21 12.535V12h2v8h-2v-.535a4 4 0 1 1 0-6.93zM19 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol><symbol id="add-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></symbol><symbol id="minus-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M5 11h14v2H5z"/></symbol><symbol id="dark-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"/></symbol><symbol id="light-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></symbol><symbol id="reset-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M18.537 19.567A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10c0 2.136-.67 4.116-1.81 5.74L17 12h3a8 8 0 1 0-2.46 5.772l.997 1.795z"/></symbol><symbol id="down-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.7803 6.21967C13.0732 6.51256 13.0732 6.98744 12.7803 7.28033L8.53033 11.5303C8.23744 11.8232 7.76256 11.8232 7.46967 11.5303L3.21967 7.28033C2.92678 6.98744 2.92678 6.51256 3.21967 6.21967C3.51256 5.92678 3.98744 5.92678 4.28033 6.21967L8 9.93934L11.7197 6.21967C12.0126 5.92678 12.4874 5.92678 12.7803 6.21967Z"></path></symbol><symbol id="codepen-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M16.5 13.202L13 15.535v3.596L19.197 15 16.5 13.202zM14.697 12L12 10.202 9.303 12 12 13.798 14.697 12zM20 10.869L18.303 12 20 13.131V10.87zM19.197 9L13 4.869v3.596l3.5 2.333L19.197 9zM7.5 10.798L11 8.465V4.869L4.803 9 7.5 10.798zM4.803 15L11 19.131v-3.596l-3.5-2.333L4.803 15zM4 13.131L5.697 12 4 10.869v2.262zM2 9a1 1 0 0 1 .445-.832l9-6a1 1 0 0 1 1.11 0l9 6A1 1 0 0 1 22 9v6a1 1 0 0 1-.445.832l-9 6a1 1 0 0 1-1.11 0l-9-6A1 1 0 0 1 2 15V9z"/></symbol><symbol id="close-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></symbol><symbol id="menu-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></symbol></defs></svg></head><body data-theme="fallback-light"><div class="sidebar-container"><div class="sidebar" id="sidebar"><div class="sidebar-items-container"><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-modules"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-DatabaseLookup.html">DatabaseLookup</a></div><div class="sidebar-section-children"><a href="module-Designation.html">Designation</a></div><div class="sidebar-section-children"><a href="module-Resection.html">Resection</a></div><div class="sidebar-section-children"><a href="module-UserDocumentation.html">UserDocumentation</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer.html">nifti_viewer</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer_matlab_functions.html">nifti_viewer/matlab_functions</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-classes"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-nifti_viewer-FILE.html">FILE</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-global"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#Dropdown">Dropdown</a></div><div class="sidebar-section-children"><a href="global.html#HelpButton">HelpButton</a></div><div class="sidebar-section-children"><a href="global.html#Identifiers">Identifiers</a></div><div class="sidebar-section-children"><a href="global.html#Legend">Legend</a></div><div class="sidebar-section-children"><a href="global.html#LegendItem">LegendItem</a></div><div class="sidebar-section-children"><a href="global.html#generateAcronym">generateAcronym</a></div><div class="sidebar-section-children"><a href="global.html#handleFileRecord">handleFileRecord</a></div><div class="sidebar-section-children"><a href="global.html#insertRegionsAndGetIds">insertRegionsAndGetIds</a></div><div class="sidebar-section-children"><a href="global.html#mapConsecutive">mapConsecutive</a></div><div class="sidebar-section-children"><a href="global.html#parseCSVFile">parseCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#parseDesignation">parseDesignation</a></div><div class="sidebar-section-children"><a href="global.html#parseLocalization">parseLocalization</a></div><div class="sidebar-section-children"><a href="global.html#parseStimulation">parseStimulation</a></div><div class="sidebar-section-children"><a href="global.html#parseTests">parseTests</a></div><div class="sidebar-section-children"><a href="global.html#saveCSVFile">saveCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveDesignationCSVFile">saveDesignationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveLocalizationToDatabase">saveLocalizationToDatabase</a></div><div class="sidebar-section-children"><a href="global.html#saveStimulationCSVFile">saveStimulationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveTestCSVFile">saveTestCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#sendShareNotification">sendShareNotification</a></div></div></div></div></div><div class="navbar-container" id="VuAckcnZhf"><nav class="navbar"><div class="navbar-left-items"></div><div class="navbar-right-items"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#dark-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div><nav></nav></nav></div><div class="toc-container"><div class="toc-content"><span class="bold">On this page</span><div id="eed4d2a0bfd64539bb9df78095dec881"></div></div></div><div class="body-wrapper"><div class="main-content"><div class="main-wrapper"><section id="source-page" class="source-page"><header><h1 id="title" class="has-anchor">src_pages_DatabaseLookup.jsx</h1></header><article><pre class="prettyprint source lang-js"><code>import { useState, useEffect, useCallback, useRef } from "react";
+import * as d3 from "d3";
+
+const backendURL = __APP_CONFIG__.backendURL;
+
+/**
+ * @module DatabaseLookup
+ */
+
+/**
+ * A React component for searching and visualizing database entries.
+ * This page cannot be opened as a tab (Handler does not exist in App.jsx)
+ *
+ * @component
+ * @param {Object} [initialData={}] - Initial data to populate the search state.
+ * @param {string} [initialData.query=""] - Initial search query.
+ * @param {Object} [initialData.parameters] - Initial search parameters.
+ * @param {Function} [onStateChange] - Callback function invoked when component state changes.
+ * @param {Object} [savedState={}] - Saved state to restore component state.
+ * @param {string} [savedState.query] - Saved search query.
+ * @param {Object} [savedState.parameters] - Saved search parameters.
+ * @param {Array} [savedState.results=[]] - Saved search results.
+ * @param {boolean} [savedState.filter=false] - Saved filter visibility state.
+ * @param {boolean} [savedState.graphView=false] - Saved graph view toggle state.
+ * @returns {JSX.Element} The database lookup interface with search, filtering, and visualization capabilities.
+ */
+const DBLookup = ({ initialData = {}, onStateChange, savedState = {} }) => {
+
+    /**
+     * Enum for different types of database items.
+     * @enum {string}
+     * @readonly
+     * @property {string} CORT - Cortical/Subcortical items.
+     * @property {string} GM - Gray Matter items.
+     * @property {string} FUNCTION - Function items.
+     * @property {string} TEST - Test items.
+     */
+    const ItemTypes = Object.freeze({
+        CORT: "Cortical/Subcortical",
+        GM: "Gray Matter",
+        FUNCTION: "Function",
+        TEST: "Test",
+    });
+
+    // Search string
+    const [query, setQuery] = useState(
+        savedState.query || initialData.query || "",
+    );
+
+    // Filtering
+    const [parameters, setParameters] = useState(
+        savedState.parameters ||
+            initialData.parameters || {
+                hemisphere: [],
+                lobe: [],
+            },
+    );
+
+    // Search result
+    const [searchResult, setSearchResult] = useState(savedState.results || []);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    // Auto-populate suggestion thing
+    const [suggestions, setSuggestions] = useState([]);
+    const [activeSuggestions, setActiveSuggestions] = useState(false);
+
+    // Filter option for lobe
+    const [lobeOptions, setLobeOptions] = useState([]);
+
+    const [showFilters, setShowFilters] = useState(savedState.filter || false);
+    const debounceTimer = useRef(null);
+
+    const graphRef = useRef(null);
+    const [graphDimensions, setGraphDimensions] = useState({
+        width: 800,
+        height: 600,
+    });
+    const [graphView, setGraphView] = useState(savedState.graphView || false); // Toggle between table and graph view
+
+    // Color scale for different node types
+    const colorScale = d3
+        .scaleOrdinal()
+        .domain([
+            ItemTypes.CORT,
+            ItemTypes.GM,
+            ItemTypes.FUNCTION,
+            ItemTypes.TEST,
+        ])
+        .range(["#4e79a7", "#f28e2b", "#e15759", "#76b7b2"]);
+
+    /**
+     * Fetch every options for lobe from backend
+     */
+    useEffect(() => {
+        // Fetch lobe options from backend
+        const fetchLobeOptions = async () => {
+            try {
+                const res = await fetch(`${backendURL}/api/lobe-options`);
+                if (!res.ok) throw new Error(`Error: ${res.status}`);
+                const data = await res.json();
+                setLobeOptions(data.lobes);
+            } catch (err) {
+                console.error("Failed to fetch lobe options:", err);
+            }
+        };
+
+        fetchLobeOptions();
+    }, []);
+
+    useEffect(() => {
+        if (onStateChange) {
+            onStateChange({
+                parameters,
+                results: searchResult,
+                filter: showFilters,
+                query: query,
+                graphView: graphView,
+            });
+        }
+    }, [parameters, searchResult, showFilters, query, graphView]);
+
+    /**
+     * Call backend with given parameters to search.
+     * Search result will be transformed and put into searchResult variable
+     * @async
+     */
+    const performSearch = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const queryParams = {
+                query,
+                ...Object.fromEntries(
+                    Object.entries(parameters).filter(
+                        ([_, v]) => v !== "" &amp;&amp; v.length !== 0,
+                    ),
+                ),
+            };
+
+            const res = await fetch(`${backendURL}/api/search`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(queryParams),
+            });
+
+            if (!res.ok) throw new Error(`Error: ${res.status}`);
+            const data = await res.json();
+
+            // Transform the data for display
+            const transformedResults = transformSearchResults(data);
+            setSearchResult(transformedResults);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [query, parameters]);
+
+    /**
+     * Call search when user press enter
+     */
+    const handleSearch = (e) => {
+        e.preventDefault();
+        performSearch();
+    };
+
+    /**
+     * Call backend with given search string to get relevant items as suggestion
+     * Backend and database takes care of ordering
+     * @async
+     */
+    const fetchSuggestions = async (input) => {
+        if (!input) return;
+        try {
+            const res = await fetch(`${backendURL}/api/suggest`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: input }),
+            });
+            if (!res.ok) throw new Error(`Error: ${res.status}`);
+            const data = await res.json();
+            setSuggestions(data.suggestions);
+        } catch (err) {
+            console.error("Failed to fetch suggestions:", err);
+        }
+    };
+
+    /**
+     * Transforms raw results into a structured format for display.
+     *
+     * @param {Object} data - The raw search results from the backend.
+     * @param {Array} [data.cort] - Cortical/Subcortical items.
+     * @param {Array} [data.gm] - Gray Matter items.
+     * @param {Array} [data.functions] - Function items.
+     * @param {Array} [data.tests] - Test items.
+     * @returns {Array} Transformed results with relevance scoring and relationships.
+     */
+    const transformSearchResults = (data) => {
+        let results = [];
+        const searchString = query.toLowerCase();
+
+        // Helper function to check if text contains the search string
+        const containsString = (text) => {
+            if (!text) return false;
+            return text.toString().toLowerCase().includes(searchString);
+        };
+
+        // Helper function to determine relevance level
+        const getRelevanceLevel = (item, type) => {
+            // Level 1: Name matches
+            if (containsString(item.name || item.title)) return 1;
+
+            // Level 2: Acronym or description matches
+            if (
+                containsString(item.acronym) ||
+                containsString(item.description) ||
+                containsString(item.lobe)
+            )
+                return 2;
+
+            // Default to level 4 (will be upgraded if direct relationships found)
+            return 4;
+        };
+
+        // Helper function to add item if it doesn't exist
+        const addItem = (item, type, relevance = null) => {
+            if (!item || !item.id) return;
+
+            const existsIndex = results.findIndex(
+                (r) => r.type === type &amp;&amp; r.id === item.id,
+            );
+
+            const relevanceLevel =
+                relevance !== null ? relevance : getRelevanceLevel(item, type);
+
+            // Take care of related items
+            if (existsIndex === -1) {
+                let relatedItems = [];
+                switch (type) {
+                    case ItemTypes.CORT:
+                        item.name = `${item.hemisphere === "l" ? "Left" : "Right"} ${item.name}`;
+                        for (let relatedGM in item.cort_gm) {
+
+                            // Add GM as related only if they are not duplicate
+                            if (!item.cort_gm[relatedGM].gm.duplicate) {
+                                relatedItems.push({
+                                    id: item.cort_gm[relatedGM].gm.id,
+                                    type: ItemTypes.GM,
+                                    name: item.cort_gm[relatedGM].gm.name,
+                                    reference: item.cort_gm[relatedGM].reference,
+                                });
+                            }
+                        }
+                        break;
+                    case ItemTypes.GM:
+                        for (let relatedCort in item.cort_gm) {
+                            relatedItems.push({
+                                id: item.cort_gm[relatedCort].cort.id,
+                                type: ItemTypes.CORT,
+                                name: item.cort_gm[relatedCort].cort.name,
+                                reference: item.cort_gm[relatedCort].reference,
+                            });
+                        }
+                        for (let relatedFunc in item.gm_function) {
+                            relatedItems.push({
+                                id: item.gm_function[relatedFunc].function.id,
+                                type: ItemTypes.FUNCTION,
+                                name: item.gm_function[relatedFunc].function
+                                    .name,
+                                reference:
+                                    item.gm_function[relatedFunc].reference,
+                            });
+                        }
+                        break;
+                    case ItemTypes.FUNCTION:
+                        for (let relatedGM in item.gm_function) {
+
+                            // Add GM as related only if they are not duplicate
+                            if (!item.gm_function[relatedGM].gm.duplicate) {
+                                relatedItems.push({
+                                    id: item.gm_function[relatedGM].gm.id,
+                                    type: ItemTypes.GM,
+                                    name: item.gm_function[relatedGM].gm.name,
+                                    reference:
+                                        item.gm_function[relatedGM].reference,
+                                });
+
+                            }
+                        }
+                        for (let relatedTest in item.function_test) {
+                            relatedItems.push({
+                                id: item.function_test[relatedTest].test.id,
+                                type: ItemTypes.TEST,
+                                name: item.function_test[relatedTest].test.name,
+                                reference:
+                                    item.function_test[relatedTest].reference,
+                            });
+                        }
+                        break;
+                    case ItemTypes.TEST:
+                        for (let relatedFunc in item.function_test) {
+                            relatedItems.push({
+                                id: item.function_test[relatedFunc].function.id,
+                                type: ItemTypes.FUNCTION,
+                                name: item.function_test[relatedFunc].function
+                                    .name,
+                                reference:
+                                    item.function_test[relatedFunc].reference,
+                            });
+                        }
+                        break;
+                }
+
+                results.push({
+                    type: type,
+                    id: item.id,
+                    name: item.name,
+                    details: getItemDetails(item, type),
+                    related: relatedItems,
+                    relevance: relevanceLevel,
+                    duplicate: item.duplicate === true,
+                });
+            } else if (relevanceLevel &lt; results[existsIndex].relevance) {
+                // Update with better relevance if found
+                results[existsIndex].relevance = relevanceLevel;
+            }
+        };
+
+        // Helper to get display details for each item type
+        const getItemDetails = (item, type) => {
+            switch (type) {
+                case ItemTypes.CORT:
+                    const side = item.hemisphere === "l" ? "left" : "right";
+                    return {
+                        hemisphere: side,
+                        lobe: item.lobe,
+                        electrode_label: item.electrode_label,
+                        acronym: item.acronym,
+                    };
+                case ItemTypes.GM:
+                    return { acronym: item.acronym };
+                case ItemTypes.FUNCTION:
+                    return { description: item.description };
+                case ItemTypes.TEST:
+                    return { description: item.description };
+                default:
+                    return {};
+            }
+        };
+
+        // add all items with their direct relevance
+        data.cort?.forEach((cort) => addItem(cort, ItemTypes.CORT));
+        data.gm?.forEach((gm) => addItem(gm, ItemTypes.GM));
+        data.functions?.forEach((func) => addItem(func, ItemTypes.FUNCTION));
+        data.tests?.forEach((test) => addItem(test, ItemTypes.TEST));
+
+        // resolve duplicates in gm
+        results.forEach((entry) => {
+            if (entry.duplicate) {
+                entry.related.forEach((relative) => {
+                    let original = results.find(r => (r.id === relative.id) &amp;&amp; (r.type === relative.type));
+                    if (original) {
+                        original.related = original.related.concat(entry.related.filter(r => (r.id !== relative.id) &amp;&amp; (r.type !== relative.type)))
+                    }
+                })
+            }
+        })
+        results = results.filter(r => r.duplicate !== true)
+
+        // find direct relationships (level 3)
+        const directlyRelated = new Set();
+        results.forEach((item) => {
+            if (item.relevance &lt;= 2) {
+                // If item is level 1 or 2
+                item.related?.forEach((rel) => {
+                    directlyRelated.add(`${rel.type}-${rel.id}`);
+                });
+            }
+        });
+
+        // Update relevance for directly related items
+        results.forEach((item) => {
+            const itemKey = `${item.type}-${item.id}`;
+            if (directlyRelated.has(itemKey) &amp;&amp; item.relevance > 3) {
+                item.relevance = 3;
+            }
+        });
+
+        // Sort results by relevance (lower numbers first)
+        results.sort((a, b) => a.relevance - b.relevance);
+
+        return results;
+    };
+
+    /**
+     * Clear out all parameters
+     */
+    const handleReset = () => {
+        setQuery("");
+        setParameters({ hemisphere: [], lobe: [] });
+        setSearchResult([]);
+        setSuggestions([]);
+        setError(null);
+    };
+
+    /**
+     * Search again when hemisphere filter changes
+     */
+    const handleHemisphereChange = (side) => {
+        setParameters((prev) => {
+            const newHemisphere = prev.hemisphere.includes(side)
+                ? prev.hemisphere.filter((h) => h !== side)
+                : [...prev.hemisphere, side];
+            const newParams = { ...prev, hemisphere: newHemisphere };
+
+            if (searchResult.length > 0 || query) {
+                if (searchResult.length > 0 || query) {
+                    clearTimeout(debounceTimer.current);
+                    debounceTimer.current = setTimeout(() => {
+                        performSearch();
+                    }, 300); // 300ms delay
+                }
+            }
+            return newParams;
+        });
+    };
+
+    /**
+     * Search again when lobe filter changes
+     */
+    const handleLobeChange = (lobe) => {
+        setParameters((prev) => {
+            const newLobe = prev.lobe.includes(lobe)
+                ? prev.lobe.filter((l) => l !== lobe)
+                : [...prev.lobe, lobe];
+            const newParams = { ...prev, lobe: newLobe };
+
+            if (searchResult.length > 0 || query) {
+                if (searchResult.length > 0 || query) {
+                    clearTimeout(debounceTimer.current);
+                    debounceTimer.current = setTimeout(() => {
+                        performSearch();
+                    }, 300); // 300ms delay
+                }
+            }
+            return newParams;
+        });
+    };
+
+    useEffect(() => {
+        if (
+            (searchResult.length > 0 || query) &amp;&amp;
+            Object.keys(parameters).length > 0
+        ) {
+            if (searchResult.length > 0 || query) {
+                clearTimeout(debounceTimer.current);
+                debounceTimer.current = setTimeout(() => {
+                    performSearch();
+                }, 300); // 300ms delay
+            }
+        }
+    }, [parameters.hemisphere, parameters.lobe]);
+
+    // Add this useEffect to handle window resize
+    useEffect(() => {
+        const handleResize = () => {
+            if (graphRef.current) {
+                const width = graphRef.current.clientWidth;
+                const height = Math.min(600, window.innerHeight - 200);
+                setGraphDimensions({ width, height });
+            }
+        };
+
+        window.addEventListener("resize", handleResize);
+        handleResize(); // Initial call
+
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    useEffect(() => {
+        if (graphView &amp;&amp; searchResult.length > 0 &amp;&amp; graphRef.current) {
+            const cleanup = renderGraph();
+            return () => {
+                // Clean up when switching views or unmounting
+                if (graphRef.current) {
+                    d3.select(graphRef.current).selectAll("*").remove();
+                }
+                if (cleanup) cleanup();
+            };
+        } else {
+            // Ensure clean removal when not in graph view
+            if (graphRef.current) {
+                d3.select(graphRef.current).selectAll("*").remove();
+            }
+        }
+    }, [searchResult, graphView, graphDimensions]);
+
+    /**
+     * Renders a graph visualization of search results using D3.js.
+     *
+     * @returns {Function} A cleanup function to remove the graph when unmounting.
+     */
+    const renderGraph = () => {
+        // Helper function to wrap long labels
+        function wrap(text, width) {
+            text.each(function () {
+                var text = d3.select(this),
+                    words = text.text().split(/\s+/),
+                    word,
+                    line = [],
+                    lineHeight = 1.2, // ems
+                    dy = -2 * lineHeight,
+                    tspan = text
+                        .text(null)
+                        .append("tspan")
+                        .attr("text-anchor", "middle")
+                        .attr("dy", dy + "em");
+                while ((word = words.pop())) {
+                    line = [word, ...line];
+                    tspan.text(line.join(" "));
+                    if (tspan.node().getComputedTextLength() > width) {
+                        line.shift();
+                        tspan.text(line.join(" "));
+                        line = [word];
+                        tspan = text
+                            .append("tspan")
+                            .attr("text-anchor", "middle")
+                            .attr("dy", dy + lineHeight + "em")
+                            .attr("dx", -tspan.node().getComputedTextLength())
+                            .text(word);
+                    }
+                }
+            });
+        }
+
+        // Clear previous graph completely
+        const container = d3.select(graphRef.current);
+        container.selectAll("*").remove();
+
+        // Prepare nodes and links data
+        const nodes = [];
+        const links = [];
+        const nodeMap = new Map();
+
+        // Create nodes from search results
+        searchResult.forEach((item, index) => {
+            const nodeId = `${item.type}-${item.id}`;
+            nodeMap.set(nodeId, index);
+            nodes.push({
+                id: nodeId,
+                name: item.name,
+                type: item.type,
+                details: item.details,
+                // Store the original item for relationship lookup
+                originalItem: item,
+            });
+        });
+
+        // Create links from related items - FIXED LINK CREATION
+        nodes.forEach((sourceNode, sourceIndex) => {
+            sourceNode.originalItem.related?.forEach((rel) => {
+                // Create target ID in the same format as node IDs
+                const targetId = `${rel.type}-${rel.id}`;
+                const targetIndex = nodeMap.get(targetId);
+
+                // Only create link if target exists and it's not linking to itself
+                if (targetIndex !== undefined &amp;&amp; targetIndex !== sourceIndex) {
+                    links.push({
+                        source: sourceIndex,
+                        target: targetIndex,
+                        value: 1,
+                    });
+                }
+            });
+        });
+
+        // Create the force simulation with proper node references
+        const simulation = d3
+            .forceSimulation(nodes)
+            .force(
+                "link",
+                d3
+                    .forceLink(links)
+                    .id((d) => nodes.indexOf(d)) // Use node index as ID
+                    .distance(130),
+            )
+            .force("charge", d3.forceManyBody().strength(-20))
+            .force(
+                "center",
+                d3.forceCenter(
+                    graphDimensions.width / 2,
+                    graphDimensions.height / 2,
+                ),
+            )
+            .force("collision", d3.forceCollide().radius(40));
+
+        // Create SVG container with Tailwind classes
+        const svg = container
+            .append("svg")
+            .attr("class", "w-full h-full")
+            .attr(
+                "viewBox",
+                `0 0 ${graphDimensions.width} ${graphDimensions.height}`,
+            )
+            .attr("preserveAspectRatio", "xMidYMid meet");
+
+        // Add zoom behavior
+        const zoom = d3
+            .zoom()
+            .scaleExtent([0.5, 3])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+
+        svg.call(zoom);
+
+        const g = svg.append("g");
+
+        // Draw links
+        const link = g
+            .append("g")
+            .selectAll("line")
+            .data(links)
+            .join("line")
+            .attr("class", "stroke-gray-400 stroke-opacity-60 stroke-2")
+            .attr("stroke", "#999") // Explicit color as fallback
+            .attr("stroke-width", 2);
+
+        // Create a size scale based on relevance
+        const sizeScale = d3
+            .scaleLinear()
+            .domain([1, 4]) // Relevance levels from 1 (highest) to 4 (lowest)
+            .range([20, 10]); // Size range from 30px (largest) to 15px (smallest)
+
+        // Draw nodes
+        const node = g
+            .append("g")
+            .selectAll("circle")
+            .data(nodes)
+            .join("circle")
+            .attr("r", (d) => sizeScale(d.originalItem.relevance))
+            .attr("fill", (d) => colorScale(d.type))
+            .attr("class", "stroke-white stroke-2")
+            .call(drag(simulation));
+
+        // Add labels
+        const label = g
+            .append("g")
+            .selectAll("text")
+            .data(nodes)
+            .join("text")
+            .attr(
+                "class",
+                (d) =>
+                    `text-xs text-[${12 - d.originalItem.relevance}px] fill-gray-800 max-w-24`,
+            )
+            .text((d) => d.name)
+            .call(wrap, 120);
+
+        // Add node type indicators
+        const typeLabel = g
+            .append("g")
+            .selectAll("text")
+            .data(nodes)
+            .join("text")
+            .attr("dy", (d) => 30 - d.originalItem.relevance * 3)
+            .attr("text-anchor", "middle")
+            .attr("class", "text-[8px] fill-gray-600")
+            .text((d) => d.type.split("/")[0]);
+
+        // Tooltip with Tailwind classes
+        const tooltip = d3
+            .select("body")
+            .append("div")
+            .attr(
+                "class",
+                "fixed invisible bg-white border border-gray-200 rounded p-2 pointer-events-none z-50 max-w-[300px] shadow-md",
+            );
+
+        // Add interactivity
+        node.on("mouseover", (event, d) => {
+            tooltip
+                .html(
+                    `
+                    &lt;strong class="font-semibold">${d.name}&lt;/strong>&lt;br>
+                    &lt;em class="text-gray-600">${d.type}&lt;/em>&lt;br>
+                    ${formatDetails(d.details)}
+                `,
+                )
+                .classed("invisible", false)
+                .classed("visible", true);
+        })
+            .on("mousemove", (event) => {
+                tooltip
+                    .style("top", `${event.pageY - document.body.scrollTop}px`)
+                    .style("left", `${event.pageX}px`);
+            })
+            .on("mouseout", () => {
+                tooltip.classed("invisible", true).classed("visible", false);
+            });
+
+        // Update positions on each tick
+        simulation.on("tick", () => {
+            link.attr("x1", (d) => d.source.x)
+                .attr("y1", (d) => d.source.y)
+                .attr("x2", (d) => d.target.x)
+                .attr("y2", (d) => d.target.y);
+
+            node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+
+            label.attr("x", (d) => d.x).attr("y", (d) => d.y);
+
+            typeLabel.attr("x", (d) => d.x).attr("y", (d) => d.y);
+        });
+
+        // Drag functions
+        function drag(simulation) {
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+
+            return d3
+                .drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended);
+        }
+
+        // Helper to format details for tooltip
+        function formatDetails(details) {
+            if (!details) return "";
+            return Object.entries(details)
+                .map(
+                    ([key, value]) =>
+                        `&lt;span class="text-gray-500">${key}:&lt;/span> ${value}`,
+                )
+                .join("&lt;br>");
+        }
+
+        // Return cleanup function
+        return () => {
+            simulation.stop();
+            tooltip.remove();
+        };
+    };
+
+    /**
+     * @returns {JSX.Element} Table / Graph for the search result
+     */
+    const renderResultsTable = () => {
+        if (searchResult.length === 0) {
+            return (
+                &lt;p>No results to display. Perform a search to see results.&lt;/p>
+            );
+        }
+
+        return (
+            &lt;div className="space-y-4">
+                &lt;div className="flex justify-between items-center">
+                    &lt;h3 className="text-lg font-semibold">
+                        Results ({searchResult.length})
+                    &lt;/h3>
+                    &lt;button
+                        onClick={() => {
+                            setGraphView(!graphView);
+                            // Force a re-render by resetting the graph dimensions
+                            const container = d3.select(graphRef.current);
+                            container.selectAll("*").remove();
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    >
+                        {graphView ? "Show Table" : "Show Graph"}
+                    &lt;/button>
+                &lt;/div>
+
+                {graphView ? (
+                    &lt;div
+                        ref={graphRef}
+                        className="border rounded bg-white w-full h-[600px]"
+                    />
+                ) : (
+                    &lt;div className="overflow-auto border rounded">
+                        &lt;table className="min-w-full divide-y divide-gray-200 text-sm">
+                            &lt;thead className="bg-gray-100">
+                                &lt;tr>
+                                    &lt;th className="px-4 py-2 text-left font-medium text-gray-700">
+                                        Type
+                                    &lt;/th>
+                                    &lt;th className="px-4 py-2 text-left font-medium text-gray-700">
+                                        Name
+                                    &lt;/th>
+                                    &lt;th className="px-4 py-2 text-left font-medium text-gray-700">
+                                        Details
+                                    &lt;/th>
+                                    &lt;th className="px-4 py-2 text-left font-medium text-gray-700 w-1/2">
+                                        Related Results
+                                    &lt;/th>
+                                &lt;/tr>
+                            &lt;/thead>
+                            &lt;tbody className="bg-white divide-y divide-gray-200">
+                                {searchResult.map((item) => (
+                                    &lt;tr
+                                        key={`${item.type}-${item.id}`}
+                                        className="hover:bg-gray-50"
+                                    >
+                                        &lt;td className="px-4 py-2 capitalize">
+                                            {item.type}
+                                        &lt;/td>
+                                        &lt;td className="px-4 py-2 font-medium capitalize">
+                                            {item.name}
+                                        &lt;/td>
+                                        &lt;td className="px-4 py-2">
+                                            {item.type === ItemTypes.CORT &amp;&amp; (
+                                                &lt;div className="space-y-1">
+                                                    &lt;div>
+                                                        &lt;span className="text-gray-500">
+                                                            Hemisphere:
+                                                        &lt;/span>{" "}
+                                                        {
+                                                            item.details
+                                                                .hemisphere
+                                                        }
+                                                    &lt;/div>
+                                                    &lt;div>
+                                                        &lt;span className="text-gray-500">
+                                                            Lobe:
+                                                        &lt;/span>{" "}
+                                                        {item.details.lobe}
+                                                    &lt;/div>
+                                                    &lt;div>
+                                                        &lt;span className="text-gray-500">
+                                                            Electrode:
+                                                        &lt;/span>{" "}
+                                                        {
+                                                            item.details
+                                                                .electrode_label
+                                                        }
+                                                    &lt;/div>
+                                                    &lt;div>
+                                                        &lt;span className="text-gray-500">
+                                                            Acronym:
+                                                        &lt;/span>{" "}
+                                                        {item.details.acronym}
+                                                    &lt;/div>
+                                                &lt;/div>
+                                            )}
+                                            {item.type === ItemTypes.GM &amp;&amp; (
+                                                &lt;div>
+                                                    &lt;span className="text-gray-500">
+                                                        Acronym:
+                                                    &lt;/span>{" "}
+                                                    {item.details.acronym}
+                                                &lt;/div>
+                                            )}
+                                            {item.type ===
+                                                ItemTypes.FUNCTION &amp;&amp; (
+                                                &lt;div>
+                                                    &lt;span className="text-gray-500">
+                                                        Description:
+                                                    &lt;/span>{" "}
+                                                    {item.details.description}
+                                                &lt;/div>
+                                            )}
+                                            {item.type === ItemTypes.TEST &amp;&amp; (
+                                                &lt;div>
+                                                    &lt;span className="text-gray-500">
+                                                        Description:
+                                                    &lt;/span>{" "}
+                                                    {item.details.description}
+                                                &lt;/div>
+                                            )}
+                                        &lt;/td>
+                                        &lt;td className="px-4 py-2">
+                                            {item.related?.length > 0 ? (
+                                                &lt;div className="space-y-1">
+                                                    {item.related.map(
+                                                        (rel, i) => (
+                                                            &lt;div
+                                                                key={i}
+                                                                className="text-xs bg-gray-100 rounded px-2 py-1"
+                                                            >
+                                                                {rel.reference ? (
+                                                                    &lt;details className="flex cursor-pointer">
+                                                                        &lt;summary>
+                                                                            &lt;span className="font-medium capitalize">
+                                                                                {
+                                                                                    rel.type
+                                                                                }
+                                                                                :
+                                                                            &lt;/span>{" "}
+                                                                            &lt;span className="capitalize">
+                                                                                {
+                                                                                    rel.name
+                                                                                }
+                                                                            &lt;/span>
+                                                                        &lt;/summary>
+                                                                        &lt;p className="pl-5">
+                                                                            {`${rel.reference.authors}. (${rel.reference.publication_date}). ${rel.reference.title}. `}
+                                                                            &lt;i>{`${rel.reference.publisher}.`}&lt;/i>
+                                                                            {` doi:${rel.reference.isbn_issn_doi}`}
+                                                                        &lt;/p>
+                                                                    &lt;/details>
+                                                                ) : (
+                                                                    &lt;div>
+                                                                        &lt;span className="font-medium capitalize">
+                                                                            {
+                                                                                rel.type
+                                                                            }
+                                                                            :
+                                                                        &lt;/span>{" "}
+                                                                        &lt;span className="capitalize">
+                                                                            {
+                                                                                rel.name
+                                                                            }
+                                                                        &lt;/span>
+                                                                    &lt;/div>
+                                                                )}
+                                                            &lt;/div>
+                                                        ),
+                                                    )}
+                                                &lt;/div>
+                                            ) : (
+                                                &lt;span className="text-gray-400">
+                                                    None
+                                                &lt;/span>
+                                            )}
+                                        &lt;/td>
+                                    &lt;/tr>
+                                ))}
+                            &lt;/tbody>
+                        &lt;/table>
+                    &lt;/div>
+                )}
+            &lt;/div>
+        );
+    };
+
+    return (
+        &lt;div className="flex flex-col mx-10 p-4 space-y-4 relative">
+            &lt;h2 className="text-2xl font-semibold">Database Lookup&lt;/h2>
+
+            {/* Search Bar */}
+            &lt;form onSubmit={handleSearch} onReset={handleReset}>
+                &lt;div className="flex gap-2 w-full mb-4 relative">
+                    &lt;button
+                        type="button"
+                        className="px-4 py-2 border border-gray-400 rounded hover:bg-gray-100"
+                        onClick={() => setShowFilters(!showFilters)}
+                    >
+                        {showFilters ? "Hide Filters" : "Show Filters"}
+                    &lt;/button>
+                    &lt;input
+                        type="text"
+                        className="flex-grow p-2 border rounded-l-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Search database..."
+                        value={query}
+                        onChange={(e) => {
+                            setQuery(e.target.value);
+                            fetchSuggestions(e.target.value);
+                            setActiveSuggestions(true);
+                        }}
+                        onFocus={() => setActiveSuggestions(true)}
+                        onBlur={() =>
+                            setTimeout(() => setActiveSuggestions(false), 200)
+                        }
+                    />
+                    &lt;button
+                        type="submit"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 disabled:opacity-50"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? "Searching..." : "Search"}
+                    &lt;/button>
+                    &lt;button
+                        type="reset"
+                        className="px-4 py-2 border border-gray-400 rounded hover:bg-gray-100"
+                    >
+                        Reset
+                    &lt;/button>
+                    {isLoading &amp;&amp; (
+                        &lt;div className="absolute right-0 -bottom-6 text-sm text-gray-500">
+                            Loading...
+                        &lt;/div>
+                    )}
+                &lt;/div>
+
+                {/* Suggestions Dropdown */}
+                {activeSuggestions &amp;&amp; suggestions &amp;&amp; suggestions.length > 0 &amp;&amp; (
+                    &lt;ul className="bg-white border border-gray-300 rounded shadow max-h-60 overflow-y-auto absolute z-10 w-full">
+                        {suggestions.map((sug, i) => (
+                            &lt;li
+                                key={i}
+                                className="p-2 hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                    setQuery(sug);
+                                    setActiveSuggestions(false);
+                                }}
+                            >
+                                {sug}
+                            &lt;/li>
+                        ))}
+                    &lt;/ul>
+                )}
+            &lt;/form>
+
+            &lt;div className="flex gap-4">
+                {showFilters &amp;&amp; (
+                    &lt;div className="w-1/6 space-y-4">
+                        &lt;h3 className="text-lg font-semibold">Filters&lt;/h3>
+
+                        {/* Hemisphere Checkboxes */}
+                        &lt;div>
+                            &lt;label className="block text-sm font-medium mb-1">
+                                Hemisphere
+                            &lt;/label>
+                            &lt;div className="flex gap-2">
+                                {["left", "right"].map((side) => (
+                                    &lt;label
+                                        key={side}
+                                        className="inline-flex items-center gap-2"
+                                    >
+                                        &lt;input
+                                            type="checkbox"
+                                            checked={parameters.hemisphere.includes(
+                                                side,
+                                            )}
+                                            onChange={() =>
+                                                handleHemisphereChange(side)
+                                            }
+                                            className="rounded border-gray-300 text-blue-600
+                                                       cursor-pointer focus:ring-blue-500"
+                                        />
+                                        {side.charAt(0).toUpperCase() +
+                                            side.slice(1)}
+                                    &lt;/label>
+                                ))}
+                            &lt;/div>
+                        &lt;/div>
+
+                        {/* Lobe Checkboxes */}
+                        &lt;div>
+                            &lt;label className="block text-sm font-medium mb-1">
+                                Lobe
+                            &lt;/label>
+                            &lt;div className="space-y-2">
+                                {lobeOptions.map((lobe) => (
+                                    &lt;label
+                                        key={lobe}
+                                        className="flex items-center gap-2"
+                                    >
+                                        &lt;input
+                                            type="checkbox"
+                                            checked={parameters.lobe.includes(
+                                                lobe,
+                                            )}
+                                            onChange={() =>
+                                                handleLobeChange(lobe)
+                                            }
+                                            className="rounded border-gray-300 text-blue-600
+                                                       cursor-pointer focus:ring-blue-500"
+                                        />
+                                        {lobe}
+                                    &lt;/label>
+                                ))}
+                            &lt;/div>
+                        &lt;/div>
+                    &lt;/div>
+                )}
+
+                {/* Results */}
+                &lt;div className={showFilters ? "w-3/4" : "w-full"}>
+                    {error &amp;&amp; &lt;div className="text-red-500 mb-2">{error}&lt;/div>}
+                    {renderResultsTable()}
+                &lt;/div>
+            &lt;/div>
+        &lt;/div>
+    );
+};
+
+export default DBLookup;
+</code></pre></article></section></div></div></div><div class="search-container" id="PkfLWpAbet" style="display:none"><div class="wrapper" id="iCxFxjkHbP"><button class="icon-button search-close-button" id="VjLlGakifb" aria-label="close search"><svg><use xlink:href="#close-icon"></use></svg></button><div class="search-box-c"><svg><use xlink:href="#search-icon"></use></svg> <input type="text" id="vpcKVYIppa" class="search-input" placeholder="Search..." autofocus></div><div class="search-result-c" id="fWwVHRuDuN"><span class="search-result-c-text">Type anything to view search result</span></div></div></div><div class="mobile-menu-icon-container"><button class="icon-button" id="mobile-menu" data-isopen="false" aria-label="menu"><svg><use xlink:href="#menu-icon"></use></svg></button></div><div id="mobile-sidebar" class="mobile-sidebar-container"><div class="mobile-sidebar-wrapper"><div class="mobile-nav-links"></div><div class="mobile-sidebar-items-c"><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-modules"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-DatabaseLookup.html">DatabaseLookup</a></div><div class="sidebar-section-children"><a href="module-Designation.html">Designation</a></div><div class="sidebar-section-children"><a href="module-Resection.html">Resection</a></div><div class="sidebar-section-children"><a href="module-UserDocumentation.html">UserDocumentation</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer.html">nifti_viewer</a></div><div class="sidebar-section-children"><a href="module-nifti_viewer_matlab_functions.html">nifti_viewer/matlab_functions</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-classes"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-nifti_viewer-FILE.html">FILE</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="sidebar-global"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#Dropdown">Dropdown</a></div><div class="sidebar-section-children"><a href="global.html#HelpButton">HelpButton</a></div><div class="sidebar-section-children"><a href="global.html#Identifiers">Identifiers</a></div><div class="sidebar-section-children"><a href="global.html#Legend">Legend</a></div><div class="sidebar-section-children"><a href="global.html#LegendItem">LegendItem</a></div><div class="sidebar-section-children"><a href="global.html#generateAcronym">generateAcronym</a></div><div class="sidebar-section-children"><a href="global.html#handleFileRecord">handleFileRecord</a></div><div class="sidebar-section-children"><a href="global.html#insertRegionsAndGetIds">insertRegionsAndGetIds</a></div><div class="sidebar-section-children"><a href="global.html#mapConsecutive">mapConsecutive</a></div><div class="sidebar-section-children"><a href="global.html#parseCSVFile">parseCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#parseDesignation">parseDesignation</a></div><div class="sidebar-section-children"><a href="global.html#parseLocalization">parseLocalization</a></div><div class="sidebar-section-children"><a href="global.html#parseStimulation">parseStimulation</a></div><div class="sidebar-section-children"><a href="global.html#parseTests">parseTests</a></div><div class="sidebar-section-children"><a href="global.html#saveCSVFile">saveCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveDesignationCSVFile">saveDesignationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveLocalizationToDatabase">saveLocalizationToDatabase</a></div><div class="sidebar-section-children"><a href="global.html#saveStimulationCSVFile">saveStimulationCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#saveTestCSVFile">saveTestCSVFile</a></div><div class="sidebar-section-children"><a href="global.html#sendShareNotification">sendShareNotification</a></div></div></div><div class="mobile-navbar-actions"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#dark-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div></div></div><script type="text/javascript" src="scripts/core.min.js"></script><script src="scripts/search.min.js" defer="defer"></script><script src="scripts/third-party/fuse.js" defer="defer"></script><script type="text/javascript">var tocbotInstance=tocbot.init({tocSelector:"#eed4d2a0bfd64539bb9df78095dec881",contentSelector:".main-content",headingSelector:"h1, h2, h3",hasInnerContainers:!0,scrollContainer:".main-content",headingsOffset:130,onClick:bringLinkToView})</script></body></html>

@@ -1,8 +1,8 @@
-# **Designation Page**
+# **Epilepsy Page**
 
 ## **Overview**
 
-The Designation page allows epileptologists to mark and categorize electrode contacts with different visual designations. This interface provides keyboard-optimized workflow for efficient contact marking during activity monitoring.
+The epilepsy page allows epileptologists to mark and categorize electrode contacts with different visual designations. This interface provides keyboard-optimized workflow for efficient contact marking during activity monitoring.
 
 ## **Key Features**
 
