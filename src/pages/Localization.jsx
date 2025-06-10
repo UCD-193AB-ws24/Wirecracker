@@ -805,6 +805,19 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
             await handleSaveLocalization(false);
             console.log('Anatomy file saved successfully');
 
+            // Check if an epilepsy file exists for this patient
+            const designationResponse = await fetch(`${backendURL}/api/by-patient/${savedState.patientId}?type=designation`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!designationResponse.ok) {
+                throw new Error('Failed to check for existing epilepsy file');
+            }
+
+            const designationResult = await designationResponse.json();
+
             // Now share the file
             console.log('Sharing file with epileptologist...');
             const response = await fetch(`${backendURL}/api/files/share-with-epileptologist`, {
@@ -817,7 +830,9 @@ const Localization = ({ initialData = {}, onStateChange, savedState = {}, isShar
                     fileId: fileId,
                     email: shareEmail,
                     designationData: saveCSVFile(Identifiers.LOCALIZATION, electrodes, savedState.patientId, creationDate, modifiedDate, false, fileId),
-                    localizationData: electrodes
+                    localizationData: electrodes,
+                    existingEpilepsyFileId: designationResult.exists ? designationResult.fileId : null,
+                    patientId: savedState.patientId
                 })
             });
 
